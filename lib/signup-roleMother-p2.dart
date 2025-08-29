@@ -23,10 +23,13 @@ class DeliveryDetailsApp extends StatelessWidget {
       title: 'Safe Mother - Delivery Details',
       theme: ThemeData(
         fontFamily: 'Lexend',
-        scaffoldBackgroundColor: const Color(0xFF0F1724),
-        colorScheme: ColorScheme.fromSwatch().copyWith(primary: const Color(0xFF1993E5)),
+        scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          primary: const Color(0xFFE91E63), // Soft pink accent
+          secondary: const Color(0xFF9C27B0), // Soft purple
+        ),
         textTheme: const TextTheme(
-          bodyMedium: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Color(0xFF5A5A5A)), // Dark gray text
         ),
       ),
       home: const DeliveryDetailsForm(),
@@ -71,14 +74,14 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
       lastDate: DateTime(2100),
       builder: (BuildContext context, Widget? child) {
         return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF1993E5),
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFE91E63), // Soft pink
               onPrimary: Colors.white,
-              surface: Color(0xFF0F1724),
-              onSurface: Colors.white,
+              surface: Colors.white,
+              onSurface: Color(0xFF5A5A5A),
             ),
-            dialogBackgroundColor: const Color(0xFF0F1724),
+            dialogBackgroundColor: Colors.white,
           ),
           child: child!,
         );
@@ -103,18 +106,18 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
     return Scaffold(
       body: Stack(
         children: [
-          // NEW BACKGROUND: Different gradient direction and colors
+          // Soft gradient background
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF0A1A30), Color(0xFF142540)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                colors: [Color(0xFFFBE9E7), Color(0xFFF8F6F8)], // Soft peach to off-white
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
           ),
           
-          // NEW BACKGROUND ELEMENTS: Different shapes and positioning
+          // Decorative shapes with softer colors
           Positioned(
             top: -40,
             right: -40,
@@ -123,10 +126,11 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
               height: 180,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF34D399).withOpacity(0.08),
+                color: const Color(0xFFFFCCBC).withOpacity(0.4), // Soft peach
               ),
             ),
           ),
+          
           Positioned(
             bottom: -60,
             left: -60,
@@ -137,20 +141,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                 height: 200,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(60),
-                  color: const Color(0xFFFB7185).withOpacity(0.06),
-                ),
-              ),
-            ),
-          ),
-          
-          // Subtle pattern overlay for visual distinction
-          Opacity(
-            opacity: 0.03,
-            child: Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/subtle_pattern.png'), // Optional pattern
-                  repeat: ImageRepeat.repeat,
+                  color: const Color(0xFFF8BBD0).withOpacity(0.3), // Soft pink
                 ),
               ),
             ),
@@ -166,7 +157,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Logo with slightly different styling
+                      // Logo with soft styling
                       Container(
                         width: 88,
                         height: 88,
@@ -174,30 +165,32 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
+                              color: Colors.pink[100]!, // Soft pink shadow
                               blurRadius: 18,
                               offset: const Offset(0, 8),
                             ),
                           ],
                           border: Border.all(
-                            color: const Color(0xFF34D399).withOpacity(0.3),
+                            color: const Color(0xFFFFCDD2).withOpacity(0.5),
                             width: 2,
                           ),
-                          image: const DecorationImage(
-                            image: AssetImage('assets/logo.png'),
-                            fit: BoxFit.cover,
-                          ),
+                          color: Colors.white,
+                        ),
+                        child: const Icon(
+                          Icons.favorite,
+                          size: 40,
+                          color: Color(0xFFE91E63), // Soft pink
                         ),
                       ),
                       const SizedBox(height: 16),
                       
-                      // Title with different color accent
+                      // Title
                       const Text(
                         'Delivery Details',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: Color(0xFF7B1FA2), // Soft purple
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -205,23 +198,26 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                       // Subtitle
                       const Text(
                         'Tell us about your pregnancy journey',
-                        style: TextStyle(color: Color(0xFF98A8B8)),
+                        style: TextStyle(
+                          color: Color(0xFF9575CD), // Light purple
+                          fontSize: 15,
+                        ),
                       ),
                       const SizedBox(height: 32),
                       
-                      // Form container with slightly different styling
+                      // Form container with soft styling
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: const Color(0xFF34D399).withOpacity(0.1),
+                            color: const Color(0xFFF3E5F5).withOpacity(0.8),
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.4),
+                              color: Colors.purple[50]!, // Very soft purple shadow
                               blurRadius: 25,
                               offset: const Offset(0, 12),
                             ),
@@ -235,17 +231,17 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                               TextFormField(
                                 controller: _deliveryDateController,
                                 readOnly: true,
-                                style: const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 decoration: InputDecoration(
                                   labelText: 'Delivery Date (Optional)',
-                                  labelStyle: const TextStyle(color: Color(0xFF9FB3C6)),
+                                  labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                   filled: true,
-                                  fillColor: Colors.white.withOpacity(0.07),
+                                  fillColor: const Color(0xFFF5F5F5),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
                                     borderSide: BorderSide.none,
                                   ),
-                                  prefixIcon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF34D399)),
+                                  prefixIcon: const Icon(Icons.calendar_today_outlined, color: Color(0xFFE91E63)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                                 ),
                                 onTap: () => _selectDate(context, true),
@@ -256,17 +252,17 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                               TextFormField(
                                 controller: _pregnancyConfirmedController,
                                 readOnly: true,
-                                style: const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 decoration: InputDecoration(
                                   labelText: 'Pregnancy Confirmed Date',
-                                  labelStyle: const TextStyle(color: Color(0xFF9FB3C6)),
+                                  labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                   filled: true,
-                                  fillColor: Colors.white.withOpacity(0.07),
+                                  fillColor: const Color(0xFFF5F5F5),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
                                     borderSide: BorderSide.none,
                                   ),
-                                  prefixIcon: const Icon(Icons.event_available_outlined, color: Color(0xFF34D399)),
+                                  prefixIcon: const Icon(Icons.event_available_outlined, color: Color(0xFFE91E63)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                                 ),
                                 onTap: () => _selectDate(context, false),
@@ -317,17 +313,17 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                 value: _firstChildValue,
                                 decoration: InputDecoration(
                                   labelText: 'First Child?',
-                                  labelStyle: const TextStyle(color: Color(0xFF9FB3C6)),
+                                  labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                   filled: true,
-                                  fillColor: Colors.white.withOpacity(0.07),
+                                  fillColor: const Color(0xFFF5F5F5),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
                                     borderSide: BorderSide.none,
                                   ),
-                                  prefixIcon: const Icon(Icons.child_care_outlined, color: Color(0xFF34D399)),
+                                  prefixIcon: const Icon(Icons.child_care_outlined, color: Color(0xFFE91E63)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                                 ),
-                                style: const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 items: const [
                                   DropdownMenuItem(value: 'Yes', child: Text('Yes')),
                                   DropdownMenuItem(value: 'No', child: Text('No')),
@@ -351,17 +347,17 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                 value: _pregnancyLossValue,
                                 decoration: InputDecoration(
                                   labelText: 'Pregnancy Loss?',
-                                  labelStyle: const TextStyle(color: Color(0xFF9FB3C6)),
+                                  labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                   filled: true,
-                                  fillColor: Colors.white.withOpacity(0.07),
+                                  fillColor: const Color(0xFFF5F5F5),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
                                     borderSide: BorderSide.none,
                                   ),
-                                  prefixIcon: const Icon(Icons.heart_broken_outlined, color: Color(0xFF34D399)),
+                                  prefixIcon: const Icon(Icons.heart_broken_outlined, color: Color(0xFFE91E63)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                                 ),
-                                style: const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 items: const [
                                   DropdownMenuItem(value: 'Yes', child: Text('Yes')),
                                   DropdownMenuItem(value: 'No', child: Text('No')),
@@ -385,17 +381,17 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                 value: _babyBornValue,
                                 decoration: InputDecoration(
                                   labelText: 'Baby Already Born?',
-                                  labelStyle: const TextStyle(color: Color(0xFF9FB3C6)),
+                                  labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                   filled: true,
-                                  fillColor: Colors.white.withOpacity(0.07),
+                                  fillColor: const Color(0xFFF5F5F5),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
                                     borderSide: BorderSide.none,
                                   ),
-                                  prefixIcon: const Icon(Icons.celebration_outlined, color: Color(0xFF34D399)),
+                                  prefixIcon: const Icon(Icons.celebration_outlined, color: Color(0xFFE91E63)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                                 ),
-                                style: const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 items: const [
                                   DropdownMenuItem(value: 'Yes', child: Text('Yes')),
                                   DropdownMenuItem(value: 'No', child: Text('No')),
@@ -414,7 +410,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                               ),
                               const SizedBox(height: 24),
                               
-                              // Continue Button with different color accent
+                              // Continue Button
                               SizedBox(
                                 width: double.infinity,
                                 height: 50,
@@ -430,7 +426,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF34D399),
+                                    backgroundColor: const Color(0xFFE91E63),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
@@ -453,7 +449,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                       
                       const SizedBox(height: 24),
                       
-                      // Back to previous page with different styling
+                      // Back to previous page
                       TextButton(
                         onPressed: () {
                           Navigator.pop(context);
@@ -461,12 +457,12 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                         child: const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.arrow_back_ios, size: 16, color: Color(0xFF34D399)),
+                            Icon(Icons.arrow_back_ios, size: 16, color: Color(0xFFE91E63)),
                             SizedBox(width: 8),
                             Text(
                               'Back to previous step',
                               style: TextStyle(
-                                color: Color(0xFF34D399),
+                                color: Color(0xFFE91E63),
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -496,17 +492,17 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
       controller: controller,
       keyboardType: keyboardType,
       maxLines: maxLines,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Color(0xFF5A5A5A)),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Color(0xFF9FB3C6)),
+        labelStyle: const TextStyle(color: Color(0xFF9575CD)),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.07),
+        fillColor: const Color(0xFFF5F5F5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
-        prefixIcon: Icon(icon, color: const Color(0xFF34D399)),
+        prefixIcon: Icon(icon, color: const Color(0xFFE91E63)),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
       validator: validator,
@@ -521,11 +517,11 @@ class NextPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1724),
+      backgroundColor: const Color(0xFFF8F6F8),
       body: const Center(
         child: Text(
           'Next Page',
-          style: TextStyle(color: Colors.white, fontSize: 22),
+          style: TextStyle(color: Color(0xFF5A5A5A), fontSize: 22),
         ),
       ),
     );

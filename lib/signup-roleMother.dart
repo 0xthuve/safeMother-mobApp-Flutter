@@ -15,10 +15,13 @@ class SignupMotherApp extends StatelessWidget {
       title: 'Safe Mother - Signup',
       theme: ThemeData(
         fontFamily: 'Lexend',
-        scaffoldBackgroundColor: const Color(0xFF0F1724),
-        colorScheme: ColorScheme.fromSwatch().copyWith(primary: const Color(0xFF1993E5)),
+        scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          primary: const Color(0xFFE91E63), // Soft pink accent
+          secondary: const Color(0xFF9C27B0), // Soft purple
+        ),
         textTheme: const TextTheme(
-          bodyMedium: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Color(0xFF5A5A5A)), // Dark gray text
         ),
       ),
       home: const SafeArea(child: SignupMotherForm()),
@@ -69,14 +72,14 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
       lastDate: DateTime(2100),
       builder: (BuildContext context, Widget? child) {
         return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF1993E5),
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFFE91E63), // Soft pink
               onPrimary: Colors.white,
-              surface: Color(0xFF0F1724),
-              onSurface: Colors.white,
+              surface: Colors.white,
+              onSurface: Color(0xFF5A5A5A),
             ),
-            dialogBackgroundColor: const Color(0xFF0F1724),
+            dialogBackgroundColor: Colors.white,
           ),
           child: child!,
         );
@@ -95,18 +98,18 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background gradient and soft shapes
+          // Soft gradient background
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF071430), Color(0xFF0F1724)],
+                colors: [Color(0xFFFBE9E7), Color(0xFFF8F6F8)], // Soft peach to off-white
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
           ),
           
-          // Decorative shapes
+          // Decorative shapes with softer colors
           Positioned(
             top: -80,
             left: -60,
@@ -117,7 +120,7 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                 height: 220,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(80),
-                  color: Colors.white.withOpacity(0.03),
+                  color: const Color(0xFFF8BBD0).withOpacity(0.3), // Soft pink
                 ),
               ),
             ),
@@ -132,8 +135,22 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                 height: 260,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(100),
-                  color: const Color(0xFF1993E5).withOpacity(0.06),
+                  color: const Color(0xFFE1BEE7).withOpacity(0.3), // Soft lavender
                 ),
+              ),
+            ),
+          ),
+          
+          // Additional subtle background element
+          Positioned(
+            top: 150,
+            right: -30,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFFFFCCBC).withOpacity(0.4), // Soft peach
               ),
             ),
           ),
@@ -148,7 +165,7 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Logo
+                      // Logo with soft styling
                       Container(
                         width: 88,
                         height: 88,
@@ -156,11 +173,16 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.35),
+                              color: Colors.pink[100]!, // Soft pink shadow
                               blurRadius: 20,
-                              offset: const Offset(0, 10),
+                              offset: const Offset(0, 8),
                             ),
                           ],
+                          border: Border.all(
+                            color: const Color(0xFFFFCDD2).withOpacity(0.5),
+                            width: 1.5,
+                            ),
+                          color: Colors.white,
                           image: const DecorationImage(
                             image: AssetImage('assets/logo.png'),
                             fit: BoxFit.cover,
@@ -175,7 +197,7 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: Color(0xFF7B1FA2), // Soft purple
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -183,21 +205,27 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                       // Subtitle
                       const Text(
                         'Create your account to get started',
-                        style: TextStyle(color: Color(0xFF98A8B8)),
+                        style: TextStyle(
+                          color: Color(0xFF9575CD), // Light purple
+                          fontSize: 15,
+                        ),
                       ),
                       const SizedBox(height: 32),
                       
-                      // Form container
+                      // Form container with soft styling
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.04),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.white.withOpacity(0.04)),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFFF3E5F5).withOpacity(0.8),
+                            width: 1,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.35),
-                              blurRadius: 20,
+                              color: Colors.purple[50]!, // Very soft purple shadow
+                              blurRadius: 25,
                               offset: const Offset(0, 10),
                             ),
                           ],
@@ -335,17 +363,17 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                               TextFormField(
                                 controller: _eddController,
                                 readOnly: true,
-                                style: const TextStyle(color: Colors.white),
+                                style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 decoration: InputDecoration(
                                   labelText: 'Estimated Due Date',
-                                  labelStyle: const TextStyle(color: Color(0xFF9FB3C6)),
+                                  labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                   filled: true,
-                                  fillColor: Colors.white.withOpacity(0.06),
+                                  fillColor: const Color(0xFFF5F5F5),
                                   border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(14),
                                     borderSide: BorderSide.none,
                                   ),
-                                  prefixIcon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF9FB3C6)),
+                                  prefixIcon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF9575CD)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                                 ),
                                 onTap: () => _selectDate(context),
@@ -358,13 +386,14 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                               ),
                               const SizedBox(height: 24),
                               
-                              // Next Button
+                              // Continue Button - FIXED NAVIGATION
                               SizedBox(
                                 width: double.infinity,
                                 height: 50,
                                 child: ElevatedButton(
                                   onPressed: () {
                                     if (_formKey.currentState!.validate()) {
+                                      // Fixed navigation to RoleMotherP2
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
@@ -374,11 +403,12 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF1993E5),
+                                    backgroundColor: const Color(0xFFE91E63),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(14),
                                     ),
                                     padding: const EdgeInsets.symmetric(vertical: 16),
+                                    elevation: 2,
                                   ),
                                   child: const Text(
                                     'Continue',
@@ -398,26 +428,45 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                       const SizedBox(height: 24),
                       
                       // Already have account prompt
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            "Already have an account?",
-                            style: TextStyle(color: Color(0xFF9FB3C6)),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
-                            child: const Text(
-                              'Sign In',
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3E5F5).withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              "Already have an account?",
                               style: TextStyle(
-                                color: Color(0xFF1993E5),
-                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF7E57C2),
+                                fontSize: 15,
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                backgroundColor: const Color(0xFFE91E63).withOpacity(0.15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: const Text(
+                                'Sign In',
+                                style: TextStyle(
+                                  color: Color(0xFFE91E63),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -440,17 +489,17 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Color(0xFF5A5A5A)),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Color(0xFF9FB3C6)),
+        labelStyle: const TextStyle(color: Color(0xFF9575CD)),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.06),
+        fillColor: const Color(0xFFF5F5F5),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
-        prefixIcon: Icon(icon, color: const Color(0xFF9FB3C6)),
+        prefixIcon: Icon(icon, color: const Color(0xFF9575CD)),
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       ),
       validator: validator,
@@ -467,21 +516,21 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
-      style: const TextStyle(color: Colors.white),
+      style: const TextStyle(color: Color(0xFF5A5A5A)),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Color(0xFF9FB3C6)),
+        labelStyle: const TextStyle(color: Color(0xFF9575CD)),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.06),
+        fillColor: const Color(0xFFF5F5F5),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
-        prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF9FB3C6)),
+        prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF9575CD)),
         suffixIcon: IconButton(
           icon: Icon(
             obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-            color: const Color(0xFF9FB3C6),
+            color: const Color(0xFF9575CD),
           ),
           onPressed: onToggle,
         ),
@@ -491,5 +540,3 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
     );
   }
 }
-
-// ...existing code...

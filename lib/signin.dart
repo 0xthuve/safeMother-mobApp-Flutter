@@ -15,10 +15,13 @@ class SignInApp extends StatelessWidget {
       title: 'Safe Mother - Login',
       theme: ThemeData(
         fontFamily: 'Lexend',
-        scaffoldBackgroundColor: const Color(0xFF0F1724),
-        colorScheme: ColorScheme.fromSwatch().copyWith(primary: const Color(0xFF1993E5)),
+        scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
+        colorScheme: ColorScheme.fromSwatch().copyWith(
+          primary: const Color(0xFFE91E63), // Soft pink accent
+          secondary: const Color(0xFF9C27B0), // Soft purple
+        ),
         textTheme: const TextTheme(
-          bodyMedium: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Color(0xFF5A5A5A)), // Dark gray text
         ),
       ),
       home: const SignInScreen(),
@@ -34,18 +37,18 @@ class SignInScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // NEW: Enhanced background with more depth
+          // Soft gradient background
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF081735), Color(0xFF0D1E38)],
+                colors: [Color(0xFFFBE9E7), Color(0xFFF8F6F8)], // Soft peach to off-white
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
           ),
           
-          // NEW: Additional subtle background elements
+          // Decorative shapes with softer colors
           Positioned(
             top: 120,
             left: -30,
@@ -54,12 +57,11 @@ class SignInScreen extends StatelessWidget {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF34D399).withOpacity(0.05),
+                color: const Color(0xFFFFCCBC).withOpacity(0.4), // Soft peach
               ),
             ),
           ),
           
-          // Decorative shapes - slightly modified positions and colors
           Positioned(
             top: -60,
             left: -40,
@@ -70,11 +72,12 @@ class SignInScreen extends StatelessWidget {
                 height: 200,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(80),
-                  color: const Color(0xFFFB7185).withOpacity(0.04),
+                  color: const Color(0xFFF8BBD0).withOpacity(0.3), // Soft pink
                 ),
               ),
             ),
           ),
+          
           Positioned(
             right: -70,
             bottom: -100,
@@ -85,7 +88,7 @@ class SignInScreen extends StatelessWidget {
                 height: 240,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(100),
-                  color: const Color(0xFF1993E5).withOpacity(0.08),
+                  color: const Color(0xFFE1BEE7).withOpacity(0.3), // Soft lavender
                 ),
               ),
             ),
@@ -101,68 +104,69 @@ class SignInScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Logo with subtle enhancement
+                      // Logo with soft styling
                       Container(
-                        width: 96, // Slightly larger
+                        width: 96,
                         height: 96,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.4),
-                              blurRadius: 25,
-                              offset: const Offset(0, 12),
+                              color: Colors.pink[100]!, // Soft pink shadow
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.1),
+                            color: const Color(0xFFFFCDD2).withOpacity(0.5),
                             width: 1.5,
                           ),
+                          color: Colors.white,
                           image: const DecorationImage(
                             image: AssetImage('assets/logo.png'),
                             fit: BoxFit.cover,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20), // Increased spacing
+                      const SizedBox(height: 20),
                       
-                      // Title with subtle gradient effect
+                      // Title
                       const Text(
                         'Welcome Back',
                         style: TextStyle(
-                          fontSize: 26, // Slightly larger
+                          fontSize: 26,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: Color(0xFF7B1FA2), // Soft purple
                         ),
                       ),
                       const SizedBox(height: 10),
                       
-                      // Subtitle with improved readability
+                      // Subtitle
                       const Text(
                         'Sign in to continue your motherhood journey',
                         style: TextStyle(
-                          color: Color(0xFFA8B8C8), // Slightly lighter
+                          color: Color(0xFF9575CD), // Light purple
                           fontSize: 15,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 36), // Increased spacing
+                      const SizedBox(height: 36),
                       
-                      // Form container with enhanced styling
+                      // Form container with soft styling
                       Container(
-                        padding: const EdgeInsets.all(24), // More padding
+                        padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(20), // More rounded
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
+                            color: const Color(0xFFF3E5F5).withOpacity(0.8),
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.4),
+                              color: Colors.purple[50]!, // Very soft purple shadow
                               blurRadius: 25,
-                              offset: const Offset(0, 15),
+                              offset: const Offset(0, 10),
                             ),
                           ],
                         ),
@@ -171,11 +175,11 @@ class SignInScreen extends StatelessWidget {
                       
                       const SizedBox(height: 28),
                       
-                      // Sign up prompt with improved styling
+                      // Sign up prompt
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.03),
+                          color: const Color(0xFFF3E5F5).withOpacity(0.5),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -184,24 +188,24 @@ class SignInScreen extends StatelessWidget {
                             const Text(
                               "New to Safe Mother?",
                               style: TextStyle(
-                                color: Color(0xFFA8B8C8),
+                                color: Color(0xFF7E57C2),
                                 fontSize: 15,
                               ),
                             ),
                             const SizedBox(width: 8),
                             TextButton(
                               onPressed: () {
-                                // Navigate to signup-roleSelection page
+                                // Navigate to role selection screen
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => RoleSelectionScreen(),
+                                    builder: (context) => const RoleSelectionScreen(),
                                   ),
                                 );
                               },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                backgroundColor: const Color(0xFF1993E5).withOpacity(0.15),
+                                backgroundColor: const Color(0xFFE91E63).withOpacity(0.15),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -209,7 +213,7 @@ class SignInScreen extends StatelessWidget {
                               child: const Text(
                                 'Create Account',
                                 style: TextStyle(
-                                  color: Color(0xFF1993E5),
+                                  color: Color(0xFFE91E63),
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,
                                 ),
@@ -221,17 +225,17 @@ class SignInScreen extends StatelessWidget {
                       
                       const SizedBox(height: 20),
                       
-                      // NEW: Quick access options
+                      // Quick access options
                       const Text(
                         'Or continue with',
                         style: TextStyle(
-                          color: Color(0xFF8A9BA8),
+                          color: Color(0xFF9575CD),
                           fontSize: 13,
                         ),
                       ),
                       const SizedBox(height: 16),
                       
-                      // NEW: Social login options
+                      // Social login options
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -243,7 +247,7 @@ class SignInScreen extends StatelessWidget {
                               height: 24,
                             ),
                             style: IconButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.08),
+                              backgroundColor: const Color(0xFFF5F5F5),
                               padding: const EdgeInsets.all(12),
                             ),
                           ),
@@ -256,7 +260,7 @@ class SignInScreen extends StatelessWidget {
                               height: 24,
                             ),
                             style: IconButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.08),
+                              backgroundColor: const Color(0xFFF5F5F5),
                               padding: const EdgeInsets.all(12),
                             ),
                           ),
@@ -265,11 +269,11 @@ class SignInScreen extends StatelessWidget {
                             onPressed: () {},
                             icon: const Icon(
                               Icons.phone,
-                              color: Colors.white,
+                              color: Color(0xFF7B1FA2),
                               size: 24,
                             ),
                             style: IconButton.styleFrom(
-                              backgroundColor: Colors.white.withOpacity(0.08),
+                              backgroundColor: const Color(0xFFF5F5F5),
                               padding: const EdgeInsets.all(12),
                             ),
                           ),
@@ -313,7 +317,7 @@ class _SignInFormState extends State<SignInForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Signing in as ${_emailController.text.trim()}'),
-          backgroundColor: const Color(0xFF1993E5),
+          backgroundColor: const Color(0xFFE91E63),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -329,20 +333,20 @@ class _SignInFormState extends State<SignInForm> {
       key: _formKey,
       child: Column(
         children: [
-          // Email field with improved styling
+          // Email field
           TextFormField(
             controller: _emailController,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Color(0xFF5A5A5A)),
             decoration: InputDecoration(
               labelText: 'Email or Phone',
-              labelStyle: const TextStyle(color: Color(0xFFA8B8C8)),
+              labelStyle: const TextStyle(color: Color(0xFF9575CD)),
               filled: true,
-              fillColor: Colors.white.withOpacity(0.07),
+              fillColor: const Color(0xFFF5F5F5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide.none,
               ),
-              prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFFA8B8C8)),
+              prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF9575CD)),
               contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
             ),
             validator: (value) {
@@ -354,25 +358,25 @@ class _SignInFormState extends State<SignInForm> {
           ),
           const SizedBox(height: 20),
           
-          // Password field with improved styling
+          // Password field
           TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: Color(0xFF5A5A5A)),
             decoration: InputDecoration(
               labelText: 'Password',
-              labelStyle: const TextStyle(color: Color(0xFFA8B8C8)),
+              labelStyle: const TextStyle(color: Color(0xFF9575CD)),
               filled: true,
-              fillColor: Colors.white.withOpacity(0.07),
+              fillColor: const Color(0xFFF5F5F5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide.none,
               ),
-              prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFFA8B8C8)),
+              prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF9575CD)),
               suffixIcon: IconButton(
                 icon: Icon(
                   _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                  color: const Color(0xFFA8B8C8),
+                  color: const Color(0xFF9575CD),
                 ),
                 onPressed: () {
                   setState(() {
@@ -394,7 +398,7 @@ class _SignInFormState extends State<SignInForm> {
           ),
           const SizedBox(height: 16),
           
-          // NEW: Remember me checkbox
+          // Remember me checkbox
           Row(
             children: [
               Checkbox(
@@ -404,7 +408,7 @@ class _SignInFormState extends State<SignInForm> {
                     _rememberMe = value ?? false;
                   });
                 },
-                activeColor: const Color(0xFF1993E5),
+                activeColor: const Color(0xFFE91E63),
                 checkColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4),
@@ -413,7 +417,7 @@ class _SignInFormState extends State<SignInForm> {
               const Text(
                 'Remember me',
                 style: TextStyle(
-                  color: Color(0xFFA8B8C8),
+                  color: Color(0xFF7E57C2),
                   fontSize: 14,
                 ),
               ),
@@ -423,7 +427,7 @@ class _SignInFormState extends State<SignInForm> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: const Text('Password reset instructions will be sent to your email'),
-                      backgroundColor: const Color(0xFF1993E5),
+                      backgroundColor: const Color(0xFFE91E63),
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -434,7 +438,7 @@ class _SignInFormState extends State<SignInForm> {
                 child: const Text(
                   'Forgot Password?',
                   style: TextStyle(
-                    color: Color(0xFF1993E5),
+                    color: Color(0xFFE91E63),
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -444,14 +448,14 @@ class _SignInFormState extends State<SignInForm> {
           ),
           const SizedBox(height: 20),
           
-          // Sign in button with improved styling
+          // Sign in button
           SizedBox(
             width: double.infinity,
             height: 54,
             child: ElevatedButton(
               onPressed: _onSignIn,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1993E5),
+                backgroundColor: const Color(0xFFE91E63),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -473,5 +477,3 @@ class _SignInFormState extends State<SignInForm> {
     );
   }
 }
-
-// ...existing code...
