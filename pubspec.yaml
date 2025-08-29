@@ -27,3 +27,6 @@ flutter:
 
   assets:
     - assets/signup_image.png
+    - assets/logo.png
+    - assets/facebook_icon.png
+    - assets/google_icon.png
