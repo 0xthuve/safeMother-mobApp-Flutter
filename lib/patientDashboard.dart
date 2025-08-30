@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'bottom_navigation.dart'; // Import the separate navigation bar
+import 'navigation_handler.dart';
 
 void main() {
   runApp(const PregnancyApp());
@@ -14,13 +16,13 @@ class PregnancyApp extends StatelessWidget {
       title: 'Safe Mother - Home',
       theme: ThemeData(
         fontFamily: 'Lexend',
-        scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
+        scaffoldBackgroundColor: const Color(0xFFF8F6F8),
         colorScheme: ColorScheme.fromSwatch().copyWith(
-          primary: const Color(0xFFE91E63), // Soft pink accent
-          secondary: const Color(0xFF9C27B0), // Soft purple
+          primary: const Color(0xFFE91E63),
+          secondary: const Color(0xFF9C27B0),
         ),
         textTheme: const TextTheme(
-          bodyMedium: TextStyle(color: Color(0xFF5A5A5A)), // Dark gray text
+          bodyMedium: TextStyle(color: Color(0xFF5A5A5A)),
         ),
       ),
       home: const HomeScreen(),
@@ -28,8 +30,20 @@ class PregnancyApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+
+  void _onItemTapped(int index) {
+    if (index == _currentIndex) return;
+    NavigationHandler.navigateToScreen(context, index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +54,7 @@ class HomeScreen extends StatelessWidget {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFFBE9E7), Color(0xFFF8F6F8)], // Soft peach to off-white
+                colors: [Color(0xFFFBE9E7), Color(0xFFF8F6F8)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -58,7 +72,7 @@ class HomeScreen extends StatelessWidget {
                 height: 200,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(70),
-                  color: const Color(0xFFFFCCBC).withOpacity(0.4), // Soft peach
+                  color: const Color(0xFFFFCCBC).withOpacity(0.4),
                 ),
               ),
             ),
@@ -73,7 +87,7 @@ class HomeScreen extends StatelessWidget {
                 height: 240,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(90),
-                  color: const Color(0xFFF8BBD0).withOpacity(0.3), // Soft pink
+                  color: const Color(0xFFF8BBD0).withOpacity(0.3),
                 ),
               ),
             ),
@@ -113,7 +127,7 @@ class HomeScreen extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(width: 48), // For balance
+                      const SizedBox(width: 48),
                     ],
                   ),
                   
@@ -411,63 +425,47 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   
                   // Log symptoms button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Handle symptoms logging
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE91E63),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                      ),
-                      child: const Text(
-                        'Log Symptoms',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: 200,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // Handle symptoms logging
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE91E63),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28),
+                            ),
+                          ),
+                          child: const Text(
+                            'Log Symptoms',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
                   
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 80), // Space for bottom navigation
                 ],
               ),
             ),
           ),
           
-          // Bottom navigation bar
+          // Bottom navigation bar - Now using the separate widget
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(Icons.home_outlined, 'Home', isActive: true),
-                  _buildNavItem(Icons.assignment_outlined, 'Log'),
-                  _buildNavItem(Icons.notifications_outlined, 'Reminders'),
-                  _buildNavItem(Icons.school_outlined, 'Learn'),
-                  _buildNavItem(Icons.chat_outlined, 'Chat'),
-                ],
-              ),
+            child: CustomBottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: _onItemTapped,
             ),
           ),
         ],
@@ -516,28 +514,6 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-  
-  Widget _buildNavItem(IconData icon, String label, {bool isActive = false}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: isActive ? const Color(0xFFE91E63) : const Color(0xFF9575CD),
-          size: 24,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: isActive ? const Color(0xFFE91E63) : const Color(0xFF9575CD),
-            fontSize: 12,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-          ),
-        ),
-      ],
     );
   }
 }
