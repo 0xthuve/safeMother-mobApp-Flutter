@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'navigation_handler.dart';
 
 void main() {
-  // Ensure .env is loaded before running the app
-  dotenv.load().then((_) {
-    runApp(const PregnancyApp());
-  });
+  runApp(const PregnancyApp());
 }
 
 class PregnancyApp extends StatelessWidget {
@@ -49,7 +45,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = false;
   
   // Groq API credentials
-  final String _apiKey = dotenv.env['API_KEY'] ?? '';
+  final String _apiKey = "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";
   final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
   
   // Sample chat messages
