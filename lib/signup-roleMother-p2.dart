@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'patientDashboard.dart';
 
 class RoleMotherP2 extends StatelessWidget {
   const RoleMotherP2({super.key});
@@ -420,7 +421,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => const NextPage(),
+                                          builder: (context) => const HomeScreen(),
                                         ),
                                       );
                                     }
@@ -433,7 +434,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                     padding: const EdgeInsets.symmetric(vertical: 16),
                                   ),
                                   child: const Text(
-                                    'Continue',
+                                    'Complete Sign Up',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
