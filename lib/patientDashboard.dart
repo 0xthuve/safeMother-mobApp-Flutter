@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'bottom_navigation.dart'; // Import the separate navigation bar
 import 'navigation_handler.dart';
+import 'patientProfile.dart';
 
 void main() {
   runApp(const PregnancyApp());
@@ -104,18 +105,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFFFFCDD2).withOpacity(0.5),
-                            width: 1.5,
-                          ),
-                          image: const DecorationImage(
-                            image: AssetImage('assets/profile.png'),
-                            fit: BoxFit.cover,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFFFFCDD2).withOpacity(0.5),
+                              width: 1.5,
+                            ),
+                            image: const DecorationImage(
+                              image: AssetImage('assets/profile.png'),
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
