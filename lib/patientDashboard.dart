@@ -432,7 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 56,
                         child: ElevatedButton(
                           onPressed: () {
-                            // Handle symptoms logging
+                            NavigationHandler.navigateToScreen(context, 1);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFE91E63),
