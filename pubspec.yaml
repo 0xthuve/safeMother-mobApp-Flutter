@@ -8,6 +8,10 @@ environment:
   sdk: ^3.9.0
 
 dependencies:
+
+  http: ^1.2.0
+  flutter_dotenv: ^5.0.2
+  
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
@@ -30,3 +34,11 @@ flutter:
     - assets/logo.png
     - assets/facebook_icon.png
     - assets/google_icon.png
+    - assets/profile.png
+    - assets/baby.png
+    - assets/tip.png
+    - assets/chia_seed.png
+    - assets/coconut.png
+    - assets/banana.png
+    - assets/avocado.png
+    - assets/yogurt.png
