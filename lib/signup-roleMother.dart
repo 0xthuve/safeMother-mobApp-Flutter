@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'signup-roleMother-p2.dart'; // Make sure this file contains `RoleMotherP2` widget
+import 'signin.dart';
 
 void main() {
   runApp(const SignupMotherApp());
@@ -447,7 +448,12 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                             const SizedBox(width: 8),
                             TextButton(
                               onPressed: () {
-                                Navigator.pop(context);
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignInApp(),
+                                  ),
+                                );
                               },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
