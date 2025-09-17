@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'navigation_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:contacts_service/contacts_service.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
+
+// Placeholder for NavigationHandler (ensure this exists in your project)
+class NavigationHandler {
+  static void navigateToScreen(BuildContext context, int index) {
+    // Implement navigation logic here
+    // Example: Navigator.pushNamed(context, '/screen$index');
+  }
+}
 
 void main() {
   runApp(const PregnancyAppLog());
@@ -45,70 +52,108 @@ class LogScreen extends StatefulWidget {
 
 class _LogScreenState extends State<LogScreen> {
   int _currentIndex = 1;
-  final TextEditingController _bloodPressureController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
-  final TextEditingController _babyKicksController = TextEditingController();
+  late final TextEditingController _bloodPressureController;
+  late final TextEditingController _weightController;
+  late final TextEditingController _babyKicksController;
+  late final TextEditingController _symptomsController;
   String _selectedMood = '';
   int _kickCount = 0;
   bool _isCounting = false;
-  
+
   // Pre-filled information
   String _currentLocation = 'Not set';
   String _medicalConditions = 'None';
   String _emergencyContacts = 'Not set';
-  
+
   final List<String> _moodOptions = [
     'Joyful',
     'Neutral',
     'Down',
     'Worried',
-    'Fatigued'
+    'Fatigued',
   ];
 
   // Telemedicine state
   String? _selectedDoctor;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  final TextEditingController _symptomsController = TextEditingController();
 
   // Appointments
   List<Map<String, dynamic>> _appointments = [];
 
+  // SharedPreferences instance
+  late SharedPreferences _prefs;
+
+  // Configurable emergency number
+  final String _emergencyNumber = '911'; // Change based on region
+
   @override
   void initState() {
     super.initState();
-    _loadPrefilledInfo();
+    _bloodPressureController = TextEditingController();
+    _weightController = TextEditingController();
+    _babyKicksController = TextEditingController();
+    _symptomsController = TextEditingController();
+    _initializePrefs();
     _loadAppointments();
   }
 
+  @override
+  void dispose() {
+    _bloodPressureController.dispose();
+    _weightController.dispose();
+    _babyKicksController.dispose();
+    _symptomsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializePrefs() async {
+    _prefs = await SharedPreferences.getInstance();
+    _loadPrefilledInfo();
+  }
+
   Future<void> _loadPrefilledInfo() async {
-    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _currentLocation = prefs.getString('currentLocation') ?? 'Not set';
-      _medicalConditions = prefs.getString('medicalConditions') ?? 'None';
-      _emergencyContacts = prefs.getString('emergencyContacts') ?? 'Not set';
+      _currentLocation = _prefs.getString('currentLocation') ?? 'Not set';
+      _medicalConditions = _prefs.getString('medicalConditions') ?? 'None';
+      _emergencyContacts = _prefs.getString('emergencyContacts') ?? 'Not set';
     });
   }
 
   Future<void> _loadAppointments() async {
-    final prefs = await SharedPreferences.getInstance();
-    final jsonString = prefs.getString('appointments');
+    final jsonString = _prefs.getString('appointments');
     if (jsonString != null) {
-      final List<dynamic> list = jsonDecode(jsonString);
-      setState(() {
-        _appointments = list.map((e) => Map<String, dynamic>.from(e)).toList();
-      });
+      try {
+        final List<dynamic> list = jsonDecode(jsonString);
+        setState(() {
+          _appointments = list.map((e) => Map<String, dynamic>.from(e)).toList();
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading appointments: $e')),
+        );
+      }
     }
   }
 
   Future<void> _saveAppointments() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('appointments', jsonEncode(_appointments));
+    try {
+      await _prefs.setString('appointments', jsonEncode(_appointments));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving appointments: $e')),
+      );
+    }
   }
 
   Future<void> _savePrefilledInfo(String key, String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, value);
+    try {
+      await _prefs.setString(key, value);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving $key: $e')),
+      );
+    }
   }
 
   void _onItemTapped(int index) {
@@ -121,12 +166,12 @@ class _LogScreenState extends State<LogScreen> {
       _isCounting = true;
       _kickCount = 0;
     });
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setStateDialog) {
             return AlertDialog(
               title: const Text('Count Baby Kicks'),
               content: Column(
@@ -134,16 +179,19 @@ class _LogScreenState extends State<LogScreen> {
                 children: [
                   const Text('Press the button each time you feel a kick:'),
                   const SizedBox(height: 20),
-                  Text('Kicks: $_kickCount', style: const TextStyle(fontSize: 24)),
+                  Text(
+                    'Kicks: $_kickCount',
+                    style: const TextStyle(fontSize: 24),
+                  ),
                   const SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {
-                      setState(() {
+                      setStateDialog(() {
                         _kickCount++;
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+                      backgroundColor: Colors.white,
                     ),
                     child: const Text('Kicked!!'),
                   ),
@@ -169,6 +217,11 @@ class _LogScreenState extends State<LogScreen> {
   }
 
   Future<void> _showTelemedicinePopup() async {
+    String? localSelectedDoctor;
+    DateTime? localSelectedDate;
+    TimeOfDay? localSelectedTime;
+    final localSymptomsController = TextEditingController();
+
     final result = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -198,7 +251,7 @@ class _LogScreenState extends State<LogScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Doctor Selection
                       const Text(
                         'Select Doctor',
@@ -215,27 +268,42 @@ class _LogScreenState extends State<LogScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: _selectedDoctor,
+                          value: localSelectedDoctor,
                           decoration: const InputDecoration(
                             border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                           ),
                           items: const [
-                            DropdownMenuItem(value: 'Dr. Anya Sharma', child: Text('Dr. Anya Sharma - Obstetrician')),
-                            DropdownMenuItem(value: 'Dr. Ethan Patel', child: Text('Dr. Ethan Patel - Pediatrician')),
-                            DropdownMenuItem(value: 'Dr. Sophia Chen', child: Text('Dr. Sophia Chen - Gynecologist')),
-                            DropdownMenuItem(value: 'Dr. Michael Rodriguez', child: Text('Dr. Michael Rodriguez - Nutritionist')),
+                            DropdownMenuItem(
+                              value: 'Dr. Anya Sharma',
+                              child: Text('Dr. Anya Sharma - Obstetrician'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Dr. Ethan Patel',
+                              child: Text('Dr. Ethan Patel - Pediatrician'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Dr. Sophia Chen',
+                              child: Text('Dr. Sophia Chen - Gynecologist'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Dr. Michael Rodriguez',
+                              child: Text('Dr. Michael Rodriguez - Nutritionist'),
+                            ),
                           ],
                           onChanged: (value) {
                             setStatePopup(() {
-                              _selectedDoctor = value;
+                              localSelectedDoctor = value;
                             });
                           },
                           hint: const Text('Choose a doctor'),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Date Selection
                       const Text(
                         'Select Date',
@@ -253,11 +321,11 @@ class _LogScreenState extends State<LogScreen> {
                         ),
                         child: ListTile(
                           title: Text(
-                            _selectedDate == null 
-                              ? 'Select appointment date'
-                              : DateFormat('MMM dd, yyyy').format(_selectedDate!),
+                            localSelectedDate == null
+                                ? 'Select appointment date'
+                                : DateFormat('MMM dd, yyyy').format(localSelectedDate!),
                             style: TextStyle(
-                              color: _selectedDate == null ? Colors.grey : Colors.black,
+                              color: localSelectedDate == null ? Colors.grey : Colors.black,
                             ),
                           ),
                           trailing: const Icon(Icons.calendar_today),
@@ -270,14 +338,14 @@ class _LogScreenState extends State<LogScreen> {
                             );
                             if (pickedDate != null) {
                               setStatePopup(() {
-                                _selectedDate = pickedDate;
+                                localSelectedDate = pickedDate;
                               });
                             }
                           },
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Time Selection
                       const Text(
                         'Select Time',
@@ -295,11 +363,11 @@ class _LogScreenState extends State<LogScreen> {
                         ),
                         child: ListTile(
                           title: Text(
-                            _selectedTime == null 
-                              ? 'Select appointment time'
-                              : _selectedTime!.format(context),
+                            localSelectedTime == null
+                                ? 'Select appointment time'
+                                : localSelectedTime!.format(context),
                             style: TextStyle(
-                              color: _selectedTime == null ? Colors.grey : Colors.black,
+                              color: localSelectedTime == null ? Colors.grey : Colors.black,
                             ),
                           ),
                           trailing: const Icon(Icons.access_time),
@@ -310,14 +378,14 @@ class _LogScreenState extends State<LogScreen> {
                             );
                             if (pickedTime != null) {
                               setStatePopup(() {
-                                _selectedTime = pickedTime;
+                                localSelectedTime = pickedTime;
                               });
                             }
                           },
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Symptoms/Notes
                       const Text(
                         'Symptoms or Notes',
@@ -329,7 +397,7 @@ class _LogScreenState extends State<LogScreen> {
                       ),
                       const SizedBox(height: 8),
                       TextField(
-                        controller: _symptomsController,
+                        controller: localSymptomsController,
                         maxLines: 3,
                         decoration: InputDecoration(
                           hintText: 'Describe your symptoms or concerns',
@@ -342,23 +410,24 @@ class _LogScreenState extends State<LogScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-                      
+
                       // Schedule Button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () async {
-                            if (_selectedDoctor == null || _selectedDate == null || _selectedTime == null) {
+                            if (localSelectedDoctor == null ||
+                                localSelectedDate == null ||
+                                localSelectedTime == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Please select doctor, date and time'),
+                                  content: Text('Please select doctor, date, and time'),
                                   backgroundColor: Colors.red,
                                 ),
                               );
                               return;
                             }
-                            
-                            // Show confirmation dialog
+
                             final confirmed = await showDialog<bool>(
                               context: context,
                               builder: (BuildContext context) {
@@ -368,11 +437,13 @@ class _LogScreenState extends State<LogScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Doctor: $_selectedDoctor'),
-                                      Text('Date: ${DateFormat('MMM dd, yyyy').format(_selectedDate!)}'),
-                                      Text('Time: ${_selectedTime!.format(context)}'),
-                                      if (_symptomsController.text.isNotEmpty)
-                                        Text('Notes: ${_symptomsController.text}'),
+                                      Text('Doctor: $localSelectedDoctor'),
+                                      Text(
+                                        'Date: ${DateFormat('MMM dd, yyyy').format(localSelectedDate!)}',
+                                      ),
+                                      Text('Time: ${localSelectedTime!.format(context)}'),
+                                      if (localSymptomsController.text.isNotEmpty)
+                                        Text('Notes: ${localSymptomsController.text}'),
                                     ],
                                   ),
                                   actions: [
@@ -383,7 +454,7 @@ class _LogScreenState extends State<LogScreen> {
                                     ElevatedButton(
                                       onPressed: () => Navigator.pop(context, true),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color.fromARGB(255, 221, 221, 221),
+                                        backgroundColor: Colors.grey[300],
                                       ),
                                       child: const Text('Confirm'),
                                     ),
@@ -393,7 +464,7 @@ class _LogScreenState extends State<LogScreen> {
                             );
 
                             if (confirmed ?? false) {
-                              Navigator.pop(context, true); // Close telemedicine with true
+                              Navigator.pop(context, true);
                             }
                           },
                           style: ElevatedButton.styleFrom(
@@ -421,9 +492,7 @@ class _LogScreenState extends State<LogScreen> {
                           },
                           child: const Text(
                             'Cancel',
-                            style: TextStyle(
-                              color: Color(0xFF638763),
-                            ),
+                            style: TextStyle(color: Color(0xFF638763)),
                           ),
                         ),
                       ),
@@ -438,22 +507,35 @@ class _LogScreenState extends State<LogScreen> {
     );
 
     if (result ?? false) {
-      // Add appointment
-      _appointments.add({
-        'doctor': _selectedDoctor!,
-        'date': _selectedDate!.toIso8601String(),
-        'time': '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
-        'notes': _symptomsController.text,
-        'status': 'Not scheduled yet',
-        'meetingLink': null,
+      setState(() {
+        _appointments.add({
+          'doctor': localSelectedDoctor!,
+          'date': localSelectedDate!.toIso8601String(),
+          'time': '${localSelectedTime!.hour.toString().padLeft(2, '0')}:${localSelectedTime!.minute.toString().padLeft(2, '0')}',
+          'notes': localSymptomsController.text,
+          'status': 'Not scheduled yet',
+          'meetingLink': null,
+        });
       });
       await _saveAppointments();
-      setState(() {});
-      _showAppointmentConfirmation();
+      _showAppointmentConfirmation(
+        localSelectedDoctor!,
+        localSelectedDate!,
+        localSelectedTime!,
+        localSymptomsController.text,
+      );
+      localSymptomsController.dispose();
+    } else {
+      localSymptomsController.dispose();
     }
   }
 
-  void _showAppointmentConfirmation() {
+  void _showAppointmentConfirmation(
+    String doctor,
+    DateTime date,
+    TimeOfDay time,
+    String notes,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -465,22 +547,26 @@ class _LogScreenState extends State<LogScreen> {
             children: [
               const Text('Your appointment has been scheduled successfully!'),
               const SizedBox(height: 16),
-              Text('Doctor: $_selectedDoctor'),
-              Text('Date: ${DateFormat('MMM dd, yyyy').format(_selectedDate!)}'),
-              Text('Time: ${_selectedTime!.format(context)}'),
+              Text('Doctor: $doctor'),
+              Text('Date: ${DateFormat('MMM dd, yyyy').format(date)}'),
+              Text('Time: ${time.format(context)}'),
+              if (notes.isNotEmpty) Text('Notes: $notes'),
               const SizedBox(height: 16),
-              const Text('You will receive a confirmation and meeting link once the doctor accepts your request.'),
+              const Text(
+                'You will receive a confirmation and meeting link once the doctor accepts your request.',
+              ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                // Reset form
-                _selectedDoctor = null;
-                _selectedDate = null;
-                _selectedTime = null;
-                _symptomsController.clear();
+                setState(() {
+                  _selectedDoctor = null;
+                  _selectedDate = null;
+                  _selectedTime = null;
+                  _symptomsController.clear();
+                });
               },
               child: const Text('OK'),
             ),
@@ -494,133 +580,178 @@ class _LogScreenState extends State<LogScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setStatePopup) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Emergency Assistance',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF111611),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'In case of emergency, call for help immediately',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF161111),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            _callAmbulance();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE91E63),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: const Text(
-                            'Call Ambulance',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Pre-fill Information',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF161111),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ListTile(
-                        title: Text('Current Location: $_currentLocation'),
-                        trailing: const Icon(Icons.chevron_right, color: Color(0xFF638763)),
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          await _editPrefilledInfo('Current Location', 'currentLocation', _currentLocation);
-                          _showEmergencyPopup();
-                        },
-                      ),
-                      ListTile(
-                        title: Text('Medical Conditions: $_medicalConditions'),
-                        trailing: const Icon(Icons.chevron_right, color: Color(0xFF638763)),
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          await _editPrefilledInfo('Medical Conditions', 'medicalConditions', _medicalConditions);
-                          _showEmergencyPopup();
-                        },
-                      ),
-                      ListTile(
-                        title: Text('Emergency Contacts: $_emergencyContacts'),
-                        trailing: const Icon(Icons.chevron_right, color: Color(0xFF638763)),
-                        onTap: () async {
-                          Navigator.of(context).pop();
-                          await _editPrefilledInfo('Emergency Contacts', 'emergencyContacts', _emergencyContacts);
-                          _showEmergencyPopup();
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text(
-                            'Close',
-                            style: TextStyle(
-                              color: Color(0xFF638763),
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.0),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Emergency Assistance',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF111611),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'In case of emergency, call for help immediately',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Color(0xFF161111),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _callAmbulance,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE91E63),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: Text(
+                        'Call Ambulance ($_emergencyNumber)',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Pre-fill Information',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF161111),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    title: Text('Current Location: $_currentLocation'),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: Color(0xFF638763),
+                    ),
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      await _editPrefilledInfo(
+                        'Current Location',
+                        'currentLocation',
+                        _currentLocation,
+                      );
+                      _showEmergencyPopup();
+                    },
+                  ),
+                  ListTile(
+                    title: Text('Medical Conditions: $_medicalConditions'),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: Color(0xFF638763),
+                    ),
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      await _editPrefilledInfo(
+                        'Medical Conditions',
+                        'medicalConditions',
+                        _medicalConditions,
+                      );
+                      _showEmergencyPopup();
+                    },
+                  ),
+                  ListTile(
+                    title: Text('Emergency Contacts: $_emergencyContacts'),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: Color(0xFF638763),
+                    ),
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      await _editPrefilledInfo(
+                        'Emergency Contacts',
+                        'emergencyContacts',
+                        _emergencyContacts,
+                      );
+                      _showEmergencyPopup();
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text(
+                        'Close',
+                        style: TextStyle(
+                          color: Color(0xFF638763),
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );
   }
 
   Future<void> _getCurrentLocation(TextEditingController controller) async {
-    var status = await Permission.location.request();
-    if (status.isGranted) {
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-      controller.text = '${position.latitude}, ${position.longitude}';
+    bool serviceEnabled;
+    PermissionStatus permission;
+
+    // Check if location services are enabled
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enable location services')),
+      );
+      return;
+    }
+
+    permission = await Permission.location.request();
+    if (permission.isGranted) {
+      try {
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        controller.text = '${position.latitude}, ${position.longitude}';
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error getting location: $e')),
+        );
+      }
+    } else if (permission.isPermanentlyDenied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Location permission permanently denied. Please enable it in settings.'),
+          action: SnackBarAction(
+            label: 'Open Settings',
+            onPressed: openAppSettings,
+          ),
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Location permission denied')),
@@ -629,32 +760,56 @@ class _LogScreenState extends State<LogScreen> {
   }
 
   Future<void> _pickContact(TextEditingController controller) async {
-    var status = await Permission.contacts.request();
-    if (status.isGranted) {
-      Iterable<Contact> contacts = await ContactsService.getContacts(withThumbnails: false);
-      if (contacts.isNotEmpty) {
-        Contact? selected = await showDialog<Contact>(
-          context: context,
-          builder: (context) {
-            return SimpleDialog(
-              title: const Text('Select Contact'),
-              children: contacts.take(10).map((contact) {
-                String name = contact.displayName ?? 'No Name';
-                String phone = contact.phones?.isNotEmpty == true ? contact.phones!.first.value ?? '' : '';
-                return SimpleDialogOption(
-                  onPressed: () => Navigator.pop(context, contact),
-                  child: Text('$name${phone.isNotEmpty ? ' - $phone' : ''}'),
-                );
-              }).toList(),
-            );
-          },
+    PermissionStatus permission = await Permission.contacts.request();
+    if (permission.isGranted) {
+      try {
+        // Request contacts with minimal data for efficiency
+        List<Contact> contacts = await FlutterContacts.getContacts(
+          withProperties: true,
+          withPhoto: false,
         );
-        if (selected != null) {
-          String name = selected.displayName ?? 'No Name';
-          String phone = selected.phones?.isNotEmpty == true ? selected.phones!.first.value ?? '' : '';
-          controller.text = phone.isNotEmpty ? '$name: $phone' : name;
+        if (contacts.isNotEmpty) {
+          Contact? selected = await showDialog<Contact>(
+            context: context,
+            builder: (context) {
+              return SimpleDialog(
+                title: const Text('Select Contact'),
+                children: contacts.take(10).map((contact) {
+                  String name = contact.displayName;
+                  String phone = contact.phones.isNotEmpty ? contact.phones.first.number : '';
+                  return SimpleDialogOption(
+                    onPressed: () => Navigator.pop(context, contact),
+                    child: Text('$name${phone.isNotEmpty ? ' - $phone' : ''}'),
+                  );
+                }).toList(),
+              );
+            },
+          );
+          if (selected != null) {
+            String name = selected.displayName;
+            String phone = selected.phones.isNotEmpty ? selected.phones.first.number : '';
+            controller.text = phone.isNotEmpty ? '$name: $phone' : name;
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No contacts found')),
+          );
         }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error accessing contacts: $e')),
+        );
       }
+    } else if (permission.isPermanentlyDenied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Contacts permission permanently denied. Please enable it in settings.'),
+          action: SnackBarAction(
+            label: 'Open Settings',
+            onPressed: openAppSettings,
+          ),
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Contacts permission denied')),
@@ -664,7 +819,7 @@ class _LogScreenState extends State<LogScreen> {
 
   Future<void> _editPrefilledInfo(String title, String key, String currentValue) async {
     TextEditingController controller = TextEditingController(text: currentValue);
-    
+
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -693,9 +848,7 @@ class _LogScreenState extends State<LogScreen> {
                     ),
                   TextField(
                     controller: controller,
-                    decoration: InputDecoration(
-                      hintText: 'Enter your $title',
-                    ),
+                    decoration: InputDecoration(hintText: 'Enter your $title'),
                     onChanged: (_) {
                       setStateDialog(() {});
                     },
@@ -706,7 +859,10 @@ class _LogScreenState extends State<LogScreen> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'Current: \n${controller.text}',
-                        style: const TextStyle(fontSize: 13, color: Colors.grey),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                   ),
@@ -733,6 +889,10 @@ class _LogScreenState extends State<LogScreen> {
                         }
                       });
                       Navigator.of(context).pop();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('$title cannot be empty')),
+                      );
                     }
                   },
                   child: const Text('Save'),
@@ -743,22 +903,76 @@ class _LogScreenState extends State<LogScreen> {
         );
       },
     );
+    controller.dispose();
   }
 
   void _callAmbulance() async {
-    // Open the phone dialer with 110
-    final Uri telUri = Uri(scheme: 'tel', path: '110');
-    if (await canLaunchUrl(telUri)) {
-      await launchUrl(telUri);
-    } else {
+    final Uri telUri = Uri(scheme: 'tel', path: _emergencyNumber);
+    try {
+      if (await canLaunchUrl(telUri)) {
+        await launchUrl(telUri);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch dialer')),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not launch dialer.')),
+        SnackBar(content: Text('Error launching dialer: $e')),
       );
     }
   }
 
   void _saveSymptoms() {
-    // Save functionality
+    // Validate inputs
+    if (_bloodPressureController.text.isNotEmpty) {
+      try {
+        final bp = _bloodPressureController.text.split('/');
+        if (bp.length != 2 || int.tryParse(bp[0]) == null || int.tryParse(bp[1]) == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please enter blood pressure in format: systolic/diastolic (e.g., 120/80)'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid blood pressure format'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    if (_weightController.text.isNotEmpty) {
+      if (double.tryParse(_weightController.text) == null || double.parse(_weightController.text) <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid weight'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    if (_babyKicksController.text.isNotEmpty) {
+      if (int.tryParse(_babyKicksController.text) == null || int.parse(_babyKicksController.text) < 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please enter a valid number of baby kicks'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    // Save functionality (e.g., to SharedPreferences or a backend)
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Symptoms saved successfully!'),
@@ -831,7 +1045,7 @@ class _LogScreenState extends State<LogScreen> {
               ),
             ),
           ),
-          
+
           // Decorative elements
           Positioned(
             top: -50,
@@ -848,7 +1062,7 @@ class _LogScreenState extends State<LogScreen> {
               ),
             ),
           ),
-          
+
           Positioned(
             top: 100,
             right: -40,
@@ -861,7 +1075,7 @@ class _LogScreenState extends State<LogScreen> {
               ),
             ),
           ),
-          
+
           Positioned(
             right: -60,
             bottom: -90,
@@ -877,7 +1091,7 @@ class _LogScreenState extends State<LogScreen> {
               ),
             ),
           ),
-          
+
           // Content
           SafeArea(
             child: Column(
@@ -885,106 +1099,58 @@ class _LogScreenState extends State<LogScreen> {
                 // Header
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.only(
-                    top: 16,
-                    left: 16,
-                    right: 16,
-                    bottom: 8,
-                  ),
-                  decoration: BoxDecoration(color: Colors.white),
+                  padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
+                  decoration: const BoxDecoration(color: Colors.white),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Color(0xFF111611)),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                        ),
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Color(0xFF111611)),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
                       ),
                       Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.only(left: 48),
-                          child: const Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 262,
-                                child: Text(
-                                  'Log Symptoms',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Color(0xFF111611),
-                                    fontSize: 18,
-                                    fontFamily: 'Lexend',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.28,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        child: Center(
+                          child: Text(
+                            'Log Symptoms',
+                            style: TextStyle(
+                              color: const Color(0xFF111611),
+                              fontSize: 18,
+                              fontFamily: 'Lexend',
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
-                      Container(
-                        width: 48,
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [],
-                        ),
-                      ),
+                      const SizedBox(width: 48), // Placeholder for alignment
                     ],
                   ),
                 ),
-                
+
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.only(bottom: 20),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Today's Date
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.only(
-                            top: 16,
-                            left: 16,
-                            right: 16,
-                            bottom: 8,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 358,
-                                child: Text(
-                                  'Today - ${DateFormat('MMM dd, yyyy').format(DateTime.now())}',
-                                  style: const TextStyle(
-                                    color: Color(0xFF111611),
-                                    fontSize: 18,
-                                    fontFamily: 'Lexend',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.28,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
+                          child: Text(
+                            'Today - ${DateFormat('MMM dd, yyyy').format(DateTime.now())}',
+                            style: const TextStyle(
+                              color: Color(0xFF111611),
+                              fontSize: 18,
+                              fontFamily: 'Lexend',
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        
+
                         // Blood Pressure Input
-                        Container(
-                          width: double.infinity,
+                        Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: TextField(
                             controller: _bloodPressureController,
@@ -1003,13 +1169,12 @@ class _LogScreenState extends State<LogScreen> {
                                 borderSide: BorderSide.none,
                               ),
                             ),
-                            keyboardType: TextInputType.number,
+                            keyboardType: TextInputType.text, // Allow for systolic/diastolic format
                           ),
                         ),
-                        
+
                         // Weight Input
-                        Container(
-                          width: double.infinity,
+                        Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: TextField(
                             controller: _weightController,
@@ -1028,13 +1193,12 @@ class _LogScreenState extends State<LogScreen> {
                                 borderSide: BorderSide.none,
                               ),
                             ),
-                            keyboardType: TextInputType.number,
+                            keyboardType: TextInputType.numberWithOptions(decimal: true),
                           ),
                         ),
-                        
+
                         // Baby Kicks Input
-                        Container(
-                          width: double.infinity,
+                        Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: Row(
                             children: [
@@ -1084,40 +1248,22 @@ class _LogScreenState extends State<LogScreen> {
                             ],
                           ),
                         ),
-                        
+
                         // Mood Selection
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.only(
-                            top: 16,
-                            left: 16,
-                            right: 16,
-                            bottom: 8,
-                          ),
-                          child: const Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 358,
-                                child: Text(
-                                  'Mood',
-                                  style: TextStyle(
-                                    color: Color(0xFF111611),
-                                    fontSize: 18,
-                                    fontFamily: 'Lexend',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.28,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
+                          child: Text(
+                            'Mood',
+                            style: const TextStyle(
+                              color: Color(0xFF111611),
+                              fontSize: 18,
+                              fontFamily: 'Lexend',
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        
-                        Container(
-                          width: double.infinity,
+
+                        Padding(
                           padding: const EdgeInsets.all(16),
                           child: Wrap(
                             spacing: 12,
@@ -1151,40 +1297,22 @@ class _LogScreenState extends State<LogScreen> {
                             }).toList(),
                           ),
                         ),
-                        
+
                         // Telemedicine & Counseling
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.only(
-                            top: 16,
-                            left: 16,
-                            right: 16,
-                            bottom: 8,
-                          ),
-                          child: const Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 358,
-                                child: Text(
-                                  'Telemedicine & Counseling',
-                                  style: TextStyle(
-                                    color: Color(0xFF111611),
-                                    fontSize: 18,
-                                    fontFamily: 'Lexend',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.28,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
+                          child: Text(
+                            'Telemedicine & Counseling',
+                            style: const TextStyle(
+                              color: Color(0xFF111611),
+                              fontSize: 18,
+                              fontFamily: 'Lexend',
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        
-                        Container(
-                          width: double.infinity,
+
+                        Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
@@ -1218,40 +1346,22 @@ class _LogScreenState extends State<LogScreen> {
                             ],
                           ),
                         ),
-                        
+
                         // Ambulance Service
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.only(
-                            top: 16,
-                            left: 16,
-                            right: 16,
-                            bottom: 8,
-                          ),
-                          child: const Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 358,
-                                child: Text(
-                                  'Ambulance Service',
-                                  style: TextStyle(
-                                    color: Color(0xFF111611),
-                                    fontSize: 18,
-                                    fontFamily: 'Lexend',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.28,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
+                          child: Text(
+                            'Ambulance Service',
+                            style: const TextStyle(
+                              color: Color(0xFF111611),
+                              fontSize: 18,
+                              fontFamily: 'Lexend',
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        
-                        Container(
-                          width: double.infinity,
+
+                        Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
@@ -1287,40 +1397,23 @@ class _LogScreenState extends State<LogScreen> {
                         ),
 
                         // Upcoming Appointments
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.only(
-                            top: 16,
-                            left: 16,
-                            right: 16,
-                            bottom: 8,
-                          ),
-                          child: const Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                width: 358,
-                                child: Text(
-                                  'Upcoming Appointments',
-                                  style: TextStyle(
-                                    color: Color(0xFF111611),
-                                    fontSize: 18,
-                                    fontFamily: 'Lexend',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.28,
-                                  ),
-                                ),
-                              ),
-                            ],
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
+                          child: Text(
+                            'Upcoming Appointments',
+                            style: const TextStyle(
+                              color: Color(0xFF111611),
+                              fontSize: 18,
+                              fontFamily: 'Lexend',
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
 
                         if (_appointments.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: const Text('No appointments scheduled yet.'),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text('No appointments scheduled yet.'),
                           )
                         else
                           ListView.builder(
@@ -1329,20 +1422,32 @@ class _LogScreenState extends State<LogScreen> {
                             itemCount: _appointments.length,
                             itemBuilder: (context, index) {
                               final appt = _appointments[index];
-                              DateTime date = DateTime.parse(appt['date']);
+                              DateTime? date;
+                              try {
+                                date = DateTime.parse(appt['date']);
+                              } catch (e) {
+                                return const ListTile(
+                                  title: Text('Error: Invalid appointment date'),
+                                );
+                              }
                               String timeStr = appt['time'];
                               String status = appt['status'];
                               String? link = appt['meetingLink'];
 
                               return Card(
                                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Doctor: ${appt['doctor']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      Text(
+                                        'Doctor: ${appt['doctor']}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
                                       Text('Date: ${DateFormat('MMM dd, yyyy').format(date)}'),
                                       Text('Time: $timeStr'),
                                       if (appt['notes'].isNotEmpty) Text('Notes: ${appt['notes']}'),
@@ -1353,7 +1458,8 @@ class _LogScreenState extends State<LogScreen> {
                                           onPressed: () {
                                             setState(() {
                                               _appointments[index]['status'] = 'Scheduled';
-                                              _appointments[index]['meetingLink'] = 'https://meet.example.com/${DateTime.now().millisecondsSinceEpoch}';
+                                              _appointments[index]['meetingLink'] =
+                                                  'https://meet.example.com/${DateTime.now().millisecondsSinceEpoch}';
                                             });
                                             _saveAppointments();
                                           },
@@ -1362,12 +1468,18 @@ class _LogScreenState extends State<LogScreen> {
                                       else if (status == 'Scheduled' && link != null)
                                         ElevatedButton(
                                           onPressed: () async {
-                                            final Uri url = Uri.parse(link);
-                                            if (await canLaunchUrl(url)) {
-                                              await launchUrl(url);
-                                            } else {
+                                            try {
+                                              final Uri url = Uri.parse(link);
+                                              if (await canLaunchUrl(url)) {
+                                                await launchUrl(url);
+                                              } else {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('Could not launch $link')),
+                                                );
+                                              }
+                                            } catch (e) {
                                               ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text('Could not launch $link')),
+                                                SnackBar(content: Text('Error launching URL: $e')),
                                               );
                                             }
                                           },
@@ -1379,27 +1491,29 @@ class _LogScreenState extends State<LogScreen> {
                               );
                             },
                           ),
-                        
+
                         // Save Button
-                        Container(
-                          width: double.infinity,
+                        Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                          child: ElevatedButton(
-                            onPressed: _saveSymptoms,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE91E63),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _saveSymptoms,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE91E63),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 16),
                               ),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            child: const Text(
-                              'Save',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontFamily: 'Lexend',
-                                fontWeight: FontWeight.w700,
+                              child: const Text(
+                                'Save',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontFamily: 'Lexend',
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ),
