@@ -81,8 +81,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: Color(0xFF5A5A5A),
-            ),
-            dialogBackgroundColor: Colors.white,
+            ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
           ),
           child: child!,
         );
@@ -311,7 +310,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                               
                               // First Child?
                               DropdownButtonFormField<String>(
-                                value: _firstChildValue,
+                                initialValue: _firstChildValue,
                                 decoration: InputDecoration(
                                   labelText: 'First Child?',
                                   labelStyle: const TextStyle(color: Color(0xFF9575CD)),
@@ -345,7 +344,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                               
                               // Pregnancy loss?
                               DropdownButtonFormField<String>(
-                                value: _pregnancyLossValue,
+                                initialValue: _pregnancyLossValue,
                                 decoration: InputDecoration(
                                   labelText: 'Pregnancy Loss?',
                                   labelStyle: const TextStyle(color: Color(0xFF9575CD)),
@@ -379,7 +378,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                               
                               // Baby already born?
                               DropdownButtonFormField<String>(
-                                value: _babyBornValue,
+                                initialValue: _babyBornValue,
                                 decoration: InputDecoration(
                                   labelText: 'Baby Already Born?',
                                   labelStyle: const TextStyle(color: Color(0xFF9575CD)),

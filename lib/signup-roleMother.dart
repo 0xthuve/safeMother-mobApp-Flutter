@@ -79,8 +79,7 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: Color(0xFF5A5A5A),
-            ),
-            dialogBackgroundColor: Colors.white,
+            ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
           ),
           child: child!,
         );
