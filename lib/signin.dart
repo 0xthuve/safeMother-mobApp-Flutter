@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'signup-roleSelection.dart';
+import 'patientDashboard.dart';
 
 void main() {
   runApp(const SignInApp());
@@ -324,6 +325,12 @@ class _SignInFormState extends State<SignInForm> {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
+      );
+
+      // Navigate to patient dashboard and replace the sign-in route
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     }
   }
