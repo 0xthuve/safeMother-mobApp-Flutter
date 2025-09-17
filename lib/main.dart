@@ -4,5 +4,5 @@ import 'patientDashboard.dart';
 import 'patientDashboardLog.dart';
 import 'patientProfile.dart';
 void main() {
-  runApp(const PatientProfile());
+  runApp(const SignInApp());
 }
