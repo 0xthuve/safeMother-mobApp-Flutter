@@ -6,14 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
-
-// Placeholder for NavigationHandler (ensure this exists in your project)
-class NavigationHandler {
-  static void navigateToScreen(BuildContext context, int index) {
-    // Implement navigation logic here
-    // Example: Navigator.pushNamed(context, '/screen$index');
-  }
-}
+import 'navigation_handler.dart';
 
 void main() {
   runApp(const PregnancyAppLog());
@@ -74,8 +67,12 @@ class _LogScreenState extends State<LogScreen> {
   ];
 
   // Telemedicine state
+  // These fields are set/used in dialogs; analyzer may think they're unused.
+  // ignore: unused_field
   String? _selectedDoctor;
+  // ignore: unused_field
   DateTime? _selectedDate;
+  // ignore: unused_field
   TimeOfDay? _selectedTime;
 
   // Appointments
@@ -1100,7 +1097,7 @@ class _LogScreenState extends State<LogScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
-                  decoration: const BoxDecoration(color: Colors.white),
+                  decoration: const BoxDecoration(color: Color.fromARGB(0, 255, 255, 255)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,

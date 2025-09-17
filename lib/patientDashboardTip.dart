@@ -380,65 +380,41 @@ class _LearnScreenState extends State<LearnScreen> {
           SafeArea(
             child: Column(
               children: [
-                // Header
+                // Header with back button
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.only(
                     top: 16,
-                    left: 16,
+                    left: 8,
                     right: 16,
                     bottom: 8,
                   ),
-                  decoration: BoxDecoration(color: Colors.white),
+                  color: Colors.transparent,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.only(left: 48),
-                          child: const Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 262,
-                                child: Text(
-                                  'Learn',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Color(0xFF111611),
-                                    fontSize: 18,
-                                    fontFamily: 'Lexend',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.28,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      IconButton(
+                        onPressed: () {
+                          NavigationHandler.navigateToScreen(context, 0);
+                        },
+                        icon: const Icon(Icons.arrow_back, color: Color(0xFF111611)),
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Learn',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF111611),
+                            fontSize: 18,
+                            fontFamily: 'Lexend',
+                            fontWeight: FontWeight.w700,
+                            height: 1.28,
                           ),
                         ),
                       ),
-                      Container(
-                        width: 48,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Container(
-                              height: 48,
-                              decoration: ShapeDecoration(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      const SizedBox(width: 56),
                     ],
                   ),
                 ),

@@ -45,7 +45,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = false;
   
   // Groq API credentials
-  final String _apiKey = "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";
+  final String _apiKey = "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";
   final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
   
   // Sample chat messages
@@ -99,21 +99,22 @@ class _ChatScreenState extends State<ChatScreen> {
           'messages': [
             {
               'role': 'system',
-              'content': 'You are a helpful pregnancy assistant. Only answer questions related to pregnancy, prenatal care, childbirth, postpartum care, and newborn care. If asked about other topics, politely decline and redirect back to pregnancy-related topics. Your name is "Pregnancy Assistant".',
+              'content': 'You are a helpful pregnancy assistant. Only answer questions related to pregnancy, prenatal care, childbirth, postpartum care, and newborn care. If asked about other topics, politely decline and redirect back to pregnancy-related topics. Your name is "Pregnancy Assistant". Keep answers very short and friendly — 1-2 short sentences maximum.',
             },
             {
               'role': 'user',
               'content': userMessage,
             }
           ],
-          'temperature': 0.7,
-          'max_tokens': 500,
+          'temperature': 0.3,
+          'max_tokens': 120,
         }),
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        final String assistantMessage = data['choices'][0]['message']['content'];
+        final String rawAssistant = data['choices'][0]['message']['content'];
+        final String assistantMessage = _shortenAssistantMessage(rawAssistant);
 
         setState(() {
           _messages.add({
@@ -155,6 +156,24 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     });
+  }
+
+  // Keep assistant replies short: prefer 1-2 sentences, fallback to a short substring
+  String _shortenAssistantMessage(String raw) {
+    if (raw.trim().isEmpty) return raw;
+
+    // Try to split into sentences using simple punctuation
+    final sentences = raw.trim().split(RegExp(r'(?<=[.!?])\s+'));
+    if (sentences.isNotEmpty) {
+      // Return first two sentences joined, but keep max length reasonable
+      final candidate = sentences.length >= 2 ? '${sentences[0]} ${sentences[1]}' : sentences[0];
+      if (candidate.length <= 240) return candidate.trim();
+      // If candidate is still long, truncate to 160 chars
+      return candidate.trim().substring(0, 160).trim() + '...';
+    }
+
+    // Fallback: truncate raw
+    return raw.trim().substring(0, 160).trim() + '...';
   }
 
   @override

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'signup-roleSelection.dart';
 import 'patientDashboard.dart';
+import 'patientDashboardLog.dart';
+import 'reminderPatientDashboard.dart';
+import 'patientDashboardTip.dart';
+import 'chatPatient.dart';
 
 void main() {
   runApp(const SignInApp());
@@ -26,6 +30,13 @@ class SignInApp extends StatelessWidget {
         ),
       ),
       home: const SignInScreen(),
+      routes: {
+        '/home': (context) => const HomeScreen(),
+        '/log': (context) => const LogScreen(),
+        '/reminders': (context) => const RemindersScreen(),
+        '/learn': (context) => const LearnScreen(),
+        '/chat': (context) => const ChatScreen(),
+      },
     );
   }
 }
