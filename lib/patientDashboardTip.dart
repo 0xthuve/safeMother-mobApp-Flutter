@@ -46,6 +46,8 @@ class _LearnScreenState extends State<LearnScreen> {
   bool _isLoading = true;
   String _errorMessage = '';
   int _selectedCategory = 0;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   
   final List<String> _categories = [
     'All',
@@ -60,6 +62,12 @@ class _LearnScreenState extends State<LearnScreen> {
   void initState() {
     super.initState();
     _fetchArticles();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchArticles() async {
@@ -97,23 +105,32 @@ class _LearnScreenState extends State<LearnScreen> {
   void _filterArticles(int categoryIndex) {
     setState(() {
       _selectedCategory = categoryIndex;
-      
-      if (categoryIndex == 0) {
-        // Show all articles
-        _filteredArticles = _articles;
-      } else {
-        // Filter by category
-        String category = _categories[categoryIndex].toLowerCase();
-        _filteredArticles = _articles.where((article) {
-          String title = article['title']?.toString().toLowerCase() ?? '';
-          String description = article['description']?.toString().toLowerCase() ?? '';
-          String content = article['content']?.toString().toLowerCase() ?? '';
-          
-          return title.contains(category) || 
-                 description.contains(category) || 
-                 content.contains(category);
-        }).toList();
-      }
+    });
+    _applyFilters();
+  }
+
+  void _applyFilters() {
+    final query = _searchQuery.trim().toLowerCase();
+    setState(() {
+      _filteredArticles = _articles.where((article) {
+        final title = article['title']?.toString().toLowerCase() ?? '';
+        final description = article['description']?.toString().toLowerCase() ?? '';
+        final content = article['content']?.toString().toLowerCase() ?? '';
+
+        // Category filter
+        final matchesCategory = _selectedCategory == 0
+            ? true
+            : (title.contains(_categories[_selectedCategory].toLowerCase()) ||
+                description.contains(_categories[_selectedCategory].toLowerCase()) ||
+                content.contains(_categories[_selectedCategory].toLowerCase()));
+
+        // Search query filter
+        final matchesQuery = query.isEmpty
+            ? true
+            : (title.contains(query) || description.contains(query) || content.contains(query));
+
+        return matchesCategory && matchesQuery;
+      }).toList();
     });
   }
 
@@ -456,12 +473,12 @@ class _LearnScreenState extends State<LearnScreen> {
                                       ),
                                     ),
                                   ),
-                                  child: const Row(
+                                  child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.search, color: Color(0xFF638763)),
+                                      const Icon(Icons.search, color: Color(0xFF638763)),
                                     ],
                                   ),
                                 ),
@@ -478,21 +495,32 @@ class _LearnScreenState extends State<LearnScreen> {
                                         ),
                                       ),
                                     ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment: MainAxisAlignment.start,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                    child: Row(
                                       children: [
-                                        Text(
-                                          'Search articles',
-                                          style: TextStyle(
-                                            color: Color(0xFF638763),
-                                            fontSize: 16,
-                                            fontFamily: 'Lexend',
-                                            fontWeight: FontWeight.w400,
-                                            height: 1.50,
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _searchController,
+                                            decoration: const InputDecoration(
+                                              hintText: 'Search articles',
+                                              border: InputBorder.none,
+                                              hintStyle: TextStyle(color: Color(0xFF638763)),
+                                            ),
+                                            onChanged: (val) {
+                                              _searchQuery = val;
+                                              _applyFilters();
+                                            },
                                           ),
                                         ),
+                                        if (_searchQuery.isNotEmpty)
+                                          IconButton(
+                                            onPressed: () {
+                                              _searchController.clear();
+                                              _searchQuery = '';
+                                              _applyFilters();
+                                              setState(() {});
+                                            },
+                                            icon: const Icon(Icons.close, color: Color(0xFF638763)),
+                                          ),
                                       ],
                                     ),
                                   ),
