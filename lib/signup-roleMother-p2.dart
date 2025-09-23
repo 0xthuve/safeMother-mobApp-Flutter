@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'patientDashboard.dart';
+import 'models/mother_signup_data.dart';
+import 'services/auth_service.dart';
+import 'signin.dart';
 
 class RoleMotherP2 extends StatelessWidget {
-  const RoleMotherP2({super.key});
+  final MotherSignupData signupData;
+  
+  const RoleMotherP2({super.key, required this.signupData});
 
   @override
   Widget build(BuildContext context) {
-    return const DeliveryDetailsForm();
+    return DeliveryDetailsForm(signupData: signupData);
   }
 }
 
 void main() {
-  runApp(const DeliveryDetailsApp());
+  runApp(DeliveryDetailsApp());
 }
 
 class DeliveryDetailsApp extends StatelessWidget {
@@ -33,13 +38,17 @@ class DeliveryDetailsApp extends StatelessWidget {
           bodyMedium: TextStyle(color: Color(0xFF5A5A5A)), // Dark gray text
         ),
       ),
-      home: const DeliveryDetailsForm(),
+      home: DeliveryDetailsForm(
+        signupData: MotherSignupData()..fullName = 'Test User', // Dummy data for main function
+      ),
     );
   }
 }
 
 class DeliveryDetailsForm extends StatefulWidget {
-  const DeliveryDetailsForm({super.key});
+  final MotherSignupData signupData;
+  
+  const DeliveryDetailsForm({super.key, required this.signupData});
 
   @override
   State<DeliveryDetailsForm> createState() => _DeliveryDetailsFormState();
@@ -51,12 +60,15 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
   final _pregnancyConfirmedController = TextEditingController();
   final _medicalHistoryController = TextEditingController();
   final _weightController = TextEditingController();
+  final _emergencyContactController = TextEditingController();
+  final _familyMemberEmailController = TextEditingController();
   
   DateTime? _selectedDeliveryDate;
   DateTime? _selectedPregnancyDate;
   String? _firstChildValue;
   String? _pregnancyLossValue;
   String? _babyBornValue;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -64,6 +76,8 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
     _pregnancyConfirmedController.dispose();
     _medicalHistoryController.dispose();
     _weightController.dispose();
+    _emergencyContactController.dispose();
+    _familyMemberEmailController.dispose();
     super.dispose();
   }
 
@@ -409,21 +423,125 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                   return null;
                                 },
                               ),
+                              const SizedBox(height: 16),
+                              
+                              // Emergency Contact (Optional)
+                              _buildInputField(
+                                'Emergency Contact (Optional)',
+                                Icons.emergency_outlined,
+                                controller: _emergencyContactController,
+                                keyboardType: TextInputType.phone,
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              // Family Member Email (Optional)
+                              _buildInputField(
+                                'Family Member Email (Optional)',
+                                Icons.family_restroom_outlined,
+                                controller: _familyMemberEmailController,
+                                keyboardType: TextInputType.emailAddress,
+                              ),
                               const SizedBox(height: 24),
                               
-                              // Continue Button
+                              // Complete Sign Up Button
                               SizedBox(
                                 width: double.infinity,
                                 height: 50,
                                 child: ElevatedButton(
-                                  onPressed: () {
+                                  onPressed: _isLoading ? null : () async {
                                     if (_formKey.currentState!.validate()) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const HomeScreen(),
-                                        ),
-                                      );
+                                      setState(() {
+                                        _isLoading = true;
+                                      });
+
+                                      try {
+                                        // Update signup data with page 2 info
+                                        final completeData = widget.signupData
+                                          ..deliveryDate = _selectedDeliveryDate
+                                          ..pregnancyConfirmedDate = _selectedPregnancyDate
+                                          ..medicalHistory = _medicalHistoryController.text.trim()
+                                          ..weight = double.parse(_weightController.text.trim())
+                                          ..isFirstChild = _firstChildValue == 'Yes'
+                                          ..hasPregnancyLoss = _pregnancyLossValue == 'Yes'
+                                          ..isBabyBorn = _babyBornValue == 'Yes'
+                                          ..emergencyContact = _emergencyContactController.text.trim().isEmpty 
+                                              ? null : _emergencyContactController.text.trim()
+                                          ..familyMemberEmail = _familyMemberEmailController.text.trim().isEmpty 
+                                              ? null : _familyMemberEmailController.text.trim();
+
+                                        // Register the mother with complete data
+                                        final result = await AuthService.registerMother(
+                                          fullName: completeData.fullName,
+                                          age: completeData.age,
+                                          username: completeData.username,
+                                          email: completeData.email,
+                                          password: completeData.password,
+                                          location: completeData.location,
+                                          estimatedDueDate: completeData.estimatedDueDate!,
+                                          emergencyContact: completeData.emergencyContact,
+                                          medicalConditions: completeData.medicalHistory,
+                                          currentMedications: null,
+                                          allergies: null,
+                                          previousPregnancies: completeData.isFirstChild ? '0' : 'Yes',
+                                          familyMemberEmail: completeData.familyMemberEmail,
+                                        );
+
+                                        if (result.success) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Welcome to Safe Mother, ${completeData.fullName}!'),
+                                                backgroundColor: const Color(0xFF4CAF50),
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            );
+
+                                            // Navigate to dashboard
+                                            Navigator.pushAndRemoveUntil(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => const HomeScreen(),
+                                              ),
+                                              (route) => false, // Remove all previous routes
+                                            );
+                                          }
+                                        } else {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text(result.message),
+                                                backgroundColor: const Color(0xFFE91E63),
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Registration failed: ${e.toString()}'),
+                                              backgroundColor: const Color(0xFFE91E63),
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      } finally {
+                                        if (mounted) {
+                                          setState(() {
+                                            _isLoading = false;
+                                          });
+                                        }
+                                      }
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
@@ -433,14 +551,23 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                     ),
                                     padding: const EdgeInsets.symmetric(vertical: 16),
                                   ),
-                                  child: const Text(
-                                    'Complete Sign Up',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Complete Sign Up',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],

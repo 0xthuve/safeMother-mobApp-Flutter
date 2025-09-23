@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'signup-roleMother-p2.dart'; // Make sure this file contains `RoleMotherP2` widget
 import 'signin.dart';
+import 'models/mother_signup_data.dart';
 
 void main() {
   runApp(const SignupMotherApp());
@@ -394,11 +395,21 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                                 child: ElevatedButton(
                                   onPressed: () {
                                     if (_formKey.currentState!.validate()) {
-                                      // Fixed navigation to RoleMotherP2
+                                      // Create signup data object
+                                      final signupData = MotherSignupData()
+                                        ..fullName = _nameController.text.trim()
+                                        ..age = int.parse(_ageController.text.trim())
+                                        ..username = _usernameController.text.trim()
+                                        ..email = _emailController.text.trim()
+                                        ..password = _passwordController.text.trim()
+                                        ..location = _locationController.text.trim()
+                                        ..estimatedDueDate = _selectedDate;
+
+                                      // Navigate to page 2 with data
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => const RoleMotherP2(),
+                                          builder: (context) => RoleMotherP2(signupData: signupData),
                                         ),
                                       );
                                     }
