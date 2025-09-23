@@ -5,6 +5,7 @@ import 'patientDashboardLog.dart';
 import 'reminderPatientDashboard.dart';
 import 'patientDashboardTip.dart';
 import 'chatPatient.dart';
+import 'services/auth_service.dart';
 
 void main() {
   runApp(const SignInApp());
@@ -317,6 +318,7 @@ class _SignInFormState extends State<SignInForm> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -325,24 +327,86 @@ class _SignInFormState extends State<SignInForm> {
     super.dispose();
   }
 
-  void _onSignIn() {
+  void _onSignIn() async {
     if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Signing in as ${_emailController.text.trim()}'),
-          backgroundColor: const Color(0xFFE91E63),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      setState(() {
+        _isLoading = true;
+      });
 
-      // Navigate to patient dashboard and replace the sign-in route
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+      try {
+        final result = await AuthService.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        if (result.success && result.userData != null) {
+          // Show success message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Welcome back, ${result.userData!.fullName}!'),
+                backgroundColor: const Color(0xFF4CAF50),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+
+            // Navigate based on user role
+            Widget destination;
+            switch (result.userData!.role) {
+              case 'mother':
+                destination = const HomeScreen();
+                break;
+              case 'family_member':
+                destination = const HomeScreen(); // You might want a different screen for family members
+                break;
+              default:
+                destination = const HomeScreen();
+            }
+
+            // Navigate to appropriate dashboard
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => destination),
+            );
+          }
+        } else {
+          // Show error message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(result.message),
+                backgroundColor: const Color(0xFFE91E63),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('An error occurred: ${e.toString()}'),
+              backgroundColor: const Color(0xFFE91E63),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -442,17 +506,39 @@ class _SignInFormState extends State<SignInForm> {
               ),
               const Spacer(),
               TextButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Password reset instructions will be sent to your email'),
-                      backgroundColor: const Color(0xFFE91E63),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                onPressed: () async {
+                  if (_emailController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Please enter your email first'),
+                        backgroundColor: const Color(0xFFE91E63),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                    ),
+                    );
+                    return;
+                  }
+
+                  final result = await AuthService.resetPassword(
+                    email: _emailController.text.trim(),
                   );
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(result.message),
+                        backgroundColor: result.success 
+                            ? const Color(0xFF4CAF50) 
+                            : const Color(0xFFE91E63),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+                  }
                 },
                 child: const Text(
                   'Forgot Password?',
@@ -472,7 +558,7 @@ class _SignInFormState extends State<SignInForm> {
             width: double.infinity,
             height: 54,
             child: ElevatedButton(
-              onPressed: _onSignIn,
+              onPressed: _isLoading ? null : _onSignIn,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE91E63),
                 shape: RoundedRectangleBorder(
@@ -481,14 +567,23 @@ class _SignInFormState extends State<SignInForm> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 elevation: 2,
               ),
-              child: const Text(
-                'Sign In',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Sign In',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
           ),
         ],
