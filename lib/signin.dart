@@ -5,6 +5,8 @@ import 'patientDashboardLog.dart';
 import 'reminderPatientDashboard.dart';
 import 'patientDashboardTip.dart';
 import 'chatPatient.dart';
+import 'pages/doctor/doctor_login.dart';
+import 'services/session_manager.dart';
 
 void main() {
   runApp(const SignInApp());
@@ -156,7 +158,7 @@ class SignInScreen extends StatelessWidget {
                       
                       // Subtitle
                       const Text(
-                        'Sign in to continue your motherhood journey',
+                        'Patient Login - Sign in to continue your motherhood journey',
                         style: TextStyle(
                           color: Color(0xFF9575CD), // Light purple
                           fontSize: 15,
@@ -292,6 +294,108 @@ class SignInScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                      
+                      const SizedBox(height: 32),
+                      
+                      // Healthcare Provider Login Section
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFFE3F2FD).withOpacity(0.6),
+                              const Color(0xFFF1F8E9).withOpacity(0.6),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFF81C784).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1976D2).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.medical_services,
+                                    color: Color(0xFF1976D2),
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Text(
+                                  'Healthcare Provider?',
+                                  style: TextStyle(
+                                    color: Color(0xFF1976D2),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Access your medical dashboard and patient management tools',
+                              style: TextStyle(
+                                color: Color(0xFF64B5F6),
+                                fontSize: 13,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const DoctorLogin(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1976D2),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 2,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.login,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Healthcare Login',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -325,24 +429,49 @@ class _SignInFormState extends State<SignInForm> {
     super.dispose();
   }
 
-  void _onSignIn() {
+  Future<void> _onSignIn() async {
     if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Signing in as ${_emailController.text.trim()}'),
-          backgroundColor: const Color(0xFFE91E63),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      try {
+        // Save login session for patient
+        await SessionManager.saveLoginSession(
+          userType: SessionManager.userTypePatient,
+          userId: 'patient_${DateTime.now().millisecondsSinceEpoch}', // Demo ID
+          userName: 'Sophia Carter', // Demo name
+          userEmail: _emailController.text.trim(),
+        );
 
-      // Navigate to patient dashboard and replace the sign-in route
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Welcome back, Sophia! Signing in as ${_emailController.text.trim()}'),
+              backgroundColor: const Color(0xFFE91E63),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+
+          // Navigate to patient dashboard and replace the sign-in route
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Login failed: $e'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 

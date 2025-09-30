@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'signup-roleMother.dart'; // keep this for SignupMotherForm()
-import 'linkFammem.dart';
-import 'linkFammem.dart';
+import 'linkFamMem.dart';
+import 'pages/doctor/doctor_registration.dart';
 
 void main() {
   runApp(const RoleSelectionApp());
@@ -106,6 +106,13 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with SingleTi
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const FamilyLinkScreen()),
+      );
+      return;
+    }
+    if (title == "I'm a Healthcare Professional") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const DoctorRegistration()),
       );
       return;
     }

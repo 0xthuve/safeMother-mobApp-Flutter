@@ -1,23 +1,47 @@
 // navigation_handler.dart
 import 'package:flutter/material.dart';
+import 'patientDashboard.dart';
+import 'patientDashboardLog.dart';
+import 'reminderPatientDashboard.dart';
+import 'patientDashboardTip.dart';
+import 'chatPatient.dart';
+
 class NavigationHandler {
   static void navigateToScreen(BuildContext context, int index) {
+    Widget targetScreen;
+    
     switch (index) {
       case 0:
-        Navigator.pushReplacementNamed(context, '/home');
+        targetScreen = const HomeScreen();
         break;
       case 1:
-        Navigator.pushReplacementNamed(context, '/log');
+        targetScreen = const LogScreen();
         break;
       case 2:
-        Navigator.pushReplacementNamed(context, '/reminders');
+        targetScreen = const RemindersScreen();
         break;
       case 3:
-        Navigator.pushReplacementNamed(context, '/learn');
+        targetScreen = const LearnScreen();
         break;
       case 4:
-        Navigator.pushReplacementNamed(context, '/chat');
+        targetScreen = const ChatScreen();
         break;
+      default:
+        targetScreen = const HomeScreen();
     }
+    
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => targetScreen,
+        transitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+      ),
+    );
   }
 }
