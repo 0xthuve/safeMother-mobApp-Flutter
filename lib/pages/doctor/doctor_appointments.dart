@@ -13,7 +13,7 @@ class DoctorAppointments extends StatefulWidget {
 }
 
 class _DoctorAppointmentsState extends State<DoctorAppointments> {
-  int _currentIndex = 2;
+  final int _currentIndex = 2;
   List<Appointment> _appointments = [];
   List<Patient> _patients = [];
   List<Doctor> _doctors = [];

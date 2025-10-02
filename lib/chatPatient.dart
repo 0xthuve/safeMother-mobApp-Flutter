@@ -39,7 +39,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  int _currentIndex = 4; // Chat is active
+  final int _currentIndex = 4; // Chat is active
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
@@ -169,11 +169,11 @@ class _ChatScreenState extends State<ChatScreen> {
       final candidate = sentences.length >= 2 ? '${sentences[0]} ${sentences[1]}' : sentences[0];
       if (candidate.length <= 240) return candidate.trim();
       // If candidate is still long, truncate to 160 chars
-      return candidate.trim().substring(0, 160).trim() + '...';
+      return '${candidate.trim().substring(0, 160).trim()}...';
     }
 
     // Fallback: truncate raw
-    return raw.trim().substring(0, 160).trim() + '...';
+    return '${raw.trim().substring(0, 160).trim()}...';
   }
 
   @override

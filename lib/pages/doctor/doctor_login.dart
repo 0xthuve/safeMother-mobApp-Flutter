@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../pages/doctor/doctor_dashboard.dart';
 import 'doctor_registration.dart';
-import '../../services/session_manager.dart';
+import '../../services/user_management_service.dart';
 
 class DoctorLogin extends StatefulWidget {
   const DoctorLogin({super.key});
@@ -32,39 +32,55 @@ class _DoctorLoginState extends State<DoctorLogin> {
       });
 
       try {
-        // Simulate login process
-        await Future.delayed(const Duration(seconds: 2));
-
-        // Save login session for doctor
-        await SessionManager.saveLoginSession(
-          userType: SessionManager.userTypeDoctor,
-          userId: 'doctor_${DateTime.now().millisecondsSinceEpoch}', // Demo ID
-          userName: 'Dr. Sarah Johnson', // Demo name
-          userEmail: _emailController.text.trim(),
+        // Use proper Firebase authentication for healthcare professionals
+        final success = await UserManagementService.signInUser(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+          context,
         );
 
-        setState(() {
-          _isLoading = false;
-        });
+        if (success) {
+          // Get user data to verify role
+          final userData = await UserManagementService.getCurrentUserData();
+          final userRole = userData?['role'] as String?;
+          
+          // Check if user is a healthcare professional
+          if (userRole == 'doctor' || userRole == 'healthcare') {
+            final userName = userData?['fullName'] ?? 'Healthcare Professional';
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Welcome back, $userName!'),
+                  backgroundColor: const Color(0xFF1976D2),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
 
-        if (mounted) {
-          // Navigate to doctor dashboard
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const DoctorDashboard(),
-            ),
-          );
+              // Navigate to doctor dashboard
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DoctorDashboard(),
+                ),
+              );
+            }
+          } else {
+            // User is not a healthcare professional
+            await UserManagementService.signOutUser();
+            throw Exception('Access denied. This login is for healthcare professionals only.');
+          }
+        } else {
+          throw Exception('Invalid email or password.');
         }
       } catch (e) {
-        setState(() {
-          _isLoading = false;
-        });
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Login failed: $e'),
+              content: Text('Login failed: ${e.toString()}'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -72,6 +88,12 @@ class _DoctorLoginState extends State<DoctorLogin> {
               ),
             ),
           );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
         }
       }
     }

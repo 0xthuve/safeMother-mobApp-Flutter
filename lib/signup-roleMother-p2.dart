@@ -56,7 +56,6 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
   DateTime? _selectedPregnancyDate;
   String? _firstChildValue;
   String? _pregnancyLossValue;
-  String? _babyBornValue;
 
   @override
   void dispose() {
@@ -81,8 +80,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: Color(0xFF5A5A5A),
-            ),
-            dialogBackgroundColor: Colors.white,
+            ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
           ),
           child: child!,
         );
@@ -311,7 +309,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                               
                               // First Child?
                               DropdownButtonFormField<String>(
-                                value: _firstChildValue,
+                                initialValue: _firstChildValue,
                                 decoration: InputDecoration(
                                   labelText: 'First Child?',
                                   labelStyle: const TextStyle(color: Color(0xFF9575CD)),
@@ -345,7 +343,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                               
                               // Pregnancy loss?
                               DropdownButtonFormField<String>(
-                                value: _pregnancyLossValue,
+                                initialValue: _pregnancyLossValue,
                                 decoration: InputDecoration(
                                   labelText: 'Pregnancy Loss?',
                                   labelStyle: const TextStyle(color: Color(0xFF9575CD)),
@@ -366,40 +364,6 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                 onChanged: (value) {
                                   setState(() {
                                     _pregnancyLossValue = value;
-                                  });
-                                },
-                                validator: (value) {
-                                  if (value == null) {
-                                    return 'Please select an option';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              // Baby already born?
-                              DropdownButtonFormField<String>(
-                                value: _babyBornValue,
-                                decoration: InputDecoration(
-                                  labelText: 'Baby Already Born?',
-                                  labelStyle: const TextStyle(color: Color(0xFF9575CD)),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF5F5F5),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  prefixIcon: const Icon(Icons.celebration_outlined, color: Color(0xFFE91E63)),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                                ),
-                                style: const TextStyle(color: Color(0xFF5A5A5A)),
-                                items: const [
-                                  DropdownMenuItem(value: 'Yes', child: Text('Yes')),
-                                  DropdownMenuItem(value: 'No', child: Text('No')),
-                                ],
-                                onChanged: (value) {
-                                  setState(() {
-                                    _babyBornValue = value;
                                   });
                                 },
                                 validator: (value) {

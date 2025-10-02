@@ -11,7 +11,7 @@ class DoctorPatients extends StatefulWidget {
 }
 
 class _DoctorPatientsState extends State<DoctorPatients> {
-  int _currentIndex = 1;
+  final int _currentIndex = 1;
   List<Patient> _patients = [];
   bool _isLoading = true;
   String _searchQuery = '';
@@ -1158,7 +1158,7 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            Container(
+            SizedBox(
               height: 200,
               child: ListView.builder(
                 itemCount: mealPlanOptions.length,
@@ -1184,12 +1184,12 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.grey,
                       side: const BorderSide(color: Colors.grey),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
+                    child: const Text('Cancel'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1204,12 +1204,12 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
                         ),
                       );
                     },
-                    child: const Text('Assign'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4CAF50),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
+                    child: const Text('Assign'),
                   ),
                 ),
               ],
@@ -1312,14 +1312,14 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
                           selectedExercises = List.from(exerciseOptions);
                         });
                       },
-                      child: const Text(
-                        'Select All',
-                        style: TextStyle(fontSize: 12),
-                      ),
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFF2196F3),
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         minimumSize: Size.zero,
+                      ),
+                      child: const Text(
+                        'Select All',
+                        style: TextStyle(fontSize: 12),
                       ),
                     ),
                     TextButton(
@@ -1328,14 +1328,14 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
                           selectedExercises.clear();
                         });
                       },
-                      child: const Text(
-                        'Clear All',
-                        style: TextStyle(fontSize: 12),
-                      ),
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.grey[600],
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         minimumSize: Size.zero,
+                      ),
+                      child: const Text(
+                        'Clear All',
+                        style: TextStyle(fontSize: 12),
                       ),
                     ),
                   ],
@@ -1343,7 +1343,7 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
               ],
             ),
             const SizedBox(height: 12),
-            Container(
+            SizedBox(
               height: 200,
               child: ListView.builder(
                 itemCount: exerciseOptions.length,
@@ -1381,12 +1381,12 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.grey,
                       side: const BorderSide(color: Colors.grey),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
+                    child: const Text('Cancel'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1429,12 +1429,12 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
                         ),
                       );
                     },
-                    child: Text('Recommend (${selectedExercises.length})'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2196F3),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
+                    child: Text('Recommend (${selectedExercises.length})'),
                   ),
                 ),
               ],
@@ -1527,7 +1527,7 @@ class _UrgentAlertDialogState extends State<_UrgentAlertDialog> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              value: selectedAlertType,
+              initialValue: selectedAlertType,
               onChanged: (value) {
                 setState(() {
                   selectedAlertType = value!;
@@ -1573,12 +1573,12 @@ class _UrgentAlertDialogState extends State<_UrgentAlertDialog> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.grey,
                       side: const BorderSide(color: Colors.grey),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
+                    child: const Text('Cancel'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1602,12 +1602,12 @@ class _UrgentAlertDialogState extends State<_UrgentAlertDialog> {
                         ),
                       );
                     },
-                    child: const Text('Set Alert'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF9800),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
+                    child: const Text('Set Alert'),
                   ),
                 ),
               ],

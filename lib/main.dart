@@ -1,10 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'signin.dart';
 import 'services/session_manager.dart';
+import 'services/firebase_service.dart';
 import 'patientDashboard.dart';
 import 'pages/doctor/doctor_dashboard.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized successfully');
+  } catch (e) {
+    print('Firebase initialization error: $e');
+    // For development, continue without Firebase if there's an error
+    print('Continuing without Firebase...');
+  }
+  
+  // Initialize Firebase service (will use mock if Firebase not configured)
+  await FirebaseService.initialize();
+  
   runApp(const SafeMotherApp());
 }
 
@@ -53,7 +72,47 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     try {
-      // Check if session is valid
+      // Check Firebase authentication state
+      if (FirebaseService.isLoggedIn) {
+        final currentUserData = FirebaseService.currentUserData;
+        if (currentUserData != null) {
+          final uid = currentUserData['uid'] as String?;
+          if (uid != null) {
+            // Get user data from Firestore
+            final userData = await FirebaseService.getUserData(uid);
+            
+            if (userData != null) {
+              final userRole = userData['role'] as String?;
+              
+              // Update session manager with Firebase data
+              await SessionManager.saveLoginSession(
+                userType: userRole == 'doctor' || userRole == 'healthcare' 
+                    ? SessionManager.userTypeDoctor 
+                    : SessionManager.userTypePatient,
+                userId: uid,
+                userName: userData['fullName'] ?? currentUserData['displayName'] as String? ?? 'User',
+                userEmail: currentUserData['email'] as String? ?? '',
+              );
+              
+              // Navigate to appropriate dashboard
+              if (userRole == 'doctor' || userRole == 'healthcare') {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DoctorDashboard()),
+                );
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+              }
+              return;
+            }
+          }
+        }
+      }
+
+      // Fallback to session manager check
       final isSessionValid = await SessionManager.isSessionValid();
       
       if (isSessionValid) {
@@ -89,6 +148,7 @@ class _SplashScreenState extends State<SplashScreen> {
         );
       }
     } catch (e) {
+      print('Error checking login status: $e');
       // Error checking session, go to login
       Navigator.pushReplacement(
         context,

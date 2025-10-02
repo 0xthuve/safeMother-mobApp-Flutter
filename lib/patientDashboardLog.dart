@@ -44,7 +44,7 @@ class LogScreen extends StatefulWidget {
 }
 
 class _LogScreenState extends State<LogScreen> {
-  int _currentIndex = 1;
+  final int _currentIndex = 1;
   late final TextEditingController _bloodPressureController;
   late final TextEditingController _weightController;
   late final TextEditingController _babyKicksController;
@@ -265,7 +265,7 @@ class _LogScreenState extends State<LogScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: DropdownButtonFormField<String>(
-                          value: localSelectedDoctor,
+                          initialValue: localSelectedDoctor,
                           decoration: const InputDecoration(
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(
