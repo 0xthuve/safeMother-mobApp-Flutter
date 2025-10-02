@@ -241,120 +241,120 @@ class SignInScreen extends StatelessWidget {
                       
                       const SizedBox(height: 20),
 
-                      // Demo mode button
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE3F2FD).withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFF1976D2).withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.info_outline,
-                              color: Color(0xFF1976D2),
-                              size: 20,
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(
-                              child: Text(
-                                'Demo Mode: Firebase not configured',
-                                style: TextStyle(
-                                  color: Color(0xFF1976D2),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                // Import the FirebaseMockService to show instructions
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text(
-                                      'Demo Mode',
-                                      style: TextStyle(
-                                        color: Color(0xFF7B1FA2),
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text(
-                                          'Firebase is not configured. Using demo mode with these credentials:',
-                                          style: TextStyle(fontSize: 16),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFF3E5F5),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: const Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Demo Credentials:',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF7B1FA2),
-                                                ),
-                                              ),
-                                              SizedBox(height: 8),
-                                              Text('Email: demo@safemother.com'),
-                                              Text('Password: demo123'),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        const Text(
-                                          'Or create a new account - all data will be stored locally.',
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Color(0xFF9575CD),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.of(context).pop(),
-                                        child: const Text(
-                                          'Got it!',
-                                          style: TextStyle(
-                                            color: Color(0xFFE91E63),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              ),
-                              child: const Text(
-                                'Info',
-                                style: TextStyle(
-                                  color: Color(0xFF1976D2),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // // Demo mode button
+                      // Container(
+                      //   width: double.infinity,
+                      //   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      //   decoration: BoxDecoration(
+                      //     color: const Color(0xFFE3F2FD).withOpacity(0.6),
+                      //     borderRadius: BorderRadius.circular(12),
+                      //     border: Border.all(
+                      //       color: const Color(0xFF1976D2).withOpacity(0.3),
+                      //       width: 1,
+                      //     ),
+                      //   ),
+                      //   child: Row(
+                      //     children: [
+                      //       const Icon(
+                      //         Icons.info_outline,
+                      //         color: Color(0xFF1976D2),
+                      //         size: 20,
+                      //       ),
+                      //       const SizedBox(width: 12),
+                      //       const Expanded(
+                      //         child: Text(
+                      //           'Demo Mode: Firebase not configured',
+                      //           style: TextStyle(
+                      //             color: Color(0xFF1976D2),
+                      //             fontSize: 14,
+                      //             fontWeight: FontWeight.w500,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //       TextButton(
+                      //         onPressed: () {
+                      //           // Import the FirebaseMockService to show instructions
+                      //           showDialog(
+                      //             context: context,
+                      //             builder: (context) => AlertDialog(
+                      //               title: const Text(
+                      //                 'Demo Mode',
+                      //                 style: TextStyle(
+                      //                   color: Color(0xFF7B1FA2),
+                      //                   fontWeight: FontWeight.bold,
+                      //                 ),
+                      //               ),
+                      //               content: Column(
+                      //                 mainAxisSize: MainAxisSize.min,
+                      //                 crossAxisAlignment: CrossAxisAlignment.start,
+                      //                 children: [
+                      //                   const Text(
+                      //                     'Firebase is not configured. Using demo mode with these credentials:',
+                      //                     style: TextStyle(fontSize: 16),
+                      //                   ),
+                      //                   const SizedBox(height: 16),
+                      //                   Container(
+                      //                     padding: const EdgeInsets.all(12),
+                      //                     decoration: BoxDecoration(
+                      //                       color: const Color(0xFFF3E5F5),
+                      //                       borderRadius: BorderRadius.circular(8),
+                      //                     ),
+                      //                     child: const Column(
+                      //                       crossAxisAlignment: CrossAxisAlignment.start,
+                      //                       children: [
+                      //                         Text(
+                      //                           'Demo Credentials:',
+                      //                           style: TextStyle(
+                      //                             fontWeight: FontWeight.bold,
+                      //                             color: Color(0xFF7B1FA2),
+                      //                           ),
+                      //                         ),
+                      //                         SizedBox(height: 8),
+                      //                         Text('Email: demo@safemother.com'),
+                      //                         Text('Password: demo123'),
+                      //                       ],
+                      //                     ),
+                      //                   ),
+                      //                   const SizedBox(height: 16),
+                      //                   const Text(
+                      //                     'Or create a new account - all data will be stored locally.',
+                      //                     style: TextStyle(
+                      //                       fontSize: 14,
+                      //                       color: Color(0xFF9575CD),
+                      //                     ),
+                      //                   ),
+                      //                 ],
+                      //               ),
+                      //               actions: [
+                      //                 TextButton(
+                      //                   onPressed: () => Navigator.of(context).pop(),
+                      //                   child: const Text(
+                      //                     'Got it!',
+                      //                     style: TextStyle(
+                      //                       color: Color(0xFFE91E63),
+                      //                       fontWeight: FontWeight.bold,
+                      //                     ),
+                      //                   ),
+                      //                 ),
+                      //               ],
+                      //             ),
+                      //           );
+                      //         },
+                      //         style: TextButton.styleFrom(
+                      //           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      //         ),
+                      //         child: const Text(
+                      //           'Info',
+                      //           style: TextStyle(
+                      //             color: Color(0xFF1976D2),
+                      //             fontSize: 12,
+                      //             fontWeight: FontWeight.w600,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                       
                       const SizedBox(height: 20),
                       
