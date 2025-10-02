@@ -186,50 +186,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Profile Picture Section
-                    Center(
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFFEFF4EF),
-                              border: Border.all(
-                                color: const Color(0xFFE91E63).withOpacity(0.3),
-                                width: 2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Color(0xFF638763),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextButton.icon(
-                            onPressed: () {
-                              // TODO: Implement photo picker
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Photo upload will be implemented in next update'),
-                                  backgroundColor: Color(0xFF1976D2),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.camera_alt, size: 20),
-                            label: const Text('Change Photo'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFFE91E63),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
                     // Personal Information Section
                     _buildSectionTitle('Personal Information'),
                     const SizedBox(height: 16),

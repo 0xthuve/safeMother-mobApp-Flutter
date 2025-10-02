@@ -67,7 +67,10 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
           _experienceController.text = userData['experience']?.toString() ?? '';
           _bioController.text = userData['bio'] ?? '';
           _consultationFeeController.text = userData['consultationFee']?.toString() ?? '';
-          _isAvailable = userData['isAvailable'] ?? true;
+          // Ensure availability is properly handled as boolean
+          _isAvailable = userData['isAvailable'] is bool 
+              ? userData['isAvailable'] 
+              : (userData['isAvailable']?.toString().toLowerCase() == 'true' || userData['isAvailable'] == true);
         }
         
         _isLoading = false;
@@ -99,6 +102,10 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
           'consultationFee': double.tryParse(_consultationFeeController.text.trim()) ?? 0.0,
           'isAvailable': _isAvailable,
         };
+
+        // Debug logging
+        print('Saving profile with availability: $_isAvailable');
+        print('Update data: $updateData');
 
         final success = await UserManagementService.updateUserProfile(updateData);
 
@@ -192,50 +199,6 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Profile Picture Section
-                    Center(
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF1976D2).withOpacity(0.1),
-                              border: Border.all(
-                                color: const Color(0xFF1976D2).withOpacity(0.3),
-                                width: 2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Color(0xFF1976D2),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextButton.icon(
-                            onPressed: () {
-                              // TODO: Implement photo picker
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Photo upload will be implemented in next update'),
-                                  backgroundColor: Color(0xFF1976D2),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.camera_alt, size: 20),
-                            label: const Text('Change Photo'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: const Color(0xFF1976D2),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
                     // Personal Information Section
                     _buildSectionTitle('Personal Information'),
                     const SizedBox(height: 16),
@@ -402,18 +365,31 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.check_circle_outline,
-                            color: Color(0xFF1976D2),
+                          Icon(
+                            _isAvailable ? Icons.check_circle : Icons.cancel_outlined,
+                            color: _isAvailable ? const Color(0xFF4CAF50) : const Color(0xFFF44336),
                           ),
                           const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              'Available for appointments',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF5A5A5A),
-                              ),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Available for appointments',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Color(0xFF5A5A5A),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  _isAvailable ? 'Currently accepting new appointments' : 'Not accepting new appointments',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: _isAvailable ? const Color(0xFF4CAF50) : const Color(0xFFF44336),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Switch(
@@ -422,8 +398,12 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
                               setState(() {
                                 _isAvailable = value;
                               });
+                              // Print debug information
+                              print('Availability changed to: $value');
                             },
                             activeColor: const Color(0xFF1976D2),
+                            inactiveThumbColor: Colors.grey,
+                            inactiveTrackColor: Colors.grey.withOpacity(0.3),
                           ),
                         ],
                       ),

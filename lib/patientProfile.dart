@@ -57,6 +57,58 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  
+  // Helper method to show loading dialog
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => PopScope(
+        canPop: false,
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  // Helper method to dismiss loading dialog safely
+  void _dismissLoadingDialog() {
+    if (mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+  
+  // Helper method to navigate to dashboard with success message
+  void _navigateToDashboard(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: const Color(0xFFE91E63),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      
+      // Navigate to dashboard after a short delay
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const HomeScreen(),
+            ),
+          );
+        }
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -70,35 +122,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _isLoading = true;
       });
 
-      // Get user data from session and Firebase
+      // Get user data from session and Firebase with timeout
       final userName = await SessionManager.getUserName();
       final userEmail = await SessionManager.getUserEmail();
-      final userData = await UserManagementService.getCurrentUserData();
-
-      setState(() {
-        _userName = userName ?? 'User';
-        _userEmail = userEmail ?? '';
-        
-        // Extract additional profile data from Firebase
-        if (userData != null) {
-          _userAge = userData['age']?.toString() ?? '';
-          _userContact = userData['phone'] ?? userData['contact'] ?? '';
-          _userRole = userData['role'] ?? 'Mother';
-        }
-        
-        _isLoading = false;
+      
+      // Add timeout to prevent hanging
+      final userData = await UserManagementService.getCurrentUserData()
+          .timeout(const Duration(seconds: 10), onTimeout: () {
+        print('Timeout loading user data from Firebase');
+        return null;
       });
 
-      // Update text controllers
-      _nameController.text = _userName;
-      _ageController.text = _userAge;
-      _contactController.text = _userContact;
-      _emailController.text = _userEmail;
+      if (mounted) {
+        setState(() {
+          _userName = userName ?? 'User';
+          _userEmail = userEmail ?? '';
+          
+          // Extract additional profile data from Firebase
+          if (userData != null) {
+            _userAge = userData['age']?.toString() ?? '';
+            _userContact = userData['phone'] ?? userData['contact'] ?? '';
+            _userRole = userData['role'] ?? 'Mother';
+          }
+          
+          _isLoading = false;
+        });
+
+        // Update text controllers
+        _nameController.text = _userName;
+        _ageController.text = _userAge;
+        _contactController.text = _userContact;
+        _emailController.text = _userEmail;
+      }
     } catch (e) {
       print('Error loading user data: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -130,25 +192,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(key, value);
         
-        // Reload user data to reflect changes
-        await _loadUserData();
+        // Update the local state variables immediately instead of reloading everything
+        setState(() {
+          switch (key) {
+            case 'userName':
+              _userName = value;
+              break;
+            case 'userAge':
+              _userAge = value;
+              break;
+            case 'userContact':
+              _userContact = value;
+              break;
+            case 'userEmail':
+              _userEmail = value;
+              break;
+          }
+        });
       } else {
         throw Exception('Failed to update profile');
       }
     } catch (e) {
       print('Error saving user data: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save changes: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
+      rethrow; // Re-throw the error so it can be handled in the UI
     }
   }
 
@@ -212,56 +278,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ElevatedButton(
                       onPressed: () async {
                         if (controller.text.isNotEmpty) {
-                          Navigator.of(context).pop();
+                          Navigator.of(context).pop(); // Close edit dialog first
                           
                           // Show loading indicator
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (context) => const Center(
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
-                              ),
-                            ),
-                          );
+                          _showLoadingDialog();
 
                           try {
                             String key = '';
                             if (field == 'Name') {
                               key = 'userName';
-                              _userName = controller.text;
                             } else if (field == 'Age') {
                               key = 'userAge';
-                              _userAge = controller.text;
                             } else if (field == 'Contact') {
                               key = 'userContact';
-                              _userContact = controller.text;
                             } else if (field == 'Email') {
                               key = 'userEmail';
-                              _userEmail = controller.text;
                             }
 
                             await _saveUserData(key, controller.text);
                             
-                            if (mounted) {
-                              Navigator.of(context).pop(); // Close loading dialog
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('$field updated successfully!'),
-                                  backgroundColor: const Color(0xFFE91E63),
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                            }
+                            // Dismiss loading dialog
+                            _dismissLoadingDialog();
+                            
+                            // Navigate to dashboard with success message
+                            _navigateToDashboard('$field updated successfully!');
                           } catch (e) {
+                            // Dismiss loading dialog even on error
+                            _dismissLoadingDialog();
+                            
                             if (mounted) {
-                              Navigator.of(context).pop(); // Close loading dialog
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('Failed to update $field'),
+                                  content: Text('Failed to update $field: ${e.toString()}'),
                                   backgroundColor: Colors.red,
                                   behavior: SnackBarBehavior.floating,
                                   shape: RoundedRectangleBorder(
@@ -418,12 +466,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         
                         Navigator.of(context).pop();
                         
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Password changed successfully!'),
-                            backgroundColor: Color(0xFFE91E63),
-                          ),
-                        );
+                        // Navigate to dashboard after password change
+                        _navigateToDashboard('Password changed successfully!');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE91E63),
@@ -531,12 +575,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           onPressed: () {
                             Navigator.of(context).pop();
                             
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Notification preferences saved!'),
-                                backgroundColor: Color(0xFFE91E63),
-                              ),
-                            );
+                            // Navigate to dashboard after saving preferences
+                            _navigateToDashboard('Notification preferences saved!');
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFE91E63),
@@ -717,159 +757,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showPrivacySettingsPopup() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
+void _showPrivacySettingsPopup() {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Privacy Settings',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111611),
-                  ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Safe Mother Privacy',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF111611),
                 ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Manage your privacy settings here.',
-                  style: TextStyle(
-                    color: Color(0xFF638763),
-                  ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Your privacy and safety are our top priority. '
+                'We ensure that your personal and medical information '
+                'is securely protected and never shared without your consent. '
+                'Safe Mother safeguards your details to provide you with '
+                'confidential and trusted care.',
+                style: TextStyle(
+                  color: Color(0xFF638763),
+                  height: 1.4,
                 ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE91E63),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Save Settings',
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      color: Color(0xFF638763),
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text(
-                      'Close',
-                      style: TextStyle(
-                        color: Color(0xFF638763),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
-  void _showSharingPreferencesPopup() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Sharing Preferences',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111611),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Manage your data sharing preferences here.',
-                  style: TextStyle(
-                    color: Color(0xFF638763),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE91E63),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Save Preferences',
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text(
-                      'Close',
-                      style: TextStyle(
-                        color: Color(0xFF638763),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   void _showSignOutDialog() {
     showDialog(
@@ -1245,9 +1194,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               );
                               
-                              // Reload user data if profile was updated
+                              // If profile was updated, navigate to dashboard
                               if (result == true) {
-                                await _loadUserData();
+                                _navigateToDashboard('Profile updated successfully!');
                               }
                             },
                             icon: const Icon(Icons.edit, size: 20),
@@ -1340,7 +1289,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       
                       _buildSettingRow('Privacy Settings', _showPrivacySettingsPopup),
-                      _buildSettingRow('Sharing Preferences', _showSharingPreferencesPopup),
                       
                       const SizedBox(height: 16),
                       
