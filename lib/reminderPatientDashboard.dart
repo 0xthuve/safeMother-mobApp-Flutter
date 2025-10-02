@@ -37,7 +37,7 @@ class RemindersScreen extends StatefulWidget {
 }
 
 class _RemindersScreenState extends State<RemindersScreen> {
-  int _currentIndex = 2; // Reminders is active
+  final int _currentIndex = 2; // Reminders is active
 
   void _onItemTapped(int index) {
     if (index == _currentIndex) return;

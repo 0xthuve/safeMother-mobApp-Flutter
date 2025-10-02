@@ -3,7 +3,9 @@ import '../../navigation/doctor_navigation_handler.dart';
 import '../../navigation/doctor_bottom_navigation.dart';
 import '../../models/doctor.dart';
 import '../../services/session_manager.dart';
+import '../../services/user_management_service.dart';
 import '../../signin.dart';
+import 'doctor_edit_profile.dart';
 
 class DoctorProfile extends StatefulWidget {
   const DoctorProfile({super.key});
@@ -13,29 +15,104 @@ class DoctorProfile extends StatefulWidget {
 }
 
 class _DoctorProfileState extends State<DoctorProfile> {
-  int _currentIndex = 3; // Profile is still index 3 (0-based: Dashboard, Patients, Appointments, Profile)
-  late Doctor _doctor; // Demo doctor
+  final int _currentIndex = 3; // Profile is still index 3 (0-based: Dashboard, Patients, Appointments, Profile)
+  Doctor? _doctor;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _doctor = Doctor(
-      id: 1,
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@hospital.com',
-      phone: '+1-555-0101',
-      specialization: 'Obstetrics & Gynecology',
-      licenseNumber: 'MD123456',
-      hospital: 'City General Hospital',
-      experience: '10 years',
-      bio: 'Specialized in high-risk pregnancies and maternal-fetal medicine.',
-      rating: 4.8,
-      totalPatients: 150,
-      isAvailable: true,
-      createdAt: now,
-      updatedAt: now,
-    );
+    _loadDoctorData();
+  }
+
+  Future<void> _loadDoctorData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Get actual logged-in user data
+      final userData = await UserManagementService.getCurrentUserData();
+      final userName = await SessionManager.getUserName();
+      final userEmail = await SessionManager.getUserEmail();
+      
+      final now = DateTime.now();
+      
+      if (userData != null) {
+        final doctorData = Doctor(
+          id: (userData['id'] as int?) ?? 1,
+          name: userName ?? userData['fullName'] ?? 'Dr. User',
+          email: userEmail ?? userData['email'] ?? '',
+          phone: userData['phone'] ?? userData['contact'] ?? '',
+          specialization: userData['specialization'] ?? 'General Medicine',
+          licenseNumber: userData['licenseNumber'] ?? 'Not specified',
+          hospital: userData['hospital'] ?? 'Not specified',
+          experience: userData['experience']?.toString() ?? '0 years',
+          bio: userData['bio'] ?? 'Healthcare professional dedicated to patient care.',
+          rating: (userData['rating'] as num?)?.toDouble() ?? 4.5,
+          totalPatients: (userData['totalPatients'] as int?) ?? (userData['reviewCount'] as int?) ?? 0,
+          isAvailable: userData['isAvailable'] ?? true,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        setState(() {
+          _doctor = doctorData;
+          _isLoading = false;
+        });
+      } else {
+        // Fallback to demo data
+        final fallbackDoctor = Doctor(
+          id: 1,
+          name: userName ?? 'Dr. User',
+          email: userEmail ?? 'doctor@safemother.com',
+          phone: '',
+          specialization: 'General Medicine',
+          licenseNumber: 'Demo Mode',
+          hospital: 'Demo Hospital',
+          experience: 'Demo Mode',
+          bio: 'Demo healthcare professional.',
+          rating: 4.5,
+          totalPatients: 0,
+          isAvailable: true,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        setState(() {
+          _doctor = fallbackDoctor;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading doctor data: $e');
+      // Fallback data
+      final userName = await SessionManager.getUserName();
+      final userEmail = await SessionManager.getUserEmail();
+      final now = DateTime.now();
+      
+      final fallbackDoctor = Doctor(
+        id: 1,
+        name: userName ?? 'Dr. User',
+        email: userEmail ?? 'doctor@safemother.com',
+        phone: '',
+        specialization: 'General Medicine',
+        licenseNumber: 'Not available',
+        hospital: 'Not available',
+        experience: 'Not available',
+        bio: 'Healthcare professional.',
+        rating: 4.5,
+        totalPatients: 0,
+        isAvailable: true,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      setState(() {
+        _doctor = fallbackDoctor;
+        _isLoading = false;
+      });
+    }
   }
 
   void _onItemTapped(int index) {
@@ -55,102 +132,165 @@ class _DoctorProfileState extends State<DoctorProfile> {
         backgroundColor: const Color(0xFF1976D2), // Blue theme
         elevation: 0,
         automaticallyImplyLeading: false, // Remove back arrow
+        actions: [
+          if (!_isLoading && _doctor != null)
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.white),
+              onPressed: _navigateToEditProfile,
+            ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // Header card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1976D2), Color(0xFF1E88E5)], // Blue gradient
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1976D2)),
               ),
-              child: Column(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    child: Text(
-                      _doctor.name[0],
-                      style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+            )
+          : _doctor == null
+              ? const Center(
+                  child: Text(
+                    'Failed to load profile data',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _doctor.name,
-                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _doctor.specialization,
-                    style: TextStyle(color: Colors.white.withOpacity(0.9)),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
                     children: [
-                      const Icon(Icons.star, color: Colors.yellow, size: 18),
-                      const SizedBox(width: 4),
-                      Text('${_doctor.rating}', style: const TextStyle(color: Colors.white)),
-                      const SizedBox(width: 16),
-                      const Icon(Icons.people, color: Colors.white, size: 18),
-                      const SizedBox(width: 4),
-                      Text('${_doctor.totalPatients} patients', style: const TextStyle(color: Colors.white)),
-                    ],
-                  )
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
+                      // Header card
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF1976D2), Color(0xFF1E88E5)], // Blue gradient
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.white.withOpacity(0.2),
+                              child: Text(
+                                _doctor!.name.isNotEmpty ? _doctor!.name[0] : 'D',
+                                style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _doctor!.name,
+                              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _doctor!.specialization,
+                              style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.star, color: Colors.yellow, size: 18),
+                                const SizedBox(width: 4),
+                                Text('${_doctor!.rating}', style: const TextStyle(color: Colors.white)),
+                                const SizedBox(width: 16),
+                                const Icon(Icons.people, color: Colors.white, size: 18),
+                                const SizedBox(width: 4),
+                                Text('${_doctor!.totalPatients} patients', style: const TextStyle(color: Colors.white)),
+                              ],
+                            )
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-            _infoTile(Icons.badge, 'License Number', _doctor.licenseNumber),
-            _infoTile(Icons.local_hospital, 'Hospital', _doctor.hospital),
-            _infoTile(Icons.work, 'Experience', _doctor.experience),
-            _infoTile(Icons.email, 'Email', _doctor.email),
-            _infoTile(Icons.phone, 'Phone', _doctor.phone),
-            _infoTile(Icons.info, 'Bio', _doctor.bio),
-            _infoTile(Icons.verified, 'Available', _doctor.isAvailable ? 'Yes' : 'No'),
+                      _infoTile(Icons.badge, 'License Number', _doctor!.licenseNumber),
+                      _infoTile(Icons.local_hospital, 'Hospital', _doctor!.hospital),
+                      _infoTile(Icons.work, 'Experience', _doctor!.experience),
+                      _infoTile(Icons.email, 'Email', _doctor!.email),
+                      _infoTile(Icons.phone, 'Phone', _doctor!.phone.isEmpty ? 'Not specified' : _doctor!.phone),
+                      _infoTile(Icons.info, 'Bio', _doctor!.bio),
+                      _infoTile(Icons.verified, 'Available', _doctor!.isAvailable ? 'Yes' : 'No'),
             
-            // Sign Out Button
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(top: 8, bottom: 12),
-              child: ElevatedButton.icon(
-                onPressed: _showSignOutDialog,
-                icon: const Icon(Icons.logout, color: Colors.white),
-                label: const Text(
-                  'Sign Out',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                      // Edit Profile Button
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(top: 8, bottom: 12),
+                        child: ElevatedButton.icon(
+                          onPressed: _navigateToEditProfile,
+                          icon: const Icon(Icons.edit, color: Colors.white),
+                          label: const Text(
+                            'Edit Profile',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1976D2),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                      
+                      // Sign Out Button
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: ElevatedButton.icon(
+                          onPressed: _showSignOutDialog,
+                          icon: const Icon(Icons.logout, color: Colors.white),
+                          label: const Text(
+                            'Sign Out',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 2,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
       bottomNavigationBar: DoctorBottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onItemTapped,
       ),
     );
+  }
+
+  Future<void> _navigateToEditProfile() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const DoctorEditProfile(),
+      ),
+    );
+
+    // If profile was updated, reload the data
+    if (result == true) {
+      _loadDoctorData();
+    }
   }
 
   void _showSignOutDialog() {

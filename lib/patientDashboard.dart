@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'bottom_navigation.dart'; // Import the separate navigation bar
 import 'navigation_handler.dart';
 import 'patientProfile.dart';
+import 'services/session_manager.dart';
+import 'services/route_guard.dart';
 
 void main() {
   runApp(const PregnancyApp());
@@ -39,7 +41,44 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  final int _currentIndex = 0;
+  String _userName = 'User';
+
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Get user data from session
+      final userName = await SessionManager.getUserName();
+
+      setState(() {
+        _userName = userName ?? 'User';
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading user data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _getGreetingTime() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good morning';
+    } else if (hour < 17) {
+      return 'Good afternoon';
+    } else {
+      return 'Good evening';
+    }
+  }
 
   void _onItemTapped(int index) {
     if (index == _currentIndex) return;
@@ -48,7 +87,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return RouteGuard.patientRouteGuard(
+      context: context,
+      child: Scaffold(
       body: Stack(
         children: [
           // Soft gradient background
@@ -145,28 +186,32 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   
                   // Greeting
-                  RichText(
-                    text: const TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'Good evening,\n',
-                          style: TextStyle(
-                            color: Color(0xFF7B1FA2),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                  _isLoading
+                      ? const CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B1FA2)),
+                        )
+                      : RichText(
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${_getGreetingTime()},\n',
+                                style: const TextStyle(
+                                  color: Color(0xFF7B1FA2),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              TextSpan(
+                                text: _userName,
+                                style: const TextStyle(
+                                  color: Color(0xFF7B1FA2),
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        TextSpan(
-                          text: 'Mathu',
-                          style: TextStyle(
-                            color: Color(0xFF7B1FA2),
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   
                   const SizedBox(height: 24),
                   
@@ -508,6 +553,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    ),
     );
   }
   

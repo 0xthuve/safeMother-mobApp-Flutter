@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../navigation/doctor_navigation_handler.dart';
 import '../../navigation/doctor_bottom_navigation.dart';
-// NOTE: Demo data only. No database calls are used on this screen for the demo.
 import '../../models/doctor.dart';
 import '../../models/appointment.dart';
+import '../../services/route_guard.dart';
+import '../../services/user_management_service.dart';
+import '../../services/session_manager.dart';
 
 
 class DoctorDashboard extends StatefulWidget {
@@ -14,7 +16,7 @@ class DoctorDashboard extends StatefulWidget {
 }
 
 class _DoctorDashboardState extends State<DoctorDashboard> {
-  int _currentIndex = 0;
+  final int _currentIndex = 0;
   Doctor? _currentDoctor;
   List<Appointment> _todayAppointments = [];
   bool _isLoading = true;
@@ -26,61 +28,123 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   }
 
   Future<void> _loadDashboardData() async {
-    // Inject demo values
-    final now = DateTime.now();
-    final demoDoctor = Doctor(
-      id: 1,
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@hospital.com',
-      phone: '+1-555-0101',
-      specialization: 'Obstetrics & Gynecology',
-      licenseNumber: 'MD123456',
-      hospital: 'City General Hospital',
-      experience: '10 years',
-      bio: 'Specialized in high-risk pregnancies and maternal-fetal medicine.',
-      rating: 4.8,
-      totalPatients: 150,
-      isAvailable: true,
-      createdAt: now,
-      updatedAt: now,
-    );
+    try {
+      // Get actual logged-in user data
+      final userData = await UserManagementService.getCurrentUserData();
+      final userName = await SessionManager.getUserName();
+      final userEmail = await SessionManager.getUserEmail();
+      
+      final now = DateTime.now();
+      
+      if (userData != null) {
+        // Create doctor object from real user data
+        final doctorData = Doctor(
+          id: (userData['id'] as int?) ?? 1,
+          name: userName ?? userData['fullName'] ?? 'Dr. User',
+          email: userEmail ?? userData['email'] ?? '',
+          phone: userData['phone'] ?? userData['contact'] ?? '',
+          specialization: userData['specialization'] ?? 'General Medicine',
+          licenseNumber: userData['licenseNumber'] ?? 'Not specified',
+          hospital: userData['hospital'] ?? 'Not specified',
+          experience: userData['experience']?.toString() ?? '0 years',
+          bio: userData['bio'] ?? 'Healthcare professional dedicated to patient care.',
+          rating: (userData['rating'] as num?)?.toDouble() ?? 4.5,
+          totalPatients: (userData['totalPatients'] as int?) ?? (userData['reviewCount'] as int?) ?? 0,
+          isAvailable: userData['isAvailable'] ?? true,
+          createdAt: now,
+          updatedAt: now,
+        );
 
-    final demoAppointments = <Appointment>[
-      Appointment(
-        id: 101,
-        doctorId: 1,
-        patientId: 1001,
-        appointmentDate: now,
-        timeSlot: '09:00 AM - 09:30 AM',
-        status: 'scheduled',
-        reason: 'Routine prenatal checkup',
-        notes: '',
-        prescription: '',
+        // Demo appointments for now - in a real app, these would come from a database
+        final demoAppointments = <Appointment>[
+          Appointment(
+            id: 101,
+            doctorId: doctorData.id ?? 1,
+            patientId: 1001,
+            appointmentDate: now,
+            timeSlot: '09:00 AM - 09:30 AM',
+            status: 'scheduled',
+            reason: 'Routine prenatal checkup',
+            notes: '',
+            prescription: '',
+            createdAt: now,
+            updatedAt: now,
+          ),
+          Appointment(
+            id: 102,
+            doctorId: doctorData.id ?? 1,
+            patientId: 1002,
+            appointmentDate: now,
+            timeSlot: '10:00 AM - 10:30 AM',
+            status: 'scheduled',
+            reason: 'Ultrasound review',
+            notes: '',
+            prescription: '',
+            createdAt: now,
+            updatedAt: now,
+          ),
+        ];
+
+        setState(() {
+          _currentDoctor = doctorData;
+          _todayAppointments = demoAppointments;
+          _isLoading = false;
+        });
+      } else {
+        // Fallback to demo data if user data is not available
+        final demoDoctor = Doctor(
+          id: 1,
+          name: userName ?? 'Dr. User',
+          email: userEmail ?? 'doctor@safemother.com',
+          phone: '',
+          specialization: 'General Medicine',
+          licenseNumber: 'Demo Mode',
+          hospital: 'Demo Hospital',
+          experience: 'Demo Mode',
+          bio: 'Demo healthcare professional.',
+          rating: 4.5,
+          totalPatients: 0,
+          isAvailable: true,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        setState(() {
+          _currentDoctor = demoDoctor;
+          _todayAppointments = [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading dashboard data: $e');
+      // Fallback to basic data
+      final userName = await SessionManager.getUserName();
+      final userEmail = await SessionManager.getUserEmail();
+      final now = DateTime.now();
+      
+      final fallbackDoctor = Doctor(
+        id: 1,
+        name: userName ?? 'Dr. User',
+        email: userEmail ?? 'doctor@safemother.com',
+        phone: '',
+        specialization: 'General Medicine',
+        licenseNumber: 'Not available',
+        hospital: 'Not available',
+        experience: 'Not available',
+        bio: 'Healthcare professional.',
+        rating: 4.5,
+        totalPatients: 0,
+        isAvailable: true,
         createdAt: now,
         updatedAt: now,
-      ),
-      Appointment(
-        id: 102,
-        doctorId: 1,
-        patientId: 1002,
-        appointmentDate: now,
-        timeSlot: '10:00 AM - 10:30 AM',
-        status: 'scheduled',
-        reason: 'Ultrasound review',
-        notes: '',
-        prescription: '',
-        createdAt: now,
-        updatedAt: now,
-      ),
-    ];
+      );
 
-
-
-    setState(() {
-      _currentDoctor = demoDoctor;
-      _todayAppointments = demoAppointments;
-      _isLoading = false;
-    });
+      setState(() {
+        _currentDoctor = fallbackDoctor;
+        _todayAppointments = [];
+        _isLoading = false;
+      });
+    }
   }
 
   void _onItemTapped(int index) {
@@ -90,7 +154,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return RouteGuard.doctorRouteGuard(
+      context: context,
+      child: Scaffold(
       backgroundColor: const Color(0xFFE3F2FD), // Light blue background
       appBar: AppBar(
         title: const Text(
@@ -290,6 +356,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         currentIndex: _currentIndex,
         onTap: _onItemTapped,
       ),
+    ),
     );
   }
 

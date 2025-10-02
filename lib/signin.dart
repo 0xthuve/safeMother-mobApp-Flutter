@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'signup-roleSelection.dart';
+import 'signup-roleMother-p2.dart';
 import 'patientDashboard.dart';
 import 'patientDashboardLog.dart';
 import 'reminderPatientDashboard.dart';
 import 'patientDashboardTip.dart';
 import 'chatPatient.dart';
 import 'pages/doctor/doctor_login.dart';
-import 'services/session_manager.dart';
+import 'services/user_management_service.dart';
 
 void main() {
   runApp(const SignInApp());
@@ -239,61 +240,123 @@ class SignInScreen extends StatelessWidget {
                       ),
                       
                       const SizedBox(height: 20),
-                      
-                      // Quick access options
-                      const Text(
-                        'Or continue with',
-                        style: TextStyle(
-                          color: Color(0xFF9575CD),
-                          fontSize: 13,
+
+                      // Demo mode button
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE3F2FD).withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF1976D2).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: Color(0xFF1976D2),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Demo Mode: Firebase not configured',
+                                style: TextStyle(
+                                  color: Color(0xFF1976D2),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                // Import the FirebaseMockService to show instructions
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text(
+                                      'Demo Mode',
+                                      style: TextStyle(
+                                        color: Color(0xFF7B1FA2),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Firebase is not configured. Using demo mode with these credentials:',
+                                          style: TextStyle(fontSize: 16),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF3E5F5),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'Demo Credentials:',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF7B1FA2),
+                                                ),
+                                              ),
+                                              SizedBox(height: 8),
+                                              Text('Email: demo@safemother.com'),
+                                              Text('Password: demo123'),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        const Text(
+                                          'Or create a new account - all data will be stored locally.',
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Color(0xFF9575CD),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(),
+                                        child: const Text(
+                                          'Got it!',
+                                          style: TextStyle(
+                                            color: Color(0xFFE91E63),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              ),
+                              child: const Text(
+                                'Info',
+                                style: TextStyle(
+                                  color: Color(0xFF1976D2),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
                       
-                      // Social login options
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            onPressed: () {},
-                            icon: Image.asset(
-                              'assets/google_icon.png',
-                              width: 24,
-                              height: 24,
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: const Color(0xFFF5F5F5),
-                              padding: const EdgeInsets.all(12),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          IconButton(
-                            onPressed: () {},
-                            icon: Image.asset(
-                              'assets/facebook_icon.png',
-                              width: 24,
-                              height: 24,
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: const Color(0xFFF5F5F5),
-                              padding: const EdgeInsets.all(12),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(
-                              Icons.phone,
-                              color: Color(0xFF7B1FA2),
-                              size: 24,
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: const Color(0xFFF5F5F5),
-                              padding: const EdgeInsets.all(12),
-                            ),
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: 20),
                       
                       const SizedBox(height: 32),
                       
@@ -421,6 +484,7 @@ class _SignInFormState extends State<SignInForm> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -431,19 +495,103 @@ class _SignInFormState extends State<SignInForm> {
 
   Future<void> _onSignIn() async {
     if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isLoading = true;
+      });
+
       try {
-        // Save login session for patient
-        await SessionManager.saveLoginSession(
-          userType: SessionManager.userTypePatient,
-          userId: 'patient_${DateTime.now().millisecondsSinceEpoch}', // Demo ID
-          userName: 'Sophia Carter', // Demo name
-          userEmail: _emailController.text.trim(),
+        final success = await UserManagementService.signInUser(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+          context,
         );
+
+        if (success) {
+          // Get user data to show welcome message
+          final userData = await UserManagementService.getCurrentUserData();
+          final userName = userData?['fullName'] ?? 'User';
+          final userRole = userData?['role'];
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Welcome back, $userName!'),
+                backgroundColor: const Color(0xFFE91E63),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+
+            // Navigate to appropriate dashboard based on role
+            if (userRole == 'doctor' || userRole == 'healthcare') {
+              // Doctors should not access patient dashboard - show error
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Healthcare providers cannot access patient dashboard. Please use Healthcare Login.'),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+              // Sign out the user and return to login
+              await UserManagementService.signOutUser();
+              return;
+            } else {
+              // Only patients can access patient dashboard
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen()),
+              );
+            }
+          }
+        } else {
+          throw Exception('Invalid email or password');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Login failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+
+
+  Future<void> _onGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await UserManagementService.signInWithGoogle(context);
+
+      if (result != null && result['success'] == true) {
+        final userName = result['userName'] ?? 'User';
+        final needsPregnancyInfo = result['needsPregnancyInfo'] as bool? ?? false;
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Welcome back, Sophia! Signing in as ${_emailController.text.trim()}'),
+              content: Text('Welcome, $userName!'),
               backgroundColor: const Color(0xFFE91E63),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -452,17 +600,194 @@ class _SignInFormState extends State<SignInForm> {
             ),
           );
 
-          // Navigate to patient dashboard and replace the sign-in route
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
+          // Check if user role is allowed to access patient dashboard
+          final userRole = result['userRole'] as String?;
+          if (userRole == 'doctor' || userRole == 'healthcare') {
+            // Doctors should not access patient dashboard via Google Sign-In
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Healthcare providers cannot access patient dashboard. Please use Healthcare Login.'),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+            // Sign out the user and return to login
+            await UserManagementService.signOutUser();
+            return;
+          }
+
+          // Navigate based on profile completion status
+          if (needsPregnancyInfo) {
+            // New user or incomplete profile - go to pregnancy questions
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const RoleMotherP2(), // Pregnancy questions page
+              ),
+            );
+          } else {
+            // Existing user with complete profile - go to dashboard
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          }
+        }
+      } else {
+        throw Exception('Google sign-in was cancelled or failed');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google sign-in failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _onForgotPassword() async {
+    // Show dialog to ask for email or username
+    final TextEditingController resetController = TextEditingController();
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Reset Password',
+          style: TextStyle(
+            color: Color(0xFF7B1FA2),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter your email address or username to receive a password reset link.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            TextFormField(
+              controller: resetController,
+              decoration: InputDecoration(
+                labelText: 'Email or Username',
+                labelStyle: const TextStyle(color: Color(0xFF9575CD)),
+                filled: true,
+                fillColor: const Color(0xFFF5F5F5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF9575CD)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFF9575CD)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (resetController.text.trim().isNotEmpty) {
+                Navigator.of(context).pop(resetController.text.trim());
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE91E63),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Send Reset Link',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      try {
+        // Check if input is email or username and convert to email if needed
+        String emailToReset = result;
+        
+        // If input doesn't contain @, treat it as username and try to find the email
+        if (!result.contains('@')) {
+          final userEmail = await UserManagementService.getEmailByUsername(result);
+          if (userEmail != null) {
+            emailToReset = userEmail;
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Username not found. Please try with your email address.'),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            }
+            return;
+          }
+        }
+
+        final success = await UserManagementService.resetPassword(emailToReset);
+        
+        if (mounted) {
+          if (success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Password reset email sent to $emailToReset'),
+                backgroundColor: const Color(0xFFE91E63),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Failed to send reset email. Please check your email address.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Login failed: $e'),
+              content: Text('Failed to send reset email: ${e.toString()}'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -571,18 +896,7 @@ class _SignInFormState extends State<SignInForm> {
               ),
               const Spacer(),
               TextButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Password reset instructions will be sent to your email'),
-                      backgroundColor: const Color(0xFFE91E63),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  );
-                },
+                onPressed: _isLoading ? null : _onForgotPassword,
                 child: const Text(
                   'Forgot Password?',
                   style: TextStyle(
@@ -601,7 +915,7 @@ class _SignInFormState extends State<SignInForm> {
             width: double.infinity,
             height: 54,
             child: ElevatedButton(
-              onPressed: _onSignIn,
+              onPressed: _isLoading ? null : _onSignIn,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE91E63),
                 shape: RoundedRectangleBorder(
@@ -610,13 +924,49 @@ class _SignInFormState extends State<SignInForm> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 elevation: 2,
               ),
-              child: const Text(
-                'Sign In',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Sign In',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Google Sign-In option
+          const Text(
+            'Or continue with',
+            style: TextStyle(
+              color: Color(0xFF9575CD),
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Google Sign-In only
+          Center(
+            child: IconButton(
+              onPressed: _isLoading ? null : _onGoogleSignIn,
+              icon: Image.asset(
+                'assets/google_icon.png',
+                width: 24,
+                height: 24,
+              ),
+              style: IconButton.styleFrom(
+                backgroundColor: const Color(0xFFF5F5F5),
+                padding: const EdgeInsets.all(12),
               ),
             ),
           ),

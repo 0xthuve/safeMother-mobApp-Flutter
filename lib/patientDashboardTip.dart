@@ -40,7 +40,7 @@ class LearnScreen extends StatefulWidget {
 }
 
 class _LearnScreenState extends State<LearnScreen> {
-  int _currentIndex = 3; // Learn is active
+  final int _currentIndex = 3; // Learn is active
   List<dynamic> _articles = [];
   List<dynamic> _filteredArticles = [];
   bool _isLoading = true;
@@ -440,7 +440,7 @@ class _LearnScreenState extends State<LearnScreen> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Container(
+                  child: SizedBox(
                     width: double.infinity,
                     height: 48,
                     child: Column(
@@ -693,7 +693,7 @@ class _LearnScreenState extends State<LearnScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Container(
+            child: SizedBox(
               width: 228,
               child: Column(
                 mainAxisSize: MainAxisSize.min,

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'patientDashboard.dart';
 import 'services/session_manager.dart';
+import 'services/user_management_service.dart';
+import 'pages/edit_profile.dart';
 import 'signin.dart';
 
 void main() {
@@ -40,14 +42,18 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _userName = 'Mathu mass';
-  String _userAge = '32';
-  String _userContact = '+1 (555) 123-4567';
+  String _userName = 'User';
+  String _userEmail = '';
+  String _userAge = '';
+  String _userContact = '';
   String _userRole = 'Mother';
+  bool _isLoading = true;
+
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _contactController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
@@ -59,22 +65,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _userName = prefs.getString('userName') ?? 'Sophia Carter';
-      _userAge = prefs.getString('userAge') ?? '32';
-      _userContact = prefs.getString('userContact') ?? '+1 (555) 123-4567';
-      _userRole = prefs.getString('userRole') ?? 'Mother';
-    });
-    
-    _nameController.text = _userName;
-    _ageController.text = _userAge;
-    _contactController.text = _userContact;
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // Get user data from session and Firebase
+      final userName = await SessionManager.getUserName();
+      final userEmail = await SessionManager.getUserEmail();
+      final userData = await UserManagementService.getCurrentUserData();
+
+      setState(() {
+        _userName = userName ?? 'User';
+        _userEmail = userEmail ?? '';
+        
+        // Extract additional profile data from Firebase
+        if (userData != null) {
+          _userAge = userData['age']?.toString() ?? '';
+          _userContact = userData['phone'] ?? userData['contact'] ?? '';
+          _userRole = userData['role'] ?? 'Mother';
+        }
+        
+        _isLoading = false;
+      });
+
+      // Update text controllers
+      _nameController.text = _userName;
+      _ageController.text = _userAge;
+      _contactController.text = _userContact;
+      _emailController.text = _userEmail;
+    } catch (e) {
+      print('Error loading user data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _saveUserData(String key, String value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(key, value);
+    try {
+      // Update Firebase data
+      Map<String, dynamic> updateData = {};
+      
+      switch (key) {
+        case 'userName':
+          updateData['fullName'] = value;
+          break;
+        case 'userAge':
+          updateData['age'] = int.tryParse(value) ?? 0;
+          break;
+        case 'userContact':
+          updateData['phone'] = value;
+          updateData['contact'] = value;
+          break;
+        case 'userEmail':
+          updateData['email'] = value;
+          break;
+      }
+
+      final success = await UserManagementService.updateUserProfile(updateData);
+      
+      if (success) {
+        // Also save to local preferences as backup
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(key, value);
+        
+        // Reload user data to reflect changes
+        await _loadUserData();
+      } else {
+        throw Exception('Failed to update profile');
+      }
+    } catch (e) {
+      print('Error saving user data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save changes: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _showEditPopup(String field, String currentValue, TextEditingController controller) {
@@ -135,28 +210,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (controller.text.isNotEmpty) {
-                          setState(() {
-                            if (field == 'Name') {
-                              _userName = controller.text;
-                              _saveUserData('userName', _userName);
-                            } else if (field == 'Age') {
-                              _userAge = controller.text;
-                              _saveUserData('userAge', _userAge);
-                            } else if (field == 'Contact') {
-                              _userContact = controller.text;
-                              _saveUserData('userContact', _userContact);
-                            }
-                          });
                           Navigator.of(context).pop();
                           
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('$field updated successfully!'),
-                              backgroundColor: const Color(0xFFE91E63),
+                          // Show loading indicator
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (context) => const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
+                              ),
                             ),
                           );
+
+                          try {
+                            String key = '';
+                            if (field == 'Name') {
+                              key = 'userName';
+                              _userName = controller.text;
+                            } else if (field == 'Age') {
+                              key = 'userAge';
+                              _userAge = controller.text;
+                            } else if (field == 'Contact') {
+                              key = 'userContact';
+                              _userContact = controller.text;
+                            } else if (field == 'Email') {
+                              key = 'userEmail';
+                              _userEmail = controller.text;
+                            }
+
+                            await _saveUserData(key, controller.text);
+                            
+                            if (mounted) {
+                              Navigator.of(context).pop(); // Close loading dialog
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('$field updated successfully!'),
+                                  backgroundColor: const Color(0xFFE91E63),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              Navigator.of(context).pop(); // Close loading dialog
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to update $field'),
+                                  backgroundColor: Colors.red,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -375,7 +489,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           emailNotifications = value;
                         });
                       },
-                      activeColor: const Color(0xFFE91E63),
+                      activeThumbColor: const Color(0xFFE91E63),
                     ),
                     SwitchListTile(
                       title: const Text('Push Notifications'),
@@ -385,7 +499,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           pushNotifications = value;
                         });
                       },
-                      activeColor: const Color(0xFFE91E63),
+                      activeThumbColor: const Color(0xFFE91E63),
                     ),
                     SwitchListTile(
                       title: const Text('SMS Notifications'),
@@ -395,7 +509,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           smsNotifications = value;
                         });
                       },
-                      activeColor: const Color(0xFFE91E63),
+                      activeThumbColor: const Color(0xFFE91E63),
                     ),
                     const SizedBox(height: 20),
                     Row(
@@ -950,7 +1064,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Container(
+                    SizedBox(
                       width: 48,
                       height: 48,
                       child: IconButton(
@@ -1024,29 +1138,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            Text(
-                              _userName,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Color(0xFF111611),
-                                fontSize: 22,
-                                fontFamily: 'Lexend',
-                                fontWeight: FontWeight.w700,
-                                height: 1.27,
-                              ),
-                            ),
+                            _isLoading
+                                ? const SizedBox(
+                                    width: 100,
+                                    height: 20,
+                                    child: LinearProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
+                                    ),
+                                  )
+                                : Text(
+                                    _userName,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Color(0xFF111611),
+                                      fontSize: 22,
+                                      fontFamily: 'Lexend',
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.27,
+                                    ),
+                                  ),
                             const SizedBox(height: 4),
-                            Text(
-                              _userRole,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Color(0xFF638763),
-                                fontSize: 16,
-                                fontFamily: 'Lexend',
-                                fontWeight: FontWeight.w400,
-                                height: 1.50,
-                              ),
-                            ),
+                            _isLoading
+                                ? const SizedBox(
+                                    width: 60,
+                                    height: 16,
+                                    child: LinearProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF638763)),
+                                    ),
+                                  )
+                                : Text(
+                                    _userRole,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: Color(0xFF638763),
+                                      fontSize: 16,
+                                      fontFamily: 'Lexend',
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.50,
+                                    ),
+                                  ),
                           ],
                         ),
                       ),
@@ -1072,17 +1202,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                       
-                      _buildInfoRow('Name', _userName, () {
-                        _showEditPopup('Name', _userName, _nameController);
-                      }),
+                      _isLoading
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
+                                ),
+                              ),
+                            )
+                          : Column(
+                              children: [
+                                _buildInfoRow('Name', _userName, () {
+                                  _showEditPopup('Name', _userName, _nameController);
+                                }),
+                                
+                                _buildInfoRow('Email', _userEmail, () {
+                                  _showEditPopup('Email', _userEmail, _emailController);
+                                }),
+                                
+                                _buildInfoRow('Age', _userAge.isEmpty ? 'Not set' : _userAge, () {
+                                  _showEditPopup('Age', _userAge, _ageController);
+                                }),
+                                
+                                _buildInfoRow('Contact', _userContact.isEmpty ? 'Not set' : _userContact, () {
+                                  _showEditPopup('Contact', _userContact, _contactController);
+                                }),
+                              ],
+                            ),
                       
-                      _buildInfoRow('Age', _userAge, () {
-                        _showEditPopup('Age', _userAge, _ageController);
-                      }),
-                      
-                      _buildInfoRow('Contact', _userContact, () {
-                        _showEditPopup('Contact', _userContact, _contactController);
-                      }),
+                      // Edit Profile Button
+                      if (!_isLoading)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const EditProfilePage(),
+                                ),
+                              );
+                              
+                              // Reload user data if profile was updated
+                              if (result == true) {
+                                await _loadUserData();
+                              }
+                            },
+                            icon: const Icon(Icons.edit, size: 20),
+                            label: const Text(
+                              'Edit Profile',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE91E63),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 2,
+                            ),
+                          ),
+                        ),
                       
                       // Account Settings Section
                       Container(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'signup-roleMother-p2.dart'; // Make sure this file contains `RoleMotherP2` widget
 import 'signin.dart';
+import 'services/firebase_service.dart';
+import 'services/user_management_service.dart';
 
 void main() {
   runApp(const SignupMotherApp());
@@ -50,6 +52,7 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
   
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
   DateTime? _selectedDate;
 
   @override
@@ -79,8 +82,7 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
               onPrimary: Colors.white,
               surface: Colors.white,
               onSurface: Color(0xFF5A5A5A),
-            ),
-            dialogBackgroundColor: Colors.white,
+            ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
           ),
           child: child!,
         );
@@ -91,6 +93,97 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
         _selectedDate = picked;
         _eddController.text = "${picked.day}/${picked.month}/${picked.year}";
       });
+    }
+  }
+
+  Future<void> _registerUser() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Check if email is already registered
+      final isEmailRegistered = await FirebaseService.isEmailRegistered(_emailController.text.trim());
+      
+      if (isEmailRegistered) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('This email is already registered. Please use a different email or sign in.'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Register user with UserManagementService
+      final success = await UserManagementService.registerUser(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        fullName: _nameController.text.trim(),
+        role: 'patient',
+        additionalData: {
+          'username': _usernameController.text.trim(),
+          'age': int.tryParse(_ageController.text.trim()) ?? 0,
+          'location': _locationController.text.trim(),
+          'estimatedDueDate': _eddController.text.trim(),
+          'signUpStep': 1, // Indicates user needs to complete profile
+        },
+        context: context,
+      );
+
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Welcome to Safe Mother, ${_nameController.text.trim()}!'),
+              backgroundColor: const Color(0xFFE91E63),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+
+          // Continue to next step (RoleMotherP2) or complete registration
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const RoleMotherP2(),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Registration failed. Please try again.');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Registration failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -387,22 +480,12 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                               ),
                               const SizedBox(height: 24),
                               
-                              // Continue Button - FIXED NAVIGATION
+                              // Continue Button with Firebase Registration
                               SizedBox(
                                 width: double.infinity,
                                 height: 50,
                                 child: ElevatedButton(
-                                  onPressed: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      // Fixed navigation to RoleMotherP2
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const RoleMotherP2(),
-                                        ),
-                                      );
-                                    }
-                                  },
+                                  onPressed: _isLoading ? null : _registerUser,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFE91E63),
                                     shape: RoundedRectangleBorder(
@@ -411,14 +494,23 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                                     padding: const EdgeInsets.symmetric(vertical: 16),
                                     elevation: 2,
                                   ),
-                                  child: const Text(
-                                    'Continue',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Create Account',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],

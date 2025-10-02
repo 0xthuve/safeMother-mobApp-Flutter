@@ -10,7 +10,7 @@ class DoctorSettings extends StatefulWidget {
 }
 
 class _DoctorSettingsState extends State<DoctorSettings> {
-  int _currentIndex = 4;
+  final int _currentIndex = 4;
   bool _pushNotifications = true;
   bool _emailNotifications = false;
   String _language = 'English';
@@ -100,7 +100,7 @@ class _DoctorSettingsState extends State<DoctorSettings> {
   Widget _switchTile({required IconData icon, required String title, required bool value, required ValueChanged<bool> onChanged}) => ListTile(
         leading: Icon(icon, color: const Color(0xFF1976D2)), // Blue theme
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        trailing: Switch(value: value, onChanged: onChanged, activeColor: const Color(0xFF1976D2)), // Blue theme
+        trailing: Switch(value: value, onChanged: onChanged, activeThumbColor: const Color(0xFF1976D2)), // Blue theme
       );
 
   Widget _navTile({required IconData icon, required String title, required String subtitle, required VoidCallback onTap}) => ListTile(

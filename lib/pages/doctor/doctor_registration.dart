@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'doctor_login.dart';
+import '../../services/user_management_service.dart';
 
 class DoctorRegistration extends StatefulWidget {
-  const DoctorRegistration({Key? key}) : super(key: key);
+  const DoctorRegistration({super.key});
 
   @override
   State<DoctorRegistration> createState() => _DoctorRegistrationState();
@@ -56,26 +57,67 @@ class _DoctorRegistrationState extends State<DoctorRegistration> {
         _isLoading = true;
       });
 
-      // Simulate registration process
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        // Register healthcare professional with Firebase
+        final success = await UserManagementService.registerUser(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          fullName: _fullNameController.text.trim(),
+          role: 'doctor', // Healthcare professional role
+          additionalData: {
+            'phone': _phoneController.text.trim(),
+            'licenseNumber': _licenseNumberController.text.trim(),
+            'hospital': _hospitalController.text.trim(),
+            'specialization': _selectedSpecialization,
+            'yearsExperience': int.tryParse(_yearsExperienceController.text.trim()) ?? 0,
+            'isVerified': false, // Require manual verification for healthcare professionals
+            'accountType': 'healthcare',
+          },
+          context: context,
+        );
 
-      setState(() {
-        _isLoading = false;
-      });
+        if (success) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Registration successful! Welcome, ${_fullNameController.text.trim()}!'),
+                backgroundColor: const Color(0xFF4CAF50),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registration successful! Please check your email for verification.'),
-          backgroundColor: Color(0xFF4CAF50),
-        ),
-      );
-
-      // Navigate to doctor login
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const DoctorLogin()),
-      );
+            // Navigate to doctor login
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const DoctorLogin()),
+            );
+          }
+        } else {
+          throw Exception('Registration failed. Please try again.');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Registration failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 
@@ -328,7 +370,7 @@ class _DoctorRegistrationState extends State<DoctorRegistration> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: DropdownButtonFormField<String>(
-                                  value: _selectedSpecialization,
+                                  initialValue: _selectedSpecialization,
                                   icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF64B5F6)),
                                   decoration: const InputDecoration(
                                     labelText: 'Specialization',
