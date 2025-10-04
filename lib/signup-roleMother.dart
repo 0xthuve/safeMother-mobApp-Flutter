@@ -48,12 +48,10 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _locationController = TextEditingController();
-  final _eddController = TextEditingController();
   
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
-  DateTime? _selectedDate;
 
   @override
   void dispose() {
@@ -64,37 +62,10 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _locationController.dispose();
-    _eddController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFFE91E63), // Soft pink
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Color(0xFF5A5A5A),
-            ), dialogTheme: DialogThemeData(backgroundColor: Colors.white),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-        _eddController.text = "${picked.day}/${picked.month}/${picked.year}";
-      });
-    }
-  }
+
 
   Future<void> _registerUser() async {
     if (!_formKey.currentState!.validate()) {
@@ -135,7 +106,6 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
           'username': _usernameController.text.trim(),
           'age': int.tryParse(_ageController.text.trim()) ?? 0,
           'location': _locationController.text.trim(),
-          'estimatedDueDate': _eddController.text.trim(),
           'signUpStep': 1, // Indicates user needs to complete profile
         },
         context: context,
@@ -447,33 +417,6 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Please enter your location';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              // EDD (Estimated Due Date)
-                              TextFormField(
-                                controller: _eddController,
-                                readOnly: true,
-                                style: const TextStyle(color: Color(0xFF5A5A5A)),
-                                decoration: InputDecoration(
-                                  labelText: 'Estimated Due Date',
-                                  labelStyle: const TextStyle(color: Color(0xFF9575CD)),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF5F5F5),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  prefixIcon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF9575CD)),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                                ),
-                                onTap: () => _selectDate(context),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please select your estimated due date';
                                   }
                                   return null;
                                 },

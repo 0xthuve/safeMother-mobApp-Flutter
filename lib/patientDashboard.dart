@@ -4,6 +4,8 @@ import 'navigation_handler.dart';
 import 'patientProfile.dart';
 import 'services/session_manager.dart';
 import 'services/route_guard.dart';
+import 'services/backend_service.dart';
+import 'widgets/pregnancy_progress_widget.dart';
 
 void main() {
   runApp(const PregnancyApp());
@@ -42,6 +44,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final int _currentIndex = 0;
+  final BackendService _backendService = BackendService();
   String _userName = 'User';
 
   bool _isLoading = true;
@@ -56,6 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       // Get user data from session
       final userName = await SessionManager.getUserName();
+
+      // Initialize demo data if needed
+      await _backendService.initializeDemoData();
 
       setState(() {
         _userName = userName ?? 'User';
@@ -215,133 +221,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   const SizedBox(height: 24),
                   
-                  // Pregnancy progress card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFFF3E5F5).withOpacity(0.8),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.purple[50]!,
-                          blurRadius: 25,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Your Pregnancy Journey',
-                          style: TextStyle(
-                            color: Color(0xFF7B1FA2),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Progress section
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Day 56',
-                                    style: TextStyle(
-                                      color: Color(0xFFE91E63),
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  
-                                  const SizedBox(height: 8),
-                                  
-                                  const Text(
-                                    '37 weeks to go!',
-                                    style: TextStyle(
-                                      color: Color(0xFF9575CD),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  
-                                  const SizedBox(height: 16),
-                                  
-                                  // Progress bar
-                                  Container(
-                                    width: double.infinity,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF5F5F5),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Stack(
-                                      children: [
-                                        Container(
-                                          width: 136,
-                                          height: 8,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFE91E63),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  
-                                  const SizedBox(height: 16),
-                                  
-                                  // Due date button
-                                  Container(
-                                    height: 36,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF3E5F5),
-                                      borderRadius: BorderRadius.circular(18),
-                                    ),
-                                    child: const Center(
-                                      child: Text(
-                                        'Due 10 Apr',
-                                        style: TextStyle(
-                                          color: Color(0xFF7B1FA2),
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            
-                            const SizedBox(width: 16),
-                            
-                            // Baby image
-                            Container(
-                              width: 100,
-                              height: 100,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                image: const DecorationImage(
-                                  image: AssetImage('assets/baby.png'),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                  // Pregnancy progress card - Dynamic implementation
+                  const PregnancyProgressWidget(
+                    showRefreshButton: true,
                   ),
                   
                   const SizedBox(height: 24),

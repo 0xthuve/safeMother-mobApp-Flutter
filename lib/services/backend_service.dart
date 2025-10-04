@@ -70,24 +70,42 @@ class BackendService {
         'percentage': 0.0,
         'trimester': 'First',
         'weeksRemaining': 40,
+        'daysRemaining': 280,
+        'totalDays': 0,
+        'babyName': 'Your Baby',
+        'expectedDeliveryDate': null,
+        'confirmationDate': null,
+        'isOverdue': false,
+        'trimesterProgress': 0.0,
       };
     }
 
     int currentWeek = tracking.currentWeek ?? 0;
     int currentDay = tracking.currentDay ?? 0;
+    DateTime? calculationBaseDate;
 
     // Auto-calculate if we have LMP or confirmed date
     if (tracking.lastMenstrualPeriod != null || tracking.pregnancyConfirmedDate != null) {
-      final referenceDate = tracking.lastMenstrualPeriod ?? tracking.pregnancyConfirmedDate!;
-      final calculated = PregnancyTracking.calculatePregnancyWeek(referenceDate);
+      calculationBaseDate = tracking.lastMenstrualPeriod ?? tracking.pregnancyConfirmedDate!;
+      final calculated = PregnancyTracking.calculatePregnancyWeek(calculationBaseDate);
       currentWeek = calculated['weeks']!;
       currentDay = calculated['days']!;
+
+      // Auto-calculate expected delivery date if not set
+      DateTime? expectedDeliveryDate = tracking.expectedDeliveryDate;
+      if (expectedDeliveryDate == null && tracking.lastMenstrualPeriod != null) {
+        expectedDeliveryDate = PregnancyTracking.calculateExpectedDeliveryDate(tracking.lastMenstrualPeriod);
+      } else if (expectedDeliveryDate == null && tracking.pregnancyConfirmedDate != null) {
+        // If using confirmed date, assume it's about 4-6 weeks into pregnancy
+        expectedDeliveryDate = tracking.pregnancyConfirmedDate!.add(const Duration(days: 280 - 35)); // Subtract ~5 weeks
+      }
 
       // Update tracking with calculated values
       await updatePregnancyTracking(userId, {
         'currentWeek': currentWeek,
         'currentDay': currentDay,
         'trimester': PregnancyTracking.getTrimester(currentWeek),
+        'expectedDeliveryDate': expectedDeliveryDate?.toIso8601String(),
       });
     }
 
@@ -96,16 +114,46 @@ class BackendService {
     final currentTotalDays = (currentWeek * 7) + currentDay;
     final remainingDays = (totalPregnancyDays - currentTotalDays).clamp(0, totalPregnancyDays);
     
+    // Calculate trimester progress
+    final trimester = PregnancyTracking.getTrimester(currentWeek);
+    double trimesterProgress = 0.0;
+    if (trimester == 'First') {
+      trimesterProgress = (currentWeek / 12.0 * 100).clamp(0.0, 100.0);
+    } else if (trimester == 'Second') {
+      trimesterProgress = ((currentWeek - 12) / 16.0 * 100).clamp(0.0, 100.0);
+    } else if (trimester == 'Third') {
+      trimesterProgress = ((currentWeek - 28) / 12.0 * 100).clamp(0.0, 100.0);
+    }
+
+    // Check if overdue (past 40 weeks)
+    final isOverdue = currentWeek > 40;
+
+    // Get expected delivery date
+    final expectedDeliveryDate = tracking.expectedDeliveryDate;
+
     return {
       'weeks': currentWeek,
       'days': currentDay,
       'percentage': (currentWeek / 40.0 * 100).clamp(0.0, 100.0),
-      'trimester': PregnancyTracking.getTrimester(currentWeek),
+      'trimester': trimester,
+      'trimesterProgress': trimesterProgress,
       'weeksRemaining': (40 - currentWeek).clamp(0, 40),
       'daysRemaining': remainingDays,
       'totalDays': currentTotalDays,
       'babyName': tracking.babyName ?? 'Your Baby',
-      'expectedDeliveryDate': tracking.expectedDeliveryDate?.toIso8601String(),
+      'babyGender': tracking.babyGender,
+      'expectedDeliveryDate': expectedDeliveryDate?.toIso8601String(),
+      'confirmationDate': tracking.pregnancyConfirmedDate?.toIso8601String(),
+      'lastMenstrualPeriod': tracking.lastMenstrualPeriod?.toIso8601String(),
+      'isOverdue': isOverdue,
+      'weight': tracking.weight,
+      'height': tracking.height,
+      'isFirstChild': tracking.isFirstChild,
+      'medicalHistory': tracking.medicalHistory,
+      'symptoms': tracking.symptoms,
+      'medications': tracking.medications,
+      'vitals': tracking.vitals,
+      'calculationBaseDate': calculationBaseDate?.toIso8601String(),
     };
   }
 

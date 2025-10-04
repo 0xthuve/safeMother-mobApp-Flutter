@@ -47,31 +47,37 @@ class DeliveryDetailsForm extends StatefulWidget {
 
 class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
   final _formKey = GlobalKey<FormState>();
-  final _deliveryDateController = TextEditingController();
+  final _estimatedDueDateController = TextEditingController();
   final _pregnancyConfirmedController = TextEditingController();
   final _medicalHistoryController = TextEditingController();
   final _weightController = TextEditingController();
   
-  DateTime? _selectedDeliveryDate;
+  DateTime? _selectedEstimatedDueDate;
   DateTime? _selectedPregnancyDate;
   String? _firstChildValue;
   String? _pregnancyLossValue;
 
   @override
   void dispose() {
-    _deliveryDateController.dispose();
+    _estimatedDueDateController.dispose();
     _pregnancyConfirmedController.dispose();
     _medicalHistoryController.dispose();
     _weightController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context, bool isDeliveryDate) async {
+  Future<void> _selectDate(BuildContext context, bool isEstimatedDueDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: isEstimatedDueDate 
+          ? DateTime.now().add(const Duration(days: 180)) // Default to ~6 months from now for due date
+          : DateTime.now().subtract(const Duration(days: 30)), // Default to ~1 month ago for confirmation date
+      firstDate: isEstimatedDueDate 
+          ? DateTime.now().add(const Duration(days: 90)) // Minimum 3 months from now for due date
+          : DateTime.now().subtract(const Duration(days: 280)), // Up to 40 weeks ago for confirmation
+      lastDate: isEstimatedDueDate 
+          ? DateTime.now().add(const Duration(days: 365)) // Maximum 1 year from now for due date
+          : DateTime.now(), // Today is the latest for confirmation date
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
@@ -89,9 +95,9 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
     
     if (picked != null) {
       setState(() {
-        if (isDeliveryDate) {
-          _selectedDeliveryDate = picked;
-          _deliveryDateController.text = "${picked.day}/${picked.month}/${picked.year}";
+        if (isEstimatedDueDate) {
+          _selectedEstimatedDueDate = picked;
+          _estimatedDueDateController.text = "${picked.day}/${picked.month}/${picked.year}";
         } else {
           _selectedPregnancyDate = picked;
           _pregnancyConfirmedController.text = "${picked.day}/${picked.month}/${picked.year}";
@@ -226,13 +232,13 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                           key: _formKey,
                           child: Column(
                             children: [
-                              // Delivery Date (Optional)
+                              // Estimated Due Date (Required)
                               TextFormField(
-                                controller: _deliveryDateController,
+                                controller: _estimatedDueDateController,
                                 readOnly: true,
                                 style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 decoration: InputDecoration(
-                                  labelText: 'Delivery Date (Optional)',
+                                  labelText: 'Estimated Due Date *',
                                   labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                   filled: true,
                                   fillColor: const Color(0xFFF5F5F5),
@@ -240,10 +246,29 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                     borderRadius: BorderRadius.circular(14),
                                     borderSide: BorderSide.none,
                                   ),
-                                  prefixIcon: const Icon(Icons.calendar_today_outlined, color: Color(0xFFE91E63)),
+                                  prefixIcon: const Icon(Icons.calendar_month_outlined, color: Color(0xFFE91E63)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                                  helperText: 'When is your baby expected to arrive?',
+                                  helperStyle: const TextStyle(color: Color(0xFF9575CD), fontSize: 12),
                                 ),
                                 onTap: () => _selectDate(context, true),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please select your estimated due date';
+                                  }
+                                  // Validate that the due date is in the future and reasonable
+                                  if (_selectedEstimatedDueDate != null) {
+                                    final now = DateTime.now();
+                                    final daysDifference = _selectedEstimatedDueDate!.difference(now).inDays;
+                                    if (daysDifference < 90) {
+                                      return 'Due date should be at least 3 months from now';
+                                    }
+                                    if (daysDifference > 365) {
+                                      return 'Due date should be within a year from now';
+                                    }
+                                  }
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: 16),
                               
@@ -253,7 +278,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                 readOnly: true,
                                 style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 decoration: InputDecoration(
-                                  labelText: 'Pregnancy Confirmed Date',
+                                  labelText: 'Pregnancy Confirmed Date *',
                                   labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                   filled: true,
                                   fillColor: const Color(0xFFF5F5F5),
@@ -263,11 +288,25 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                   ),
                                   prefixIcon: const Icon(Icons.event_available_outlined, color: Color(0xFFE91E63)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                                  helperText: 'When did a doctor confirm your pregnancy?',
+                                  helperStyle: const TextStyle(color: Color(0xFF9575CD), fontSize: 12),
                                 ),
                                 onTap: () => _selectDate(context, false),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Please select pregnancy confirmation date';
+                                  }
+                                  // Validate that confirmation date is in the past
+                                  if (_selectedPregnancyDate != null) {
+                                    final now = DateTime.now();
+                                    if (_selectedPregnancyDate!.isAfter(now)) {
+                                      return 'Confirmation date cannot be in the future';
+                                    }
+                                    // Check if confirmation date is reasonable (not too far in the past)
+                                    final daysDifference = now.difference(_selectedPregnancyDate!).inDays;
+                                    if (daysDifference > 280) {
+                                      return 'Confirmation date seems too far in the past';
+                                    }
                                   }
                                   return null;
                                 },

@@ -193,7 +193,7 @@ class _SplashScreenState extends State<SplashScreen> {
               
               // Tagline
               Text(
-                'Your trusted companion',
+                'Empowering Every Step of Motherhood',
                 style: TextStyle(
                   fontSize: 16,
                   color: Color(0xFF9575CD),
