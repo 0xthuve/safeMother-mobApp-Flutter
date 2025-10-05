@@ -4,7 +4,12 @@ import '../models/pregnancy_tracking.dart';
 import '../models/medical_record.dart';
 import '../models/reminder.dart';
 import '../models/appointment.dart';
+import '../models/doctor.dart';
+import '../models/patient_doctor_link.dart';
+import '../models/symptom_log.dart';
 import 'session_manager.dart';
+import 'tips_service.dart';
+import 'firebase_service.dart';
 
 class BackendService {
   static const String pregnancyTrackingKey = 'pregnancy_tracking';
@@ -13,6 +18,7 @@ class BackendService {
   static const String appointmentsKey = 'appointments';
   static const String doctorsKey = 'doctors';
   static const String patientsKey = 'patients';
+  static const String symptomLogsKey = 'symptom_logs';
 
   // Singleton pattern
   static final BackendService _instance = BackendService._internal();
@@ -86,18 +92,36 @@ class BackendService {
 
     // Auto-calculate if we have LMP or confirmed date
     if (tracking.lastMenstrualPeriod != null || tracking.pregnancyConfirmedDate != null) {
-      calculationBaseDate = tracking.lastMenstrualPeriod ?? tracking.pregnancyConfirmedDate!;
-      final calculated = PregnancyTracking.calculatePregnancyWeek(calculationBaseDate);
-      currentWeek = calculated['weeks']!;
-      currentDay = calculated['days']!;
-
-      // Auto-calculate expected delivery date if not set
       DateTime? expectedDeliveryDate = tracking.expectedDeliveryDate;
-      if (expectedDeliveryDate == null && tracking.lastMenstrualPeriod != null) {
-        expectedDeliveryDate = PregnancyTracking.calculateExpectedDeliveryDate(tracking.lastMenstrualPeriod);
-      } else if (expectedDeliveryDate == null && tracking.pregnancyConfirmedDate != null) {
-        // If using confirmed date, assume it's about 4-6 weeks into pregnancy
-        expectedDeliveryDate = tracking.pregnancyConfirmedDate!.add(const Duration(days: 280 - 35)); // Subtract ~5 weeks
+      
+      if (tracking.lastMenstrualPeriod != null) {
+        // Use LMP for most accurate calculation
+        calculationBaseDate = tracking.lastMenstrualPeriod!;
+        final calculated = PregnancyTracking.calculatePregnancyWeek(calculationBaseDate);
+        currentWeek = calculated['weeks']!;
+        currentDay = calculated['days']!;
+        
+        // Auto-calculate expected delivery date if not set (280 days from LMP)
+        if (expectedDeliveryDate == null) {
+          expectedDeliveryDate = PregnancyTracking.calculateExpectedDeliveryDate(tracking.lastMenstrualPeriod);
+        }
+      } else if (tracking.pregnancyConfirmedDate != null) {
+        // Use confirmation date as the start of pregnancy journey (day 0)
+        calculationBaseDate = tracking.pregnancyConfirmedDate!;
+        final daysSinceConfirmation = DateTime.now().difference(calculationBaseDate).inDays;
+        currentWeek = (daysSinceConfirmation / 7).floor().clamp(0, 45);
+        currentDay = (daysSinceConfirmation % 7).clamp(0, 6);
+        
+        // Ensure no negative values
+        if (daysSinceConfirmation < 0) {
+          currentWeek = 0;
+          currentDay = 0;
+        }
+        
+        // Auto-calculate expected delivery date if not set (280 days from confirmation)
+        if (expectedDeliveryDate == null) {
+          expectedDeliveryDate = calculationBaseDate.add(const Duration(days: 280));
+        }
       }
 
       // Update tracking with calculated values
@@ -451,22 +475,31 @@ class BackendService {
     final userId = await SessionManager.getUserId();
     if (userId == null) return;
 
+    // Initialize tips service (will create default tips if none exist)
+    final tipsService = TipsService();
+    await tipsService.getTodaysTip(); // This will trigger initialization if needed
+
     // Initialize pregnancy tracking if not exists
     final existingTracking = await getPregnancyTracking(userId);
     if (existingTracking == null) {
+      // Use confirmation date approach (more realistic for new users)
+      final confirmationDate = DateTime.now().subtract(const Duration(days: 60)); // 60 days ago
+      final expectedDueDate = confirmationDate.add(const Duration(days: 280)); // 280 days from confirmation
+      
       final demoTracking = PregnancyTracking(
         userId: userId,
-        lastMenstrualPeriod: DateTime.now().subtract(const Duration(days: 140)), // ~20 weeks
-        pregnancyConfirmedDate: DateTime.now().subtract(const Duration(days: 120)),
-        currentWeek: 20,
-        currentDay: 0,
+        pregnancyConfirmedDate: confirmationDate,
+        expectedDeliveryDate: expectedDueDate,
+        currentWeek: 8, // 60 days / 7 = 8 weeks, 4 days
+        currentDay: 4,
         trimester: 'Second',
         weight: 65.0,
         height: 165.0,
         babyName: 'Baby',
         isFirstChild: true,
         hasPregnancyLoss: false,
-        symptoms: ['Morning sickness', 'Fatigue'],
+        medicalHistory: 'No significant medical history. Taking prenatal vitamins.',
+        symptoms: ['Morning sickness (reduced)', 'Increased appetite', 'Mild fatigue'],
         medications: ['Prenatal vitamins', 'Folic acid'],
         vitals: {
           'bloodPressure': '120/80',
@@ -570,6 +603,294 @@ class BackendService {
     }
   }
 
+  // ========== DOCTOR MANAGEMENT OPERATIONS ==========
+
+  Future<List<Doctor>> getAllDoctors() async {
+    try {
+      // Get doctors from Firebase instead of SharedPreferences
+      final doctorsData = await FirebaseService.getAllDoctors();
+      
+      return doctorsData.map((data) => Doctor.fromMap(data)).toList();
+    } catch (e) {
+      print('Error fetching doctors: $e');
+      return [];
+    }
+  }
+
+  Future<Doctor?> getDoctorById(String doctorId) async {
+    try {
+      // Get doctor from Firebase instead of SharedPreferences
+      final doctorData = await FirebaseService.getDoctorById(doctorId);
+      
+      if (doctorData != null) {
+        return Doctor.fromMap(doctorData);
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching doctor by ID: $e');
+      return null;
+    }
+  }
+
+  Future<List<Doctor>> getDoctorsBySpecialization(String specialization) async {
+    try {
+      // Get doctors by specialization from Firebase
+      final doctorsData = await FirebaseService.getDoctorsBySpecialization(specialization);
+      
+      return doctorsData.map((data) => Doctor.fromMap(data)).toList();
+    } catch (e) {
+      print('Error fetching doctors by specialization: $e');
+      return [];
+    }
+  }
+
+  Future<List<String>> getAvailableSpecializations() async {
+    try {
+      // Get available specializations from Firebase
+      return await FirebaseService.getAvailableSpecializations();
+    } catch (e) {
+      print('Error fetching specializations: $e');
+      return [];
+    }
+  }
+
+  Future<List<PatientDoctorLink>> getLinkedDoctors(String patientId) async {
+    // This method is now deprecated - use Firebase methods instead
+    return [];
+  }
+
+  Future<bool> linkPatientWithDoctor(String patientId, String doctorId) async {
+    try {
+      print('DEBUG: Checking existing requests - PatientID: $patientId, DoctorID: $doctorId');
+      
+      // Check if there's already a request/link for this patient-doctor pair
+      final existingLink = await FirebaseService.getPatientDoctorLink(patientId, doctorId);
+      
+      if (existingLink != null) {
+        print('DEBUG: Request already exists with status: ${existingLink['status']}');
+        return false; // Request already exists
+      }
+      
+      print('DEBUG: Creating new patient request in Firebase - PatientID: $patientId, DoctorID: $doctorId');
+      
+      // Create patient-doctor link in Firebase
+      final linkId = await FirebaseService.createPatientDoctorLink(
+        patientId: patientId,
+        doctorId: doctorId,
+        status: 'requested',
+      );
+      
+      if (linkId != null) {
+        print('DEBUG: Patient request created successfully in Firebase. Link ID: $linkId');
+        return true;
+      } else {
+        print('DEBUG: Failed to create patient request in Firebase');
+        return false;
+      }
+    } catch (e) {
+      print('Error linking patient with doctor: $e');
+      return false;
+    }
+  }
+
+  Future<bool> unlinkPatientFromDoctor(String patientId, String doctorId) async {
+    try {
+      final existingLinks = await getLinkedDoctors(patientId);
+      
+      // Find and deactivate the link
+      final linkIndex = existingLinks.indexWhere((link) => 
+        link.doctorId == doctorId && link.isActive
+      );
+      
+      if (linkIndex == -1) {
+        return false; // Link not found
+      }
+
+      // Deactivate the link instead of removing it (for audit trail)
+      existingLinks[linkIndex] = existingLinks[linkIndex].copyWith(
+        isActive: false,
+        status: 'unlinked',
+        updatedAt: DateTime.now(),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final linksData = jsonEncode(existingLinks.map((l) => l.toMap()).toList());
+      await prefs.setString('patient_doctor_links_$patientId', linksData);
+
+      return true;
+    } catch (e) {
+      print('Error unlinking patient from doctor: $e');
+      return false;
+    }
+  }
+
+  // ========== DOCTOR-SIDE PATIENT MANAGEMENT ==========
+
+  // Get all patient requests for a doctor from Firebase
+  Future<List<PatientDoctorLink>> getPatientRequestsForDoctor(String doctorId) async {
+    try {
+      print('DEBUG: Looking for requests for doctorId: $doctorId in Firebase');
+      
+      final requestsData = await FirebaseService.getPatientRequestsForDoctor(doctorId);
+      
+      List<PatientDoctorLink> requests = [];
+      
+      for (final data in requestsData) {
+        requests.add(PatientDoctorLink(
+          id: data['id'],
+          patientId: data['patientId'],
+          doctorId: data['doctorId'],
+          status: data['status'],
+          isActive: data['isActive'],
+          linkedDate: data['linkedDate'],
+          createdAt: data['createdAt'],
+          updatedAt: data['updatedAt'],
+        ));
+      }
+      
+      print('DEBUG: Total requests found for doctor $doctorId in Firebase: ${requests.length}');
+      return requests;
+    } catch (e) {
+      print('Error getting patient requests for doctor from Firebase: $e');
+      return [];
+    }
+  }
+
+  // Get all accepted patients for a doctor from Firebase
+  Future<List<PatientDoctorLink>> getAcceptedPatientsForDoctor(String doctorId) async {
+    try {
+      print('DEBUG: Looking for accepted patients for doctorId: $doctorId in Firebase');
+      
+      final patientsData = await FirebaseService.getAcceptedPatientsForDoctor(doctorId);
+      
+      List<PatientDoctorLink> patients = [];
+      
+      for (final data in patientsData) {
+        patients.add(PatientDoctorLink(
+          id: data['id'],
+          patientId: data['patientId'],
+          doctorId: data['doctorId'],
+          status: data['status'],
+          isActive: data['isActive'],
+          linkedDate: data['linkedDate'],
+          createdAt: data['createdAt'],
+          updatedAt: data['updatedAt'],
+        ));
+      }
+      
+      print('DEBUG: Total accepted patients found for doctor $doctorId in Firebase: ${patients.length}');
+      return patients;
+    } catch (e) {
+      print('Error getting accepted patients for doctor from Firebase: $e');
+      return [];
+    }
+  }
+
+  // Get all linked patients for a doctor (all statuses)
+  Future<List<PatientDoctorLink>> getLinkedPatientsForDoctor(String doctorId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().where((key) => key.startsWith('patient_doctor_links_'));
+      
+      List<PatientDoctorLink> allPatients = [];
+      
+      for (final key in keys) {
+        final linksData = prefs.getString(key);
+        if (linksData != null) {
+          final List<dynamic> json = jsonDecode(linksData);
+          final links = json.map((l) => PatientDoctorLink.fromMap(l)).toList();
+          
+          // Filter for this doctor's patients (all statuses)
+          final doctorPatients = links.where((link) => 
+            link.doctorId == doctorId && 
+            link.isActive
+          ).toList();
+          
+          allPatients.addAll(doctorPatients);
+        }
+      }
+      
+      // Sort by most recent first
+      allPatients.sort((a, b) => b.linkedDate.compareTo(a.linkedDate));
+      return allPatients;
+    } catch (e) {
+      print('Error getting linked patients for doctor: $e');
+      return [];
+    }
+  }
+
+  // Accept a patient request in Firebase
+  Future<bool> acceptPatientRequest(String doctorId, String patientId, String linkId) async {
+    try {
+      print('DEBUG: Accepting patient request in Firebase - LinkID: $linkId');
+      
+      final success = await FirebaseService.acceptPatientRequest(linkId);
+      
+      if (success) {
+        print('DEBUG: Patient request accepted successfully in Firebase');
+        return true;
+      } else {
+        print('DEBUG: Failed to accept patient request in Firebase');
+        return false;
+      }
+    } catch (e) {
+      print('Error accepting patient request: $e');
+      return false;
+    }
+  }
+
+  // Decline a patient request in Firebase
+  Future<bool> declinePatientRequest(String doctorId, String patientId, String linkId) async {
+    try {
+      print('DEBUG: Declining patient request in Firebase - LinkID: $linkId');
+      
+      final success = await FirebaseService.declinePatientRequest(linkId);
+      
+      if (success) {
+        print('DEBUG: Patient request declined successfully in Firebase');
+        return true;
+      } else {
+        print('DEBUG: Failed to decline patient request in Firebase');
+        return false;
+      }
+    } catch (e) {
+      print('Error declining patient request: $e');
+      return false;
+    }
+  }
+
+  // Remove an accepted patient (unlink) permanently in Firebase
+  Future<bool> removePatient(String doctorId, String patientId, String linkId) async {
+    try {
+      print('DEBUG: Removing patient from doctor in Firebase - LinkID: $linkId');
+      
+      final success = await FirebaseService.removePatientFromDoctor(linkId);
+      
+      if (success) {
+        print('DEBUG: Patient removed from doctor successfully in Firebase');
+        return true;
+      } else {
+        print('DEBUG: Failed to remove patient from doctor in Firebase');
+        return false;
+      }
+    } catch (e) {
+      print('Error removing patient: $e');
+      return false;
+    }
+  }
+
+  // ========== PATIENT COUNT OPERATIONS ==========
+
+  // Get total patient count from Firebase
+  Future<int> getTotalPatientCount() async {
+    try {
+      return await FirebaseService.getTotalPatientCount();
+    } catch (e) {
+      print('Error getting total patient count: $e');
+      return 0;
+    }
+  }
+
   // ========== UTILITY METHODS ==========
 
   Future<Map<String, dynamic>> getDashboardSummary(String userId) async {
@@ -602,11 +923,147 @@ class BackendService {
     };
   }
 
+  // ========== PATIENT'S LINKED DOCTORS OPERATIONS ==========
+
+  // Get all linked doctors for a patient (both pending and accepted)
+  Future<List<Map<String, dynamic>>> getLinkedDoctorsForPatient(String patientId) async {
+    try {
+      print('DEBUG: Getting linked doctors for patient: $patientId');
+      
+      final linkedDoctors = await FirebaseService.getLinkedDoctorsForPatient(patientId);
+      
+      print('DEBUG: Found ${linkedDoctors.length} linked doctors for patient $patientId');
+      return linkedDoctors;
+    } catch (e) {
+      print('Error getting linked doctors for patient: $e');
+      return [];
+    }
+  }
+
+  // ========== SYMPTOM LOGS OPERATIONS (FIRESTORE) ==========
+
+  Future<List<SymptomLog>> getSymptomLogs(String patientId) async {
+    try {
+      // Get symptom logs from Firestore
+      final logsData = await FirebaseService.getSymptomLogsForPatient(patientId);
+      
+      return logsData.map((data) => SymptomLog.fromMap(data)).toList()
+        ..sort((a, b) => b.logDate.compareTo(a.logDate));
+    } catch (e) {
+      print('Error getting symptom logs from Firestore: $e');
+      
+      // Fallback to SharedPreferences (for migration period)
+      final prefs = await SharedPreferences.getInstance();
+      final logsData = prefs.getString('${symptomLogsKey}_$patientId');
+      
+      if (logsData == null) return [];
+      
+      final List<dynamic> json = jsonDecode(logsData);
+      final logs = json.map((l) => SymptomLog.fromMap(l)).toList();
+      
+      return logs..sort((a, b) => b.logDate.compareTo(a.logDate));
+    }
+  }
+
+  Future<bool> saveSymptomLog(SymptomLog log) async {
+    try {
+      // Save to Firestore
+      final logId = await FirebaseService.saveSymptomLog(log.toMap());
+      
+      if (logId != null) {
+        print('Symptom log saved successfully to Firestore with ID: $logId');
+        return true;
+      } else {
+        print('Failed to save symptom log to Firestore');
+        return false;
+      }
+    } catch (e) {
+      print('Error saving symptom log to Firestore: $e');
+      
+      // Fallback to SharedPreferences
+      try {
+        final logs = await getSymptomLogs(log.patientId);
+        
+        // Generate new ID if not provided
+        final newLog = log.id == null 
+            ? log.copyWith(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+              )
+            : log;
+        
+        logs.add(newLog);
+        
+        final prefs = await SharedPreferences.getInstance();
+        final logsData = jsonEncode(logs.map((l) => l.toMap()).toList());
+        await prefs.setString('${symptomLogsKey}_${log.patientId}', logsData);
+        return true;
+      } catch (fallbackError) {
+        print('Error saving symptom log to SharedPreferences fallback: $fallbackError');
+        return false;
+      }
+    }
+  }
+
+  Future<List<SymptomLog>> getRecentSymptomLogs(String patientId, {int days = 7}) async {
+    final logs = await getSymptomLogs(patientId);
+    final cutoffDate = DateTime.now().subtract(Duration(days: days));
+    
+    return logs.where((log) => log.logDate.isAfter(cutoffDate)).toList();
+  }
+
+  // Method for doctors to get all symptom logs for their patients
+  Future<Map<String, List<SymptomLog>>> getSymptomLogsForDoctorPatients(String doctorId) async {
+    try {
+      final acceptedPatients = await getAcceptedPatientsForDoctor(doctorId);
+      final Map<String, List<SymptomLog>> patientLogs = {};
+      
+      for (final patientLink in acceptedPatients) {
+        final logs = await getSymptomLogs(patientLink.patientId);
+        if (logs.isNotEmpty) {
+          patientLogs[patientLink.patientId] = logs;
+        }
+      }
+      
+      return patientLogs;
+    } catch (e) {
+      print('Error getting symptom logs for doctor patients: $e');
+      return {};
+    }
+  }
+
+  // Get symptom logs by date range (useful for specific period analysis)
+  Future<List<SymptomLog>> getSymptomLogsByDateRange(
+    String patientId, 
+    DateTime startDate, 
+    DateTime endDate
+  ) async {
+    try {
+      final logsData = await FirebaseService.getSymptomLogsByDateRange(
+        patientId, 
+        startDate, 
+        endDate
+      );
+      
+      return logsData.map((data) => SymptomLog.fromMap(data)).toList()
+        ..sort((a, b) => b.logDate.compareTo(a.logDate));
+    } catch (e) {
+      print('Error getting symptom logs by date range: $e');
+      
+      // Fallback: filter existing logs
+      final allLogs = await getSymptomLogs(patientId);
+      return allLogs.where((log) => 
+        log.logDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+        log.logDate.isBefore(endDate.add(const Duration(days: 1)))
+      ).toList();
+    }
+  }
+
   Future<void> clearAllData(String userId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('${pregnancyTrackingKey}_$userId');
     await prefs.remove('${medicalRecordsKey}_$userId');
     await prefs.remove('${remindersKey}_$userId');
     await prefs.remove('${appointmentsKey}_user_$userId');
+    await prefs.remove('${symptomLogsKey}_$userId');
   }
 }

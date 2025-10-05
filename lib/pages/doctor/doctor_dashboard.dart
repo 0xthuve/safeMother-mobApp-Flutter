@@ -3,9 +3,12 @@ import '../../navigation/doctor_navigation_handler.dart';
 import '../../navigation/doctor_bottom_navigation.dart';
 import '../../models/doctor.dart';
 import '../../models/appointment.dart';
+import '../../models/patient_doctor_link.dart';
 import '../../services/route_guard.dart';
 import '../../services/user_management_service.dart';
 import '../../services/session_manager.dart';
+import '../../services/backend_service.dart';
+import '../patient_requests_page.dart';
 
 
 class DoctorDashboard extends StatefulWidget {
@@ -17,8 +20,12 @@ class DoctorDashboard extends StatefulWidget {
 
 class _DoctorDashboardState extends State<DoctorDashboard> {
   final int _currentIndex = 0;
+  final BackendService _backendService = BackendService();
   Doctor? _currentDoctor;
   List<Appointment> _todayAppointments = [];
+  List<PatientDoctorLink> _pendingRequests = [];
+  List<PatientDoctorLink> _acceptedPatients = [];
+  int _totalPatientsCount = 0;
   bool _isLoading = true;
 
   @override
@@ -33,8 +40,26 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       final userData = await UserManagementService.getCurrentUserData();
       final userName = await SessionManager.getUserName();
       final userEmail = await SessionManager.getUserEmail();
+      final userId = await SessionManager.getUserId();
       
       final now = DateTime.now();
+      
+      // Load pending patient requests, accepted patients, and total patient count
+      List<PatientDoctorLink> pendingRequests = [];
+      List<PatientDoctorLink> acceptedPatients = [];
+      int totalPatientsCount = 0;
+      if (userId != null) {
+        try {
+          // Use the Firebase UID directly (no hash conversion needed)
+          print('Doctor dashboard: userId=$userId');
+          
+          pendingRequests = await _backendService.getPatientRequestsForDoctor(userId);
+          acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
+          totalPatientsCount = await _backendService.getTotalPatientCount();
+        } catch (e) {
+          print('Error loading patient data: $e');
+        }
+      }
       
       if (userData != null) {
         // Create doctor object from real user data
@@ -49,45 +74,23 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           experience: userData['experience']?.toString() ?? '0 years',
           bio: userData['bio'] ?? 'Healthcare professional dedicated to patient care.',
           rating: (userData['rating'] as num?)?.toDouble() ?? 4.5,
-          totalPatients: (userData['totalPatients'] as int?) ?? (userData['reviewCount'] as int?) ?? 0,
+          totalPatients: acceptedPatients.length, // Use actual accepted patients count
           isAvailable: userData['isAvailable'] ?? true,
           createdAt: now,
           updatedAt: now,
         );
 
-        // Demo appointments for now - in a real app, these would come from a database
-        final demoAppointments = <Appointment>[
-          Appointment(
-            id: 101,
-            doctorId: doctorData.id ?? 1,
-            patientId: 1001,
-            appointmentDate: now,
-            timeSlot: '09:00 AM - 09:30 AM',
-            status: 'scheduled',
-            reason: 'Routine prenatal checkup',
-            notes: '',
-            prescription: '',
-            createdAt: now,
-            updatedAt: now,
-          ),
-          Appointment(
-            id: 102,
-            doctorId: doctorData.id ?? 1,
-            patientId: 1002,
-            appointmentDate: now,
-            timeSlot: '10:00 AM - 10:30 AM',
-            status: 'scheduled',
-            reason: 'Ultrasound review',
-            notes: '',
-            prescription: '',
-            createdAt: now,
-            updatedAt: now,
-          ),
-        ];
+        // No hardcoded appointments - use real appointment data only
+        final List<Appointment> realAppointments = [];
+        // TODO: In future, load real appointments from database based on accepted patients
+        // For now, keeping empty to show only real data
 
         setState(() {
           _currentDoctor = doctorData;
-          _todayAppointments = demoAppointments;
+          _todayAppointments = realAppointments;
+          _pendingRequests = pendingRequests;
+          _acceptedPatients = acceptedPatients;
+          _totalPatientsCount = totalPatientsCount;
           _isLoading = false;
         });
       } else {
@@ -103,7 +106,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           experience: 'Demo Mode',
           bio: 'Demo healthcare professional.',
           rating: 4.5,
-          totalPatients: 0,
+          totalPatients: acceptedPatients.length, // Use actual accepted patients count
           isAvailable: true,
           createdAt: now,
           updatedAt: now,
@@ -111,7 +114,10 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
 
         setState(() {
           _currentDoctor = demoDoctor;
-          _todayAppointments = [];
+          _todayAppointments = []; // No hardcoded appointments
+          _pendingRequests = pendingRequests;
+          _acceptedPatients = acceptedPatients;
+          _totalPatientsCount = totalPatientsCount;
           _isLoading = false;
         });
       }
@@ -133,7 +139,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         experience: 'Not available',
         bio: 'Healthcare professional.',
         rating: 4.5,
-        totalPatients: 0,
+        totalPatients: 0, // Will be 0 in error case anyway
         isAvailable: true,
         createdAt: now,
         updatedAt: now,
@@ -142,6 +148,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       setState(() {
         _currentDoctor = fallbackDoctor;
         _todayAppointments = [];
+        _pendingRequests = [];
+        _acceptedPatients = [];
+        _totalPatientsCount = 0; // Will be 0 in error case anyway
         _isLoading = false;
       });
     }
@@ -251,7 +260,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       Expanded(
                         child: _buildStatCard(
                           'Total Patients',
-                          _currentDoctor?.totalPatients.toString() ?? '0',
+                          _totalPatientsCount.toString(),
                           Icons.people,
                           const Color(0xFF1E88E5), // Lighter blue
                         ),
@@ -262,20 +271,32 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildStatCard(
-                          'Rating',
-                          _currentDoctor?.rating.toString() ?? '0.0',
-                          Icons.star,
-                          const Color(0xFF42A5F5), // Medium blue
+                        child: GestureDetector(
+                          onTap: () {
+                            // Navigate to doctor patient management page (My Patients tab)
+                            DoctorNavigationHandler.navigateToPatientManagement(context, initialTab: 0);
+                          },
+                          child: _buildStatCard(
+                            'My Patients',
+                            _acceptedPatients.length.toString(),
+                            Icons.medical_services,
+                            const Color(0xFF42A5F5), // Medium blue
+                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _buildStatCard(
-                          'Available',
-                          _currentDoctor?.isAvailable == true ? 'Yes' : 'No',
-                          Icons.check_circle,
-                          const Color(0xFF64B5F6), // Light blue
+                        child: GestureDetector(
+                          onTap: () {
+                            // Navigate to doctor patient management page (Requests tab)
+                            DoctorNavigationHandler.navigateToPatientManagement(context, initialTab: 1);
+                          },
+                          child: _buildStatCard(
+                            'Pending Requests',
+                            _pendingRequests.length.toString(),
+                            Icons.pending_actions,
+                            const Color(0xFF64B5F6), // Light blue
+                          ),
                         ),
                       ),
                     ],
@@ -316,6 +337,61 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
 
                   const SizedBox(height: 24),
 
+                  // Patient Requests Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Patient Requests',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      if (_pendingRequests.isNotEmpty)
+                        TextButton(
+                          onPressed: () async {
+                            final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const PatientRequestsPage(),
+                              ),
+                            );
+                            // Refresh dashboard data when returning
+                            if (result == true || result == null) {
+                              _loadDashboardData();
+                            }
+                          },
+                          child: const Text('View All'),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_pendingRequests.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'No pending patient requests',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ...(_pendingRequests.take(3).map((request) => _buildPatientRequestCard(request))),
+
+                  const SizedBox(height: 24),
+
                   // Alerts Section
                   const Text(
                     'Alerts',
@@ -326,28 +402,24 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildAlertCard(
-                    'Sophia Carter',
-                    'High blood pressure detected',
-                    Icons.warning,
-                    Colors.red,
-                    'Now',
-                  ),
-                  const SizedBox(height: 8),
-                  _buildAlertCard(
-                    'Olivia Bennett',
-                    'Missed appointment',
-                    Icons.calendar_today,
-                    Colors.orange,
-                    'Yesterday',
-                  ),
-                  const SizedBox(height: 8),
-                  _buildAlertCard(
-                    'Emma Hayes',
-                    'Lab results ready for review',
-                    Icons.science,
-                    Colors.blue,
-                    '2 hours ago',
+                  // Show real alerts only - no hardcoded data
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'No alerts at this time',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -483,69 +555,94 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
 
 
 
-  Widget _buildAlertCard(String patientName, String message, IconData icon, Color color, String time) {
+
+
+  Widget _buildPatientRequestCard(PatientDoctorLink request) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
-            blurRadius: 3,
-            offset: const Offset(0, 1),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
+              color: const Color(0xFF1976D2).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(25),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 16,
+            child: const Icon(
+              Icons.person_add,
+              color: Color(0xFF1976D2),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  patientName,
+                  'Patient ID: ${request.patientId}',
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF333333),
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
-                  message,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
+                  'Requested: ${_formatDateTime(request.createdAt)}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
                   ),
                 ),
               ],
             ),
           ),
-          Text(
-            time,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[500],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Text(
+              'PENDING',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange,
+              ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays} days ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hours ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minutes ago';
+    } else {
+      return 'Just now';
+    }
   }
 
   Color _getStatusColor(String status) {

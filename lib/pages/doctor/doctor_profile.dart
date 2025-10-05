@@ -4,6 +4,7 @@ import '../../navigation/doctor_bottom_navigation.dart';
 import '../../models/doctor.dart';
 import '../../services/session_manager.dart';
 import '../../services/user_management_service.dart';
+import '../../services/backend_service.dart';
 import '../../signin.dart';
 import 'doctor_edit_profile.dart';
 
@@ -16,6 +17,7 @@ class DoctorProfile extends StatefulWidget {
 
 class _DoctorProfileState extends State<DoctorProfile> {
   final int _currentIndex = 3; // Profile is still index 3 (0-based: Dashboard, Patients, Appointments, Profile)
+  final BackendService _backendService = BackendService();
   Doctor? _doctor;
   bool _isLoading = true;
 
@@ -35,6 +37,19 @@ class _DoctorProfileState extends State<DoctorProfile> {
       final userData = await UserManagementService.getCurrentUserData();
       final userName = await SessionManager.getUserName();
       final userEmail = await SessionManager.getUserEmail();
+      final userId = await SessionManager.getUserId();
+      
+      // Get actual patient count from Firebase
+      int actualPatientCount = 0;
+      if (userId != null) {
+        try {
+          final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
+          actualPatientCount = acceptedPatients.length;
+          print('Doctor Profile: Found $actualPatientCount accepted patients for doctor $userId');
+        } catch (e) {
+          print('Error getting patient count: $e');
+        }
+      }
       
       final now = DateTime.now();
       
@@ -50,7 +65,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
           experience: userData['experience']?.toString() ?? '0 years',
           bio: userData['bio'] ?? 'Healthcare professional dedicated to patient care.',
           rating: (userData['rating'] as num?)?.toDouble() ?? 4.5,
-          totalPatients: (userData['totalPatients'] as int?) ?? (userData['reviewCount'] as int?) ?? 0,
+          totalPatients: actualPatientCount, // Use actual count from Firebase
           isAvailable: userData['isAvailable'] ?? true,
           createdAt: now,
           updatedAt: now,
@@ -73,7 +88,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
           experience: 'Demo Mode',
           bio: 'Demo healthcare professional.',
           rating: 4.5,
-          totalPatients: 0,
+          totalPatients: actualPatientCount, // Use actual count from Firebase
           isAvailable: true,
           createdAt: now,
           updatedAt: now,
@@ -86,9 +101,21 @@ class _DoctorProfileState extends State<DoctorProfile> {
       }
     } catch (e) {
       print('Error loading doctor data: $e');
-      // Fallback data
+      // Fallback data - still try to get patient count
       final userName = await SessionManager.getUserName();
       final userEmail = await SessionManager.getUserEmail();
+      final userId = await SessionManager.getUserId();
+      
+      int fallbackPatientCount = 0;
+      if (userId != null) {
+        try {
+          final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
+          fallbackPatientCount = acceptedPatients.length;
+        } catch (e2) {
+          print('Error getting patient count in fallback: $e2');
+        }
+      }
+      
       final now = DateTime.now();
       
       final fallbackDoctor = Doctor(
@@ -102,7 +129,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
         experience: 'Not available',
         bio: 'Healthcare professional.',
         rating: 4.5,
-        totalPatients: 0,
+        totalPatients: fallbackPatientCount, // Use actual count even in error case
         isAvailable: true,
         createdAt: now,
         updatedAt: now,
@@ -196,10 +223,6 @@ class _DoctorProfileState extends State<DoctorProfile> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.star, color: Colors.yellow, size: 18),
-                                const SizedBox(width: 4),
-                                Text('${_doctor!.rating}', style: const TextStyle(color: Colors.white)),
-                                const SizedBox(width: 16),
                                 const Icon(Icons.people, color: Colors.white, size: 18),
                                 const SizedBox(width: 4),
                                 Text('${_doctor!.totalPatients} patients', style: const TextStyle(color: Colors.white)),

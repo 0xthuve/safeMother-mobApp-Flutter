@@ -3,7 +3,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'patientDashboard.dart';
 import 'services/session_manager.dart';
 import 'services/user_management_service.dart';
+import 'services/backend_service.dart';
+import 'models/doctor.dart';
 import 'pages/edit_profile.dart';
+
 import 'signin.dart';
 
 void main() {
@@ -48,6 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userContact = '';
   String _userRole = 'Mother';
   bool _isLoading = true;
+  List<Map<String, dynamic>> _assignedDoctors = [];
 
 
   final TextEditingController _nameController = TextEditingController();
@@ -114,6 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _loadUserData();
+    _loadAssignedDoctor();
   }
 
   Future<void> _loadUserData() async {
@@ -161,6 +166,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadAssignedDoctor() async {
+    try {
+      final userId = await SessionManager.getUserId();
+      if (userId != null) {
+        // Get linked doctors and find all accepted ones
+        final backendService = BackendService();
+        final linkedDoctors = await backendService.getLinkedDoctorsForPatient(userId);
+        
+        // Find all accepted doctors (assigned doctors)
+        final acceptedDoctors = linkedDoctors.where((doctor) => doctor['status'] == 'accepted').toList();
+        
+        if (mounted) {
+          setState(() {
+            _assignedDoctors = acceptedDoctors;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading assigned doctors: $e');
     }
   }
 
@@ -684,75 +711,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Linked Doctors',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111611),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No doctors linked yet.',
-                  style: TextStyle(
-                    color: Color(0xFF638763),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Add functionality to link doctors
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE91E63),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Add Doctor',
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text(
-                      'Close',
-                      style: TextStyle(
-                        color: Color(0xFF638763),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        return _DoctorSelectionDialog();
       },
     );
   }
@@ -1243,6 +1202,28 @@ void _showPrivacySettingsPopup() {
                       _buildSettingRow('Change Password', _showChangePasswordPopup),
                       _buildSettingRow('Notification Preferences', _showNotificationPreferencesPopup),
                       
+                      // Assigned Doctor Section - Always show
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.only(
+                          top: 16,
+                          left: 16,
+                          right: 16,
+                          bottom: 8,
+                        ),
+                        child: const Text(
+                          'My Doctors',
+                          style: TextStyle(
+                            color: Color(0xFF111611),
+                            fontSize: 18,
+                            fontFamily: 'Lexend',
+                            fontWeight: FontWeight.w700,
+                            height: 1.28,
+                          ),
+                        ),
+                      ),
+                      _buildAssignedDoctorCard(),
+                      
                       // Family & Doctors Section
                       Container(
                         width: double.infinity,
@@ -1431,6 +1412,625 @@ void _showPrivacySettingsPopup() {
         trailing: const Icon(Icons.chevron_right, color: Color(0xFF638763)),
         onTap: onTap,
       ),
+    );
+  }
+
+  Widget _buildQuickActionButton(String title, IconData icon, VoidCallback onTap) {
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 18),
+      label: Text(title),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFFE91E63),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssignedDoctorCard() {
+    // Always show the section, even when no doctors are assigned
+    if (_assignedDoctors.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFFE91E63).withOpacity(0.3),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.purple.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.medical_services_outlined,
+              size: 48,
+              color: const Color(0xFFE91E63).withOpacity(0.5),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'No Doctors Assigned',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF5A5A5A),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Visit "My Doctors" to connect with healthcare providers',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF5A5A5A),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Show all assigned doctors
+    return Column(
+      children: _assignedDoctors.map((doctor) => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: const Color(0xFF4CAF50).withOpacity(0.3),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Doctor Avatar
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Center(
+                    child: Text(
+                      (doctor['doctorName'] ?? 'Dr')
+                          .split(' ')
+                          .map((n) => n.isNotEmpty ? n[0] : '')
+                          .take(2)
+                          .join()
+                          .toUpperCase(),
+                      style: const TextStyle(
+                        color: Color(0xFF4CAF50),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(width: 12),
+                
+                // Doctor Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Dr. ${doctor['doctorName'] ?? 'Unknown Doctor'}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF111611),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        doctor['specialization'] ?? 'General Practice',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF4CAF50),
+                        ),
+                      ),
+                      Text(
+                        doctor['hospital'] ?? 'Unknown Hospital',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF5A5A5A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Status Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'ACTIVE',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Doctor Details
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F9FA),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  if (doctor['yearsExperience'] != null) ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.work, size: 16, color: Color(0xFF5A5A5A)),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${doctor['yearsExperience']} years experience',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF5A5A5A),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                  ],
+                  Row(
+                    children: [
+                      const Icon(Icons.email, size: 16, color: Color(0xFF5A5A5A)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          doctor['doctorEmail'] ?? 'Contact via app',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF5A5A5A),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.phone, size: 16, color: Color(0xFF5A5A5A)),
+                      const SizedBox(width: 8),
+                      Text(
+                        doctor['doctorPhone'] ?? 'Contact via app',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF5A5A5A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      )).toList(),
+    );
+  }
+}
+
+
+// Doctor Selection Dialog Widget
+class _DoctorSelectionDialog extends StatefulWidget {
+  @override
+  State<_DoctorSelectionDialog> createState() => _DoctorSelectionDialogState();
+}
+
+class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
+  final BackendService _backendService = BackendService();
+  List<Doctor> _doctors = [];
+  Doctor? _selectedDoctor;
+  Doctor? _currentLinkedDoctor;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDoctors();
+    _loadCurrentLinkedDoctor();
+  }
+
+  Future<void> _loadDoctors() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      print('Loading doctors from Firebase database...');
+      
+      // Get real doctors from Firebase database who registered through doctor signup portal
+      final doctors = await _backendService.getAllDoctors();
+      
+      print('Found ${doctors.length} doctors in the database');
+      
+      if (doctors.isEmpty) {
+        setState(() {
+          _errorMessage = 'No healthcare professionals found in the database.\n\nMake sure doctors have registered through the signup portal with:\n• Account Type: Healthcare\n• Role: Doctor';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _doctors = doctors;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading doctors from Firebase: $e');
+      setState(() {
+        _errorMessage = 'Failed to load healthcare professionals from database.\n\nError: ${e.toString()}\n\nThis could be due to:\n• Firebase permission issues\n• Network connectivity problems\n• No doctors registered yet\n\nPlease ensure doctors have signed up through the doctor portal.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadCurrentLinkedDoctor() async {
+    try {
+      final userId = await SessionManager.getUserId();
+      if (userId != null) {
+        final linkedDoctors = await _backendService.getLinkedDoctors(userId);
+        if (linkedDoctors.isNotEmpty) {
+          final activeLink = linkedDoctors.firstWhere(
+            (link) => link.isActive,
+            orElse: () => linkedDoctors.first,
+          );
+          
+          // Find the doctor from our sample doctors (convert string ID to int)
+          final doctorId = int.tryParse(activeLink.doctorId) ?? 0;
+          final doctor = _doctors.firstWhere(
+            (doc) => doc.id == doctorId,
+            orElse: () => _doctors.isNotEmpty ? _doctors.first : Doctor(
+              id: doctorId,
+              name: 'Unknown Doctor',
+              email: '',
+              phone: '',
+              specialization: 'Unknown',
+              licenseNumber: '',
+              hospital: 'Unknown',
+              experience: '0 years',
+              bio: 'No information available',
+              profileImage: '',
+              rating: 0.0,
+              totalPatients: 0,
+              isAvailable: true,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          );
+          
+          setState(() {
+            _currentLinkedDoctor = doctor;
+            _selectedDoctor = doctor;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading current linked doctor: $e');
+    }
+  }
+
+  Future<void> _linkWithDoctor() async {
+    if (_selectedDoctor == null) return;
+
+    try {
+      final userId = await SessionManager.getUserId();
+      if (userId == null) return;
+
+      // First unlink any current doctor
+      if (_currentLinkedDoctor != null) {
+        await _backendService.unlinkPatientFromDoctor(userId, _currentLinkedDoctor!.id?.toString() ?? '0');
+      }
+
+      // Link with selected doctor
+      final success = await _backendService.linkPatientWithDoctor(userId, _selectedDoctor!.firebaseUid ?? _selectedDoctor!.id?.toString() ?? '0');
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Request sent to ${_selectedDoctor!.name}. Waiting for approval.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        Navigator.of(context).pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send request to doctor'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text(
+        'Select Your Doctor',
+        style: TextStyle(
+          color: Color(0xFF7B1FA2),
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 400,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_currentLinkedDoctor != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E8),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF4CAF50)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Currently Linked:',
+                      style: TextStyle(
+                        color: Color(0xFF4CAF50),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _currentLinkedDoctor!.name,
+                      style: const TextStyle(
+                        color: Color(0xFF2E7D32),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      _currentLinkedDoctor!.specialization,
+                      style: const TextStyle(
+                        color: Color(0xFF4CAF50),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Select a new doctor to change your current selection:',
+                style: TextStyle(
+                  color: Color(0xFF5A5A5A),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 8),
+            ] else ...[
+              const Text(
+                'Select a doctor to guide your pregnancy journey:',
+                style: TextStyle(
+                  color: Color(0xFF5A5A5A),
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B1FA2)),
+                      ),
+                    )
+                  : _errorMessage != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                                size: 48,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.red),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _loadDoctors,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : _doctors.isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.local_hospital,
+                                    color: Colors.grey,
+                                    size: 48,
+                                  ),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No doctors available',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: _doctors.length,
+                              itemBuilder: (context, index) {
+                                final doctor = _doctors[index];
+                                final isSelected = _selectedDoctor?.id == doctor.id;
+                                
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: isSelected 
+                                          ? const Color(0xFF7B1FA2)
+                                          : Colors.grey.shade300,
+                                      width: isSelected ? 2 : 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: isSelected 
+                                        ? const Color(0xFF7B1FA2).withOpacity(0.1)
+                                        : Colors.white,
+                                  ),
+                                  child: ListTile(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedDoctor = doctor;
+                                      });
+                                    },
+                                    leading: CircleAvatar(
+                                      backgroundColor: const Color(0xFF7B1FA2),
+                                      child: Text(
+                                        doctor.name.split(' ').map((n) => n[0]).take(2).join(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    title: Text(
+                                      doctor.name,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: isSelected 
+                                            ? const Color(0xFF7B1FA2)
+                                            : Colors.black87,
+                                      ),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          doctor.specialization,
+                                          style: const TextStyle(
+                                            color: Color(0xFF7B1FA2),
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        Text(
+                                          doctor.hospital,
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        if (doctor.experience.isNotEmpty)
+                                          Text(
+                                            doctor.experience,
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    trailing: isSelected
+                                        ? const Icon(
+                                            Icons.check_circle,
+                                            color: Color(0xFF7B1FA2),
+                                          )
+                                        : const Icon(
+                                            Icons.radio_button_unchecked,
+                                            color: Colors.grey,
+                                          ),
+                                  ),
+                                );
+                              },
+                            ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: _selectedDoctor != null ? _linkWithDoctor : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF7B1FA2),
+            foregroundColor: Colors.white,
+          ),
+          child: Text(
+            _currentLinkedDoctor != null ? 'Send New Request' : 'Send Request',
+          ),
+        ),
+      ],
     );
   }
 }

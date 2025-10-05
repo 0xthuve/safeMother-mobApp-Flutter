@@ -35,7 +35,7 @@ class SignInApp extends StatelessWidget {
       home: const SignInScreen(),
       routes: {
         '/home': (context) => const HomeScreen(),
-        '/log': (context) => const LogScreen(),
+        '/log': (context) => PatientDashboardLog(),
         '/reminders': (context) => const RemindersScreen(),
         '/learn': (context) => const LearnScreen(),
         '/chat': (context) => const ChatScreen(),

@@ -1,5 +1,6 @@
 class Doctor {
   final int? id;
+  final String? firebaseUid; // Store the original Firebase UID for patient-doctor links
   final String name;
   final String email;
   final String phone;
@@ -17,6 +18,7 @@ class Doctor {
 
   Doctor({
     this.id,
+    this.firebaseUid,
     required this.name,
     required this.email,
     required this.phone,
@@ -36,6 +38,7 @@ class Doctor {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'firebaseUid': firebaseUid,
       'name': name,
       'email': email,
       'phone': phone,
@@ -56,6 +59,7 @@ class Doctor {
   factory Doctor.fromMap(Map<String, dynamic> map) {
     return Doctor(
       id: map['id'],
+      firebaseUid: map['firebaseUid'],
       name: map['name'],
       email: map['email'],
       phone: map['phone'],
@@ -75,6 +79,7 @@ class Doctor {
 
   Doctor copyWith({
     int? id,
+    String? firebaseUid,
     String? name,
     String? email,
     String? phone,
@@ -92,6 +97,7 @@ class Doctor {
   }) {
     return Doctor(
       id: id ?? this.id,
+      firebaseUid: firebaseUid ?? this.firebaseUid,
       name: name ?? this.name,
       email: email ?? this.email,
       phone: phone ?? this.phone,

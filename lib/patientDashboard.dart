@@ -6,6 +6,8 @@ import 'services/session_manager.dart';
 import 'services/route_guard.dart';
 import 'services/backend_service.dart';
 import 'widgets/pregnancy_progress_widget.dart';
+import 'widgets/dynamic_tip_widget.dart';
+import 'pages/learn_page.dart';
 
 void main() {
   runApp(const PregnancyApp());
@@ -228,103 +230,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   const SizedBox(height: 24),
                   
-                  // Today's tip card
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFFF3E5F5).withOpacity(0.8),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.purple[50]!,
-                          blurRadius: 25,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Today's Tip",
-                                style: TextStyle(
-                                  color: Color(0xFF9575CD),
-                                  fontSize: 14,
-                                ),
-                              ),
-                              
-                              const SizedBox(height: 8),
-                              
-                              const Text(
-                                'Stay Hydrated',
-                                style: TextStyle(
-                                  color: Color(0xFF7B1FA2),
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              
-                              const SizedBox(height: 8),
-                              
-                              const Text(
-                                'Drink at least 8 glasses of water today to support your health and the baby\'s development.',
-                                style: TextStyle(
-                                  color: Color(0xFF5A5A5A),
-                                  fontSize: 14,
-                                  height: 1.5,
-                                ),
-                              ),
-                              
-                              const SizedBox(height: 16),
-                              
-                              // Learn more button
-                              Container(
-                                height: 36,
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF3E5F5),
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                child: const Center(
-                                  child: Text(
-                                    'Learn More',
-                                    style: TextStyle(
-                                      color: Color(0xFF7B1FA2),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        const SizedBox(width: 16),
-                        
-                        // Tip image
-                        Container(
-                          width: 100,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            image: const DecorationImage(
-                              image: AssetImage('assets/tip.png'),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  // Today's tip card - Dynamic implementation
+                  DynamicTipWidget(
+                    onLearnMorePressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const LearnPage()),
+                      );
+                    },
                   ),
                   
                   const SizedBox(height: 24),

@@ -15,7 +15,7 @@ class NavigationHandler {
         targetScreen = const HomeScreen();
         break;
       case 1:
-        targetScreen = const LogScreen();
+        targetScreen = PatientDashboardLog();
         break;
       case 2:
         targetScreen = const RemindersScreen();

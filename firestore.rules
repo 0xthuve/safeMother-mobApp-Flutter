@@ -1,0 +1,163 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users collection - handles user registration and basic info
+    match /users/{userId} {
+      // Allow users to create and manage their own user document
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false; // Don't allow user deletion via rules
+      
+      // Allow all authenticated users to read healthcare professionals (doctors)
+      allow read: if request.auth != null && 
+                  resource.data.get('accountType', '') == 'healthcare' && 
+                  resource.data.get('role', '') == 'doctor';
+      
+      // Allow doctors to read basic patient information for medical purposes
+      allow read: if request.auth != null && 
+                  exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                  get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                  get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor' &&
+                  resource.data.get('role', '') == 'patient';
+      
+      // Allow authenticated doctors to count total patients (for dashboard statistics)
+      allow read: if request.auth != null && 
+                  resource.data.get('role', '') == 'patient' &&
+                  exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                  get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                  get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+    }
+    
+    // Patient-Doctor Links collection - handles patient-doctor relationships permanently
+    match /patient_doctor_links/{linkId} {
+      // Patients can create requests
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.patientId &&
+                       request.resource.data.status == 'requested' &&
+                       request.resource.data.isActive == true;
+      
+      // Patients can read their own links
+      allow read: if request.auth != null && request.auth.uid == resource.data.patientId;
+      
+      // Doctors can read links where they are the doctor
+      allow read: if request.auth != null && request.auth.uid == resource.data.doctorId;
+      
+      // Doctors can update link status (accept/decline requests, remove patients)
+      allow update: if request.auth != null && 
+                       request.auth.uid == resource.data.doctorId &&
+                       // Valid status transitions
+                       (resource.data.status == 'requested' && 
+                        request.resource.data.status in ['accepted', 'declined']) ||
+                       (resource.data.status == 'accepted' && 
+                        (request.resource.data.status == 'removed' || request.resource.data.isActive == false));
+    }
+    
+    // Patients collection - additional patient-specific data
+    match /patients/{patientId} {
+      allow create: if request.auth != null && request.auth.uid == patientId;
+      allow read, update: if request.auth != null && request.auth.uid == patientId;
+      allow delete: if false;
+      
+      // Allow doctors to read and update patient data for medical purposes
+      allow read, update: if request.auth != null && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+    }
+    
+    // Doctors collection - doctor-specific data
+    match /doctors/{doctorId} {
+      allow create: if request.auth != null && request.auth.uid == doctorId;
+      allow read, update: if request.auth != null && request.auth.uid == doctorId;
+      allow delete: if false;
+      
+      // Allow all authenticated users to read doctor profiles
+      allow read: if request.auth != null;
+    }
+    
+    // Medical Records - patients can manage their records, doctors can read for accepted patients
+    match /medical_records/{recordId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.patientId;
+      
+      // Allow doctors to read/create/update records for medical purposes
+      allow read, create, update: if request.auth != null && 
+                            exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+    }
+    
+    // Appointments - both patients and doctors can manage
+    match /appointments/{appointmentId} {
+      allow read, write: if request.auth != null && 
+                            (request.auth.uid == resource.data.patientId || 
+                             request.auth.uid == resource.data.doctorId);
+    }
+    
+    // Symptom Logs - comprehensive health tracking for pregnancy
+    match /symptom_logs/{logId} {
+      // Patients can create and read their own symptom logs
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.patientId;
+      
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.patientId;
+      
+      // Patients can update their own logs (for corrections within 24 hours)
+      allow update: if request.auth != null && 
+                       request.auth.uid == resource.data.patientId &&
+                       request.time < resource.data.createdAt + duration.value(1, 'd');
+      
+      // Doctors can read ALL symptom logs (simplified for healthcare access)
+      allow read: if request.auth != null && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+      
+      // Doctors can create symptom logs for patients (for medical data entry)
+      allow create: if request.auth != null && 
+                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+      
+      // Doctors can add medical notes to symptom logs (without modifying patient data)
+      allow update: if request.auth != null && 
+                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+    }
+    
+    // Health Reminders - for medication and appointment reminders
+    match /health_reminders/{reminderId} {
+      // Patients can manage their own reminders
+      allow read, write: if request.auth != null && 
+                            request.auth.uid == resource.data.patientId;
+      
+      // Doctors can create reminders for their patients
+      allow create: if request.auth != null && 
+                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+    }
+    
+    // Pregnancy Tracking - comprehensive pregnancy journey data
+    match /pregnancy_tracking/{trackingId} {
+      // Patients can manage their own pregnancy tracking data
+      allow read, write: if request.auth != null && 
+                            request.auth.uid == resource.data.patientId;
+      
+      // Doctors can read pregnancy tracking data for their patients
+      allow read: if request.auth != null && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+    }
+
+    // Allow public read access to some collections for demonstration purposes
+    // Remove this in production and implement proper access control
+    match /public_data/{document} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

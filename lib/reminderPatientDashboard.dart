@@ -121,7 +121,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                     children: [
                       IconButton(
                         onPressed: () {
-                          Navigator.pop(context);
+                          NavigationHandler.navigateToScreen(context, 0); // Navigate back to home/dashboard
                         },
                         icon: const Icon(Icons.arrow_back, color: Color(0xFF5A5A5A)),
                       ),
