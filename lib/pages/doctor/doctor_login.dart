@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../pages/doctor/doctor_dashboard.dart';
 import 'doctor_registration.dart';
 import '../../services/user_management_service.dart';
+import '../../signin.dart';
 
 class DoctorLogin extends StatefulWidget {
   const DoctorLogin({super.key});
@@ -172,7 +173,12 @@ class _DoctorLoginState extends State<DoctorLogin> {
                             ),
                             child: IconButton(
                               onPressed: () {
-                                Navigator.pop(context);
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignInScreen(),
+                                  ),
+                                );
                               },
                               icon: const Icon(
                                 Icons.arrow_back_ios,
@@ -464,7 +470,12 @@ class _DoctorLoginState extends State<DoctorLogin> {
                             const SizedBox(width: 8),
                             TextButton(
                               onPressed: () {
-                                Navigator.pop(context);
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignInScreen(),
+                                  ),
+                                );
                               },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
