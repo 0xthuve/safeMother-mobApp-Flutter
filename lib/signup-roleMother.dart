@@ -14,7 +14,6 @@ class SignupMotherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother - Signup',
       theme: ThemeData(
         fontFamily: 'Lexend',

@@ -11,7 +11,6 @@ class PregnancyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother - Reminders',
       theme: ThemeData(
         fontFamily: 'Lexend',

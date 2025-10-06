@@ -66,7 +66,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
         isLoading = false;
       });
     } catch (e) {
-      print('Error loading dashboard data: $e');
+
       setState(() => isLoading = false);
     }
   }
@@ -97,7 +97,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
                 showRefreshButton: true,
                 onTap: () {
                   // Optional: Navigate to detailed pregnancy tracking page
-                  print('Pregnancy progress widget tapped');
+
                 },
               ),
               const SizedBox(height: 24),

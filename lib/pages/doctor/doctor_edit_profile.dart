@@ -76,7 +76,7 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading doctor data: $e');
+
       setState(() {
         _isLoading = false;
       });
@@ -104,8 +104,8 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
         };
 
         // Debug logging
-        print('Saving profile with availability: $_isAvailable');
-        print('Update data: $updateData');
+
+
 
         final success = await UserManagementService.updateUserProfile(updateData);
 
@@ -398,8 +398,8 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
                               setState(() {
                                 _isAvailable = value;
                               });
-                              // Print debug information
-                              print('Availability changed to: $value');
+
+
                             },
                             activeColor: const Color(0xFF1976D2),
                             inactiveThumbColor: Colors.grey,

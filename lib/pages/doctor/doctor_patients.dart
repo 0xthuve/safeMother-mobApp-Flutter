@@ -8,12 +8,7 @@
 // import '../../services/session_manager.dart';
 // import '../../services/firebase_service.dart';
 
-// class DoctorPatients extends StatefulWidget {
-//   const DoctorPatients({super.key});
 
-//   @override
-//   State<DoctorPatients> createState() => _DoctorPatientsState();
-// }
 
 // class _DoctorPatientsState extends State<DoctorPatients> {
 //   final int _currentIndex = 1;
@@ -40,7 +35,7 @@
 //       }
 
 //       // Use Firebase UID directly since patient requests are stored with Firebase UID
-//       print('DoctorPatients: userId=$userId (using Firebase UID directly)');
+// ...existing code...
 
 //       // Get accepted patients for this doctor using Firebase UID
 //       final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
@@ -96,7 +91,7 @@
 //             realPatients.add(patient);
 //           }
 //         } catch (e) {
-//           print('Could not load patient data for ${patientLink.patientId}: $e');
+// ...existing code...
 //           // Fallback patient data when Firebase access is denied
 //           final patient = Patient(
 //             id: patientLink.patientId.hashCode.abs(),
@@ -124,7 +119,7 @@
 //         _isLoading = false;
 //       });
 //     } catch (e) {
-//       print('Error loading patients: $e');
+// ...existing code...
 //       setState(() {
 //         _patients = []; // Show empty list on error
 //         _isLoading = false;

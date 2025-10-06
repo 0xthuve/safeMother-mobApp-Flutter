@@ -38,7 +38,7 @@ class UserManagementService {
       }
       return false;
     } catch (e) {
-      print('Sign in error: $e');
+
       return false;
     }
   }
@@ -53,7 +53,7 @@ class UserManagementService {
     BuildContext? context,
   }) async {
     try {
-      print('Attempting to register user: $email with role: $role');
+
       
       // Check if email is already registered
       final isEmailTaken = await FirebaseService.isEmailRegistered(email);
@@ -73,7 +73,7 @@ class UserManagementService {
         final uid = registrationResult['uid'] as String?;
         
         if (uid != null) {
-          print('User registered successfully: $uid');
+
           
           // Try to create role-specific data, but don't fail registration if this fails
           try {
@@ -82,9 +82,9 @@ class UserManagementService {
               role,
               _getDefaultRoleData(role),
             );
-            print('Role-specific data created successfully');
+
           } catch (roleDataError) {
-            print('Warning: Could not create role-specific data: $roleDataError');
+
             // Don't fail the registration - this can be created later
           }
 
@@ -98,19 +98,19 @@ class UserManagementService {
               userName: fullName,
               userEmail: registrationResult['email'] as String? ?? '',
             );
-            print('Login session saved successfully');
+
           } catch (sessionError) {
-            print('Warning: Could not save session: $sessionError');
+
           }
 
-          print('Registration completed successfully for user: $uid');
+
           return true;
         }
       }
-      print('Registration failed: No user data returned');
+
       return false;
     } catch (e) {
-      print('Registration error: $e');
+
       // Check if the error is about existing account
       if (e.toString().contains('email-already-in-use') || 
           e.toString().contains('account already exists')) {
@@ -126,7 +126,7 @@ class UserManagementService {
       await FirebaseService.signOut();
       await SessionManager.clearSession();
     } catch (e) {
-      print('Sign out error: $e');
+
     }
   }
 
@@ -142,7 +142,7 @@ class UserManagementService {
       }
       return null;
     } catch (e) {
-      print('Get user data error: $e');
+
       return null;
     }
   }
@@ -183,7 +183,7 @@ class UserManagementService {
       }
       return false;
     } catch (e) {
-      print('Update profile error: $e');
+
       return false;
     }
   }
@@ -199,7 +199,7 @@ class UserManagementService {
       final userData = await getCurrentUserData();
       return userData?['role'] as String?;
     } catch (e) {
-      print('Get user role error: $e');
+
       return null;
     }
   }
@@ -211,7 +211,7 @@ class UserManagementService {
       await SessionManager.clearSession();
       return true;
     } catch (e) {
-      print('Delete account error: $e');
+
       return false;
     }
   }
@@ -222,7 +222,7 @@ class UserManagementService {
       await FirebaseService.resetPassword(email);
       return true;
     } catch (e) {
-      print('Reset password error: $e');
+
       return false;
     }
   }
@@ -232,7 +232,7 @@ class UserManagementService {
     try {
       return await FirebaseService.getEmailByUsername(username);
     } catch (e) {
-      print('Get email by username error: $e');
+
       return null;
     }
   }
@@ -275,7 +275,7 @@ class UserManagementService {
       }
       return {'success': false};
     } catch (e) {
-      print('Google sign in error: $e');
+
       return {'success': false, 'error': e.toString()};
     }
   }
@@ -355,7 +355,7 @@ class UserManagementService {
         await SessionManager.clearSession();
       }
     } catch (e) {
-      print('Sync auth state error: $e');
+
     }
   }
 }

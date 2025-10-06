@@ -19,7 +19,6 @@ class PregnancyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother - Home',
       theme: ThemeData(
         fontFamily: 'Lexend',
@@ -70,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading user data: $e');
+
       setState(() {
         _isLoading = false;
       });

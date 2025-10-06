@@ -13,8 +13,7 @@ class RoleSelectionApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Safe Mother - Role Select',
+      title: 'Safe Mother - Role Selection',
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background

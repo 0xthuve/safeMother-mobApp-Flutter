@@ -30,7 +30,7 @@ class _LinkedDoctorsPageState extends State<LinkedDoctorsPage> {
 
       final userId = await SessionManager.getUserId();
       if (userId != null) {
-        print('LinkedDoctorsPage: Loading doctors for patient $userId');
+
         
         // Get linked doctors with their status from Firebase
         final linkedDoctors = await _backendService.getLinkedDoctorsForPatient(userId);
@@ -54,7 +54,7 @@ class _LinkedDoctorsPageState extends State<LinkedDoctorsPage> {
               enhanced['patientPhone'] = 'Contact via app';
             }
           } catch (e) {
-            print('Error loading patient data: $e');
+
             enhanced['patientName'] = 'Patient ${userId.substring(0, 8)}';
             enhanced['patientEmail'] = 'Contact via app';
             enhanced['patientPhone'] = 'Contact via app';
@@ -74,7 +74,7 @@ class _LinkedDoctorsPageState extends State<LinkedDoctorsPage> {
         });
       }
     } catch (e) {
-      print('Error loading linked doctors: $e');
+
       setState(() {
         _linkedDoctors = [];
         _isLoading = false;

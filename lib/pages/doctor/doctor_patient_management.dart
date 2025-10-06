@@ -48,15 +48,13 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         throw Exception('User not logged in');
       }
 
-      print('DEBUG: Loading patients for doctor: $userId');
-      final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
-      print('DEBUG: Found ${acceptedPatients.length} accepted patient links');
+  final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
       
       List<Map<String, dynamic>> patientsWithData = [];
 
       for (final patientLink in acceptedPatients) {
         try {
-          print('DEBUG: Loading data for patient: ${patientLink.patientId}');
+          // ...existing code...
           final patientData = await FirebaseService.getUserData(patientLink.patientId);
           if (patientData != null) {
             // Ensure safe type handling for dynamic data
@@ -74,12 +72,12 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
               'link': patientLink,
               'data': safePatientData,
             });
-            print('DEBUG: Successfully loaded data for patient: ${safePatientData['fullName'] ?? 'Unknown'}');
+            // ...existing code...
           } else {
-            print('DEBUG: No data found for patient: ${patientLink.patientId}');
+            // ...existing code...
           }
         } catch (e) {
-          print('Could not load patient data for ${patientLink.patientId}: $e');
+          // ...existing code...
         }
       }
 
@@ -88,9 +86,9 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         _isLoadingPatients = false;
       });
       
-      print('DEBUG: Final patients loaded: ${_patientsWithData.length}');
+  // ...existing code...
     } catch (e) {
-      print('Error loading patients: $e');
+  // ...existing code...
       setState(() {
         _patientsWithData = [];
         _isLoadingPatients = false;
@@ -109,15 +107,13 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         throw Exception('User not logged in');
       }
 
-      print('DEBUG: Loading pending requests for doctor: $userId');
-      final pendingRequests = await _backendService.getPatientRequestsForDoctor(userId);
-      print('DEBUG: Found ${pendingRequests.length} pending requests');
+  final pendingRequests = await _backendService.getPatientRequestsForDoctor(userId);
       
       List<Map<String, dynamic>> requestsWithData = [];
 
       for (final request in pendingRequests) {
         try {
-          print('DEBUG: Loading data for requesting patient: ${request.patientId}');
+          // ...existing code...
           final patientData = await FirebaseService.getUserData(request.patientId);
           if (patientData != null) {
             // Ensure safe type handling for dynamic data
@@ -135,12 +131,12 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
               'link': request,
               'data': safePatientData,
             });
-            print('DEBUG: Successfully loaded data for requesting patient: ${safePatientData['fullName'] ?? 'Unknown'}');
+            // ...existing code...
           } else {
-            print('DEBUG: No data found for requesting patient: ${request.patientId}');
+            // ...existing code...
           }
         } catch (e) {
-          print('Could not load requesting patient data for ${request.patientId}: $e');
+          // ...existing code...
         }
       }
 
@@ -149,9 +145,9 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         _isLoadingRequests = false;
       });
       
-      print('DEBUG: Final pending requests loaded: ${_pendingRequestsWithData.length}');
+  // ...existing code...
     } catch (e) {
-      print('Error loading pending requests: $e');
+  // ...existing code...
       setState(() {
         _pendingRequestsWithData = [];
         _isLoadingRequests = false;
@@ -1667,7 +1663,6 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         }
       }
     } catch (e) {
-      print('Error handling patient request: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1952,7 +1947,6 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         Navigator.pop(context);
       }
       
-      print('Error unlinking patient: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

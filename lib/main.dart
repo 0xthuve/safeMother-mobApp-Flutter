@@ -14,11 +14,11 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
+
   } catch (e) {
-    print('Firebase initialization error: $e');
+
     // For development, continue without Firebase if there's an error
-    print('Continuing without Firebase...');
+
   }
   
   // Initialize Firebase service (will use mock if Firebase not configured)
@@ -33,7 +33,6 @@ class SafeMotherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother',
       theme: ThemeData(
         fontFamily: 'Lexend',
@@ -148,7 +147,7 @@ class _SplashScreenState extends State<SplashScreen> {
         );
       }
     } catch (e) {
-      print('Error checking login status: $e');
+
       // Error checking session, go to login
       Navigator.pushReplacement(
         context,

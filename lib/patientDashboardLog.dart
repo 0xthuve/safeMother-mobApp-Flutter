@@ -92,7 +92,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
         _recentLogs = logs;
       });
     } catch (e) {
-      print('Error loading recent logs: $e');
+
     }
   }
 

@@ -43,15 +43,15 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
 
       final userId = await SessionManager.getUserId();
       if (userId != null) {
-        print('Loading doctors for user: $userId');
+
         
         // Load all doctors
         final doctors = await _backendService.getAllDoctors();
-        print('Loaded ${doctors.length} doctors from backend');
+
         
         // Load linked doctors for this patient
         final linkedDoctors = await _backendService.getLinkedDoctors(userId);
-        print('User has ${linkedDoctors.length} linked doctors');
+
         
         setState(() {
           _doctors = doctors;
@@ -65,7 +65,7 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
         });
       }
     } catch (e) {
-      print('Error loading doctors: $e');
+
       setState(() {
         _errorMessage = 'Unable to load doctors. Please check your internet connection and try again.\n\nError: $e';
         _isLoading = false;
@@ -90,7 +90,7 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
     try {
       final userId = await SessionManager.getUserId();
       if (userId == null) {
-        print('DEBUG: User ID is null, cannot proceed with linking');
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please log in again to continue.'),
@@ -100,15 +100,15 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
         return;
       }
       
-      print('DEBUG: Starting link process for user $userId with doctor ${doctor.name}');
+
 
       // Check if user already has a request or link with this specific doctor
       final doctorIdToUse = doctor.firebaseUid ?? doctor.id.toString();
-      print('DEBUG: Checking existing links for patient $userId with doctor $doctorIdToUse');
-      print('DEBUG: Doctor firebaseUid: ${doctor.firebaseUid}, Doctor id: ${doctor.id}');
+
+
       
       final linkedDoctors = await _backendService.getLinkedDoctorsForPatient(userId);
-      print('DEBUG: Found ${linkedDoctors.length} existing linked doctors');
+
       
       // Check both firebaseUid and id to be thorough
       final existingLink = linkedDoctors.where((d) => 
@@ -116,11 +116,11 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
         d['doctorId'] == doctor.firebaseUid || 
         d['doctorId'] == doctor.id.toString()
       ).toList();
-      print('DEBUG: Found ${existingLink.length} existing links with this specific doctor');
+
       
       // Print existing links for debugging
       for (var link in linkedDoctors) {
-        print('DEBUG: Existing link - doctorId: ${link['doctorId']}, status: ${link['status']}, doctorName: ${link['doctorName']}');
+
       }
       
       if (existingLink.isNotEmpty) {
@@ -204,8 +204,8 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
         );
         
         try {
-          print('DEBUG: Attempting to link patient $userId with doctor ${doctor.firebaseUid ?? doctor.id.toString()}');
-          print('DEBUG: Doctor name: ${doctor.name}');
+
+
           
           final success = await _backendService.linkPatientWithDoctor(userId, doctor.firebaseUid ?? doctor.id.toString());
           
@@ -226,7 +226,7 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
             // Refresh the list
             _loadDoctors();
           } else {
-            print('DEBUG: linkPatientWithDoctor returned false');
+
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
@@ -240,7 +240,7 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
         } catch (e) {
           // Close loading dialog
           Navigator.pop(context);
-          print('DEBUG: Exception during linking: $e');
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -253,7 +253,7 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
         }
       }
     } catch (e) {
-      print('Error linking with doctor: $e');
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('An error occurred. Please try again.'),

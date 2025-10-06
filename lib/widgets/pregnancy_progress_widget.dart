@@ -47,7 +47,6 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
         });
       }
     } catch (e) {
-      print('Error loading pregnancy progress: $e');
       setState(() {
         _isLoading = false;
       });
@@ -158,7 +157,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
       try {
         expectedDeliveryDate = DateTime.parse(expectedDeliveryDateStr);
       } catch (e) {
-        print('Error parsing expected delivery date: $e');
+        // Failed to parse date, use null
       }
     }
 

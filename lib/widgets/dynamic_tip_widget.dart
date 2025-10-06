@@ -52,7 +52,6 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading today\'s tip: $e');
       setState(() {
         _isLoading = false;
       });

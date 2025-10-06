@@ -61,7 +61,7 @@ class _LearnPageState extends State<LearnPage> with TickerProviderStateMixin {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading tips data: $e');
+
       setState(() {
         _isLoading = false;
       });

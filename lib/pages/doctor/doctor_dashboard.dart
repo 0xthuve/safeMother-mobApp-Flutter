@@ -51,13 +51,13 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       if (userId != null) {
         try {
           // Use the Firebase UID directly (no hash conversion needed)
-          print('Doctor dashboard: userId=$userId');
+          // ...existing code...
           
           pendingRequests = await _backendService.getPatientRequestsForDoctor(userId);
           acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
           totalPatientsCount = await _backendService.getTotalPatientCount();
         } catch (e) {
-          print('Error loading patient data: $e');
+          // ...existing code...
         }
       }
       
@@ -82,7 +82,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
 
         // No hardcoded appointments - use real appointment data only
         final List<Appointment> realAppointments = [];
-        // TODO: In future, load real appointments from database based on accepted patients
+  // ...existing code...
         // For now, keeping empty to show only real data
 
         setState(() {
@@ -122,7 +122,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         });
       }
     } catch (e) {
-      print('Error loading dashboard data: $e');
+  // ...existing code...
       // Fallback to basic data
       final userName = await SessionManager.getUserName();
       final userEmail = await SessionManager.getUserEmail();

@@ -32,7 +32,7 @@ class FirebaseMockService {
       'signUpStep': 2,
     };
 
-    print('Firebase Mock Service initialized');
+
   }
 
   // Check if initialized
@@ -150,7 +150,7 @@ class FirebaseMockService {
     }
     
     // In a real implementation, this would send an email
-    print('Password reset email sent to $email');
+
   }
 
   // Get email by username
@@ -202,7 +202,7 @@ class FirebaseMockService {
   static Future<void> createRoleData(String uid, String role, Map<String, dynamic> roleData) async {
     await Future.delayed(const Duration(milliseconds: 500));
     // In a real implementation, this would create a separate document
-    print('Role data created for $uid with role $role');
+
   }
 
   // Mock get role data
@@ -245,7 +245,7 @@ class FirebaseMockService {
     }
   }
 
-  // Get all mock users (for debugging)
+
   static Map<String, dynamic> getAllUsers() {
     return Map<String, dynamic>.from(_mockUsers);
   }

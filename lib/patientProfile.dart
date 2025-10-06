@@ -19,7 +19,6 @@ class PatientProfile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother',
       theme: ThemeData(
         fontFamily: 'Lexend',
@@ -134,7 +133,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Add timeout to prevent hanging
       final userData = await UserManagementService.getCurrentUserData()
           .timeout(const Duration(seconds: 10), onTimeout: () {
-        print('Timeout loading user data from Firebase');
         return null;
       });
 
@@ -160,7 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _emailController.text = _userEmail;
       }
     } catch (e) {
-      print('Error loading user data: $e');
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -187,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       }
     } catch (e) {
-      print('Error loading assigned doctors: $e');
+
     }
   }
 
@@ -240,7 +238,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         throw Exception('Failed to update profile');
       }
     } catch (e) {
-      print('Error saving user data: $e');
+
       rethrow; // Re-throw the error so it can be handled in the UI
     }
   }
@@ -1681,12 +1679,12 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
         _errorMessage = null;
       });
 
-      print('Loading doctors from Firebase database...');
+
       
       // Get real doctors from Firebase database who registered through doctor signup portal
       final doctors = await _backendService.getAllDoctors();
       
-      print('Found ${doctors.length} doctors in the database');
+
       
       if (doctors.isEmpty) {
         setState(() {
@@ -1700,7 +1698,7 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
         });
       }
     } catch (e) {
-      print('Error loading doctors from Firebase: $e');
+
       setState(() {
         _errorMessage = 'Failed to load healthcare professionals from database.\n\nError: ${e.toString()}\n\nThis could be due to:\n• Firebase permission issues\n• Network connectivity problems\n• No doctors registered yet\n\nPlease ensure doctors have signed up through the doctor portal.';
         _isLoading = false;
@@ -1749,7 +1747,7 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
         }
       }
     } catch (e) {
-      print('Error loading current linked doctor: $e');
+
     }
   }
 
