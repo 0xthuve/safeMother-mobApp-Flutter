@@ -24,7 +24,6 @@ class _DoctorSettingsState extends State<DoctorSettings> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE3F2FD), // Light blue background
       appBar: AppBar(
         title: const Text('Settings', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF1976D2), // Blue theme

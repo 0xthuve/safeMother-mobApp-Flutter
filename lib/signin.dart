@@ -3,7 +3,7 @@ import 'signup-roleSelection.dart';
 import 'signup-roleMother-p2.dart';
 import 'patient_dashboard.dart';
 import 'patient_dashboard_log.dart';
-import 'reminder_patient_dashboard.dart';
+import 'consultation_patient_dashboard.dart';
 import 'patient_dashboard_tip.dart';
 import 'chat_patient.dart';
 import 'pages/doctor/doctor_login.dart';
@@ -36,7 +36,7 @@ class SignInApp extends StatelessWidget {
       routes: {
         '/home': (context) => const HomeScreen(),
         '/log': (context) => PatientDashboardLog(),
-        '/reminders': (context) => const RemindersScreen(),
+        '/consultation': (context) => const ConsultationScreen(),
         '/learn': (context) => const LearnScreen(),
         '/chat': (context) => const ChatScreen(),
       },
@@ -811,7 +811,7 @@ class _SignInFormState extends State<SignInForm> {
             controller: _emailController,
             style: const TextStyle(color: Color(0xFF5A5A5A)),
             decoration: InputDecoration(
-              labelText: 'Email or Phone',
+              labelText: 'Email',
               labelStyle: const TextStyle(color: Color(0xFF9575CD)),
               filled: true,
               fillColor: const Color(0xFFF5F5F5),

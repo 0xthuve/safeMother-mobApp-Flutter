@@ -1,0 +1,233 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "consultation_messages": {
+      "$conversationId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "conversationId": {
+          ".validate": "newData.isString() && newData.val() == $conversationId"
+        },
+        "patientId": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "doctorId": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "lastMessage": {
+          ".validate": "newData.isString()"
+        },
+        "lastMessageTime": {
+          ".validate": "newData.isNumber()"
+        },
+        "messages": {
+          "$messageId": {
+            ".validate": "newData.hasChildren(['senderId', 'message', 'timestamp', 'messageType'])",
+            "senderId": {
+              ".validate": "newData.isString()"
+            },
+            "message": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000"
+            },
+            "timestamp": {
+              ".validate": "newData.isNumber()"
+            },
+            "messageType": {
+              ".validate": "newData.isString()"
+            },
+            "read": {
+              ".validate": "newData.isBoolean()"
+            },
+            "edited": {
+              ".validate": "newData.isBoolean()"
+            },
+            "editedAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "fileUrl": {
+              ".validate": "newData.isString()"
+            },
+            "fileName": {
+              ".validate": "newData.isString()"
+            },
+            "fileSize": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            }
+          }
+        }
+      }
+    },
+    "user_presence": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid",
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'online' || newData.val() == 'offline' || newData.val() == 'away')"
+        },
+        "lastSeen": {
+          ".validate": "newData.val() == now"
+        },
+        "typing": {
+          "$conversationId": {
+            ".validate": "newData.isBoolean()"
+          }
+        }
+      }
+    },
+    "doctor_availability": {
+      "$doctorId": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $doctorId",
+        "isAvailable": {
+          ".validate": "newData.isBoolean()"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'available' || newData.val() == 'busy' || newData.val() == 'offline')"
+        },
+        "statusMessage": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "availableHours": {
+          "$day": {
+            "start": {
+              ".validate": "newData.isString()"
+            },
+            "end": {
+              ".validate": "newData.isString()"
+            }
+          }
+        }
+      }
+    },
+    "notifications": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null",
+        "$notificationId": {
+          ".validate": "newData.hasChildren(['type', 'title', 'message', 'timestamp', 'read'])",
+          "type": {
+            ".validate": "newData.isString() && (newData.val() == 'message' || newData.val() == 'appointment' || newData.val() == 'reminder' || newData.val() == 'alert')"
+          },
+          "title": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 100"
+          },
+          "message": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 500"
+          },
+          "timestamp": {
+            ".validate": "newData.isNumber()"
+          },
+          "read": {
+            ".validate": "newData.isBoolean()"
+          },
+          "priority": {
+            ".validate": "newData.isString() && (newData.val() == 'low' || newData.val() == 'medium' || newData.val() == 'high' || newData.val() == 'urgent')"
+          }
+        }
+      }
+    },
+    "emergency_alerts": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$alertId": {
+        ".validate": "newData.hasChildren(['patientId', 'type', 'severity', 'message', 'timestamp', 'status'])",
+        "patientId": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "type": {
+          ".validate": "newData.isString() && (newData.val() == 'medical' || newData.val() == 'emergency' || newData.val() == 'urgent')"
+        },
+        "severity": {
+          ".validate": "newData.isString() && (newData.val() == 'low' || newData.val() == 'medium' || newData.val() == 'high' || newData.val() == 'critical')"
+        },
+        "message": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000"
+        },
+        "timestamp": {
+          ".validate": "newData.val() == now"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'acknowledged' || newData.val() == 'resolved')"
+        },
+        "location": {
+          "latitude": {
+            ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90"
+          },
+          "longitude": {
+            ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180"
+          }
+        },
+        "responderId": {
+          ".validate": "newData.isString()"
+        },
+        "responseTime": {
+          ".validate": "newData.isNumber()"
+        }
+      }
+    },
+    "video_calls": {
+      "$callId": {
+        ".read": "auth != null && (data.child('patientId').val() == auth.uid || data.child('doctorId').val() == auth.uid)",
+        ".write": "auth != null && (newData.child('patientId').val() == auth.uid || newData.child('doctorId').val() == auth.uid)",
+        "patientId": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "doctorId": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() == 'pending' || newData.val() == 'active' || newData.val() == 'ended' || newData.val() == 'cancelled')"
+        },
+        "startTime": {
+          ".validate": "newData.isNumber()"
+        },
+        "endTime": {
+          ".validate": "newData.isNumber()"
+        },
+        "duration": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "callToken": {
+          ".validate": "newData.isString()"
+        }
+      }
+    },
+    "connections": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid",
+        "$connectionId": {
+          ".validate": "newData.val() == now"
+        }
+      }
+    },
+    "rate_limits": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        "messages": {
+          "count": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "resetTime": {
+            ".validate": "newData.isNumber()"
+          }
+        }
+      }
+    },
+    "system_config": {
+      ".read": "auth != null",
+      ".write": "false",
+      "maintenance_mode": {
+        ".validate": "newData.isBoolean()"
+      },
+      "max_message_length": {
+        ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 5000"
+      },
+      "max_file_size": {
+        ".validate": "newData.isNumber() && newData.val() > 0"
+      }
+    }
+  }
+}

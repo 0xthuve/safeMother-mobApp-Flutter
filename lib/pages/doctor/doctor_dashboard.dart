@@ -248,31 +248,55 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     return RouteGuard.doctorRouteGuard(
       context: context,
       child: Scaffold(
-      backgroundColor: const Color(0xFFE3F2FD), // Light blue background
       appBar: AppBar(
         title: const Text(
-          'Doctor Dashboard',
+          'Doctor Portal',
           style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+            color: Color.fromARGB(255, 255, 255, 255),
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            letterSpacing: 0.5,
           ),
         ),
-        backgroundColor: const Color(0xFF1976D2), // Blue theme
+        //backgroundColor: const Color(0xFF2563EB), // Modern blue
         elevation: 0,
-        automaticallyImplyLeading: false, // Remove back arrow
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              _loadDashboardData(); // Refresh all dashboard data
-            },
-            tooltip: 'Refresh Dashboard',
+        automaticallyImplyLeading: false,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-            onPressed: () {
-              // Handle notifications
-            },
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 22),
+              onPressed: () {
+                _loadDashboardData();
+              },
+              tooltip: 'Refresh Dashboard',
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.1),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            child: IconButton(
+              icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
+              onPressed: () {
+                // Handle notifications
+              },
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.1),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ),
         ],
       ),
@@ -286,47 +310,77 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   // Welcome Card
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF1976D2), Color(0xFF1E88E5)], // Blue gradient
+                        colors: [Color(0xFF2563EB), Color(0xFF3B82F6), Color(0xFF60A5FA)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.blue.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+                          color: const Color(0xFF2563EB).withOpacity(0.25),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                          spreadRadius: 0,
                         ),
                       ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Text(
-                          'Welcome back,',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 16,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Welcome back,',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w400,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                _currentDoctor?.name ?? 'Dr. User',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  _currentDoctor?.specialization ?? 'Specialist',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _currentDoctor?.name ?? 'Dr. User',
-                          style: const TextStyle(
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(
+                            Icons.medical_services_rounded,
                             color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _currentDoctor?.specialization ?? 'Specialist',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 14,
+                            size: 32,
                           ),
                         ),
                       ],
@@ -341,8 +395,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                         child: _buildStatCard(
                           'Today\'s Appointments',
                           _todayAppointments.length.toString(),
-                          Icons.calendar_today,
-                          const Color(0xFF1976D2), // Blue theme
+                          Icons.calendar_today_rounded,
+                          const Color(0xFF3B82F6), // Modern blue
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -350,8 +404,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                         child: _buildStatCard(
                           'Total Patients',
                           _totalPatientsCount.toString(),
-                          Icons.people,
-                          const Color(0xFF1E88E5), // Lighter blue
+                          Icons.people_rounded,
+                          const Color(0xFF10B981), // Modern emerald
                         ),
                       ),
                     ],
@@ -368,8 +422,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                           child: _buildStatCard(
                             'My Patients',
                             _acceptedPatients.length.toString(),
-                            Icons.medical_services,
-                            const Color(0xFF42A5F5), // Medium blue
+                            Icons.medical_services_rounded,
+                            const Color(0xFF8B5CF6), // Modern purple
                           ),
                         ),
                       ),
@@ -383,8 +437,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                           child: _buildStatCard(
                             'Pending Requests',
                             _pendingRequests.length.toString(),
-                            Icons.pending_actions,
-                            const Color(0xFF64B5F6), // Light blue
+                            Icons.pending_actions_rounded,
+                            const Color(0xFFF59E0B), // Modern amber
                           ),
                         ),
                       ),
@@ -393,32 +447,81 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   const SizedBox(height: 24),
 
                   // Today's Appointments
-                  const Text(
-                    'Today\'s Appointments',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.calendar_today_rounded,
+                          color: Color(0xFF3B82F6),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Today\'s Appointments',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1F2937),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   if (_todayAppointments.isEmpty)
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'No appointments scheduled for today',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 16,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
+                        ],
+                        border: Border.all(color: const Color(0xFFE5E7EB)),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF3B82F6).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Icons.calendar_today_rounded,
+                              color: Color(0xFF3B82F6),
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No appointments today',
+                            style: TextStyle(
+                              color: Color(0xFF1F2937),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Your schedule is clear for today',
+                            style: TextStyle(
+                              color: Color(0xFF6B7280),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   else
@@ -430,13 +533,31 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Patient Requests',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF333333),
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF59E0B).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.pending_actions_rounded,
+                              color: Color(0xFFF59E0B),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Patient Requests',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1F2937),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
                       ),
                       if (_pendingRequests.isNotEmpty)
                         TextButton(
@@ -570,36 +691,54 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: color.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
           ),
         ],
+        border: Border.all(
+          color: color.withOpacity(0.1),
+          width: 1,
+        ),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon, 
+              color: color, 
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 12),
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1F2937),
+              letterSpacing: -1,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
+              fontSize: 13,
+              color: Color(0xFF6B7280),
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),

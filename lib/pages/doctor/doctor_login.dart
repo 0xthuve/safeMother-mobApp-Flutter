@@ -275,7 +275,7 @@ class _DoctorLoginState extends State<DoctorLogin> {
                                 controller: _emailController,
                                 style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 decoration: InputDecoration(
-                                  labelText: 'Email or License Number',
+                                  labelText: 'Email',
                                   labelStyle: const TextStyle(color: Color(0xFF64B5F6)),
                                   filled: true,
                                   fillColor: const Color(0xFFF5F5F5),
@@ -288,7 +288,7 @@ class _DoctorLoginState extends State<DoctorLogin> {
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter your email or license number';
+                                    return 'Please enter your email';
                                   }
                                   return null;
                                 },

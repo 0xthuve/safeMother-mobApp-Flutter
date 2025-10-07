@@ -186,6 +186,50 @@ service cloud.firestore {
       allow list: if request.auth != null;
     }
 
+    // Consultation Messages - for doctor-patient chat functionality
+    match /consultation_messages/{messageId} {
+      // Patients can read and create messages in their conversations
+      allow read, create: if request.auth != null && 
+                             (request.auth.uid == resource.data.patientId || 
+                              request.auth.uid == resource.data.doctorId);
+      
+      // Doctors can read and create messages in their conversations
+      allow read, create: if request.auth != null && 
+                             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+      
+      // Allow listing messages for a conversation
+      allow list: if request.auth != null && 
+                     (request.auth.uid == resource.data.patientId || 
+                      request.auth.uid == resource.data.doctorId);
+    }
+
+    // Video Call Sessions - for video consultation functionality
+    match /video_calls/{callId} {
+      // Both patients and doctors can manage video call sessions
+      allow read, write: if request.auth != null && 
+                            (request.auth.uid == resource.data.patientId || 
+                             request.auth.uid == resource.data.doctorId);
+    }
+
+    // Consultation History - comprehensive consultation tracking
+    match /consultation_history/{consultationId} {
+      // Patients can read their own consultation history
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.patientId;
+      
+      // Doctors can create and update consultation records
+      allow create, update: if request.auth != null && 
+                               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
+                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+      
+      // Doctors can read consultation history for their patients
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.doctorId;
+    }
+
     // Allow public read access to some collections for demonstration purposes
     // Remove this in production and implement proper access control
     match /public_data/{document} {
