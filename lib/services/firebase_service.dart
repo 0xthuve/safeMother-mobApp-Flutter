@@ -1354,4 +1354,99 @@ class FirebaseService {
       return false;
     }
   }
+
+  // Get doctor recommendations for a patient
+  static Future<Map<String, dynamic>?> getDoctorRecommendations(String userId) async {
+    if (_useMockService) {
+      return null;
+    }
+
+    try {
+      // Simple query without orderBy to avoid index requirement
+      final querySnapshot = await _firestore
+          .collection('doctor_recommendations')
+          .where('patientId', isEqualTo: userId)
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        // Get the most recent document manually (since we can't use orderBy without index)
+        var mostRecentDoc = querySnapshot.docs.first;
+        DateTime? mostRecentTime;
+        
+        for (var doc in querySnapshot.docs) {
+          final data = doc.data();
+          if (data['updatedAt'] != null) {
+            final docTime = (data['updatedAt'] as Timestamp).toDate();
+            if (mostRecentTime == null || docTime.isAfter(mostRecentTime)) {
+              mostRecentTime = docTime;
+              mostRecentDoc = doc;
+            }
+          }
+        }
+        
+        final data = mostRecentDoc.data();
+        print('Found doctor recommendations for patient $userId: $data');
+        return data;
+      }
+      
+      print('No doctor recommendations found for patient $userId');
+      return null;
+    } catch (e) {
+      print('Error getting doctor recommendations: $e');
+      return null;
+    }
+  }
+
+  // Save doctor recommendations for a patient
+  static Future<bool> saveDoctorRecommendations(String patientId, Map<String, dynamic> recommendations) async {
+    if (_useMockService) {
+      return true;
+    }
+
+    try {
+      final now = DateTime.now();
+      final docData = {
+        ...recommendations,
+        'patientId': patientId,
+        'createdAt': Timestamp.fromDate(now),
+        'updatedAt': Timestamp.fromDate(now),
+      };
+
+      // Use auto-generated document ID instead of patient ID to avoid conflicts
+      final docRef = await _firestore.collection('doctor_recommendations').add(docData);
+      
+      print('Successfully saved doctor recommendations for patient $patientId with doc ID: ${docRef.id}');
+      print('Saved data: $docData');
+      return true;
+    } catch (e) {
+      print('Error saving doctor recommendations: $e');
+      return false;
+    }
+  }
+
+  // Get all prescriptions made by a specific doctor
+  static Future<List<Map<String, dynamic>>> getDoctorPrescriptionsByDoctorId(String doctorId) async {
+    if (_useMockService) {
+      return [];
+    }
+
+    try {
+      final querySnapshot = await _firestore
+          .collection('doctor_recommendations')
+          .where('doctorId', isEqualTo: doctorId)
+          .get();
+      
+      List<Map<String, dynamic>> prescriptions = [];
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        prescriptions.add(data);
+      }
+      
+      print('Found ${prescriptions.length} prescriptions for doctor $doctorId');
+      return prescriptions;
+    } catch (e) {
+      print('Error getting prescriptions by doctor ID: $e');
+      return [];
+    }
+  }
 }

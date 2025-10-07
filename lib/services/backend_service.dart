@@ -1066,4 +1066,59 @@ class BackendService {
     await prefs.remove('${appointmentsKey}_user_$userId');
     await prefs.remove('${symptomLogsKey}_$userId');
   }
+
+  // Get doctor recommendations for meals and exercises
+  Future<Map<String, dynamic>?> getDoctorRecommendations(String userId) async {
+    try {
+      print('BackendService: Getting doctor recommendations for user: $userId');
+      
+      // Try to get from Firebase first
+      final recommendations = await FirebaseService.getDoctorRecommendations(userId);
+      print('BackendService: Firebase recommendations: $recommendations');
+      
+      if (recommendations != null) {
+        print('BackendService: Returning Firebase recommendations');
+        return recommendations;
+      }
+
+      // Fallback to local storage
+      final prefs = await SharedPreferences.getInstance();
+      final recommendationsJson = prefs.getString('doctor_recommendations_$userId');
+      print('BackendService: Local storage data: $recommendationsJson');
+      
+      if (recommendationsJson != null) {
+        final localData = json.decode(recommendationsJson);
+        print('BackendService: Returning local recommendations: $localData');
+        return localData;
+      }
+
+      print('BackendService: No recommendations found');
+      return null;
+    } catch (e) {
+      print('BackendService: Error getting recommendations: $e');
+      return null;
+    }
+  }
+
+  // Save doctor recommendations (for doctors to set recommendations for patients)
+  Future<bool> saveDoctorRecommendations(String patientId, Map<String, dynamic> recommendations) async {
+    try {
+      print('BackendService: Saving doctor recommendations for patient: $patientId');
+      print('BackendService: Recommendations data: $recommendations');
+      
+      // Save to Firebase
+      final firebaseSuccess = await FirebaseService.saveDoctorRecommendations(patientId, recommendations);
+      print('BackendService: Firebase save result: $firebaseSuccess');
+
+      // Also save locally as backup
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('doctor_recommendations_$patientId', json.encode(recommendations));
+      print('BackendService: Saved to local storage as backup');
+
+      return firebaseSuccess;
+    } catch (e) {
+      print('BackendService: Error saving recommendations: $e');
+      return false;
+    }
+  }
 }
