@@ -6,7 +6,7 @@ import '../../services/backend_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/firebase_service.dart';
 import '../../models/patient_doctor_link.dart';
-import '../../models/symptom_log.dart';
+
 
 class DoctorPatientManagement extends StatefulWidget {
   final int? initialTabIndex;

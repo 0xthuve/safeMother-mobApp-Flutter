@@ -118,10 +118,8 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
       ).toList();
 
       
-      // Print existing links for debugging
-      for (var link in linkedDoctors) {
-
-      }
+      // Check existing links for debugging
+      // No specific action needed here
       
       if (existingLink.isNotEmpty) {
         String statusMessage;

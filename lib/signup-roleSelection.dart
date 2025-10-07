@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'signup-roleMother.dart'; // keep this for SignupMotherForm()
-import 'linkFamMem.dart';
+import 'link_fam_mem.dart';
 import 'pages/doctor/doctor_registration.dart';
 import 'signin.dart';
 
@@ -15,6 +15,7 @@ class RoleSelectionApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Safe Mother - Role Selection',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background

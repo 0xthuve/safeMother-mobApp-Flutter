@@ -47,7 +47,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
           actualPatientCount = acceptedPatients.length;
 
         } catch (e) {
-
+          // Error getting patient count, using default value
         }
       }
       
@@ -112,7 +112,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
           final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
           fallbackPatientCount = acceptedPatients.length;
         } catch (e2) {
-
+          // Fallback also failed, using default count
         }
       }
       

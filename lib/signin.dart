@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'signup-roleSelection.dart';
 import 'signup-roleMother-p2.dart';
-import 'patientDashboard.dart';
-import 'patientDashboardLog.dart';
-import 'reminderPatientDashboard.dart';
-import 'patientDashboardTip.dart';
-import 'chatPatient.dart';
+import 'patient_dashboard.dart';
+import 'patient_dashboard_log.dart';
+import 'reminder_patient_dashboard.dart';
+import 'patient_dashboard_tip.dart';
+import 'chat_patient.dart';
 import 'pages/doctor/doctor_login.dart';
 import 'services/user_management_service.dart';
 
@@ -20,6 +20,7 @@ class SignInApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Safe Mother - Login',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'bottom_navigation.dart'; // Import the separate navigation bar
 import 'navigation_handler.dart';
-import 'patientProfile.dart';
+import 'patient_profile.dart';
 import 'services/session_manager.dart';
 import 'services/route_guard.dart';
 import 'services/backend_service.dart';
@@ -20,6 +20,7 @@ class PregnancyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Safe Mother - Home',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8),
@@ -145,13 +146,13 @@ class _HomeScreenState extends State<HomeScreen> {
           // Content
           SafeArea(
             child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header with profile
+                  // Header with profile - Fixed responsive layout
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       GestureDetector(
                         onTap: () {
@@ -178,15 +179,20 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                      const Text(
-                        'Safe Mother',
-                        style: TextStyle(
-                          color: Color(0xFF7B1FA2),
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'Safe Mother',
+                            style: const TextStyle(
+                              color: Color(0xFF7B1FA2),
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 48),
+                      const SizedBox(width: 48), // Balance the profile image width
                     ],
                   ),
                   
@@ -253,22 +259,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   const SizedBox(height: 16),
                   
-                  // Horizontal scroll for meal preferences
+                  // Horizontal scroll for meal preferences - Fixed responsive
                   SizedBox(
                     height: 200,
-                    child: ListView(
+                    child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      children: [
-                        _buildMealItem('Chia Seed', 'assets/chia_seed.png'),
-                        const SizedBox(width: 16),
-                        _buildMealItem('Coconut', 'assets/coconut.png'),
-                        const SizedBox(width: 16),
-                        _buildMealItem('Banana', 'assets/banana.png'),
-                        const SizedBox(width: 16),
-                        _buildMealItem('Avocado', 'assets/avocado.png'),
-                        const SizedBox(width: 16),
-                        _buildMealItem('Yogurt', 'assets/yogurt.png'),
-                      ],
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      itemCount: 5,
+                      separatorBuilder: (context, index) => const SizedBox(width: 16),
+                      itemBuilder: (context, index) {
+                        final meals = [
+                          {'name': 'Chia Seed', 'image': 'assets/chia_seed.png'},
+                          {'name': 'Coconut', 'image': 'assets/coconut.png'},
+                          {'name': 'Banana', 'image': 'assets/banana.png'},
+                          {'name': 'Avocado', 'image': 'assets/avocado.png'},
+                          {'name': 'Yogurt', 'image': 'assets/yogurt.png'},
+                        ];
+                        return _buildMealItem(meals[index]['name']!, meals[index]['image']!);
+                      },
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -285,27 +293,33 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   SizedBox(
                     height: 140,
-                    child: ListView(
+                    child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      children: [
-                        _buildExerciseItem('Prenatal Yoga', Icons.self_improvement),
-                        const SizedBox(width: 12),
-                        _buildExerciseItem('Walking', Icons.directions_walk),
-                        const SizedBox(width: 12),
-                        _buildExerciseItem('Pelvic Floor', Icons.fitness_center),
-                        const SizedBox(width: 12),
-                        _buildExerciseItem('Gentle Stretch', Icons.accessibility_new),
-                      ],
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      itemCount: 4,
+                      separatorBuilder: (context, index) => const SizedBox(width: 12),
+                      itemBuilder: (context, index) {
+                        final exercises = [
+                          {'name': 'Prenatal Yoga', 'icon': Icons.self_improvement},
+                          {'name': 'Walking', 'icon': Icons.directions_walk},
+                          {'name': 'Pelvic Floor', 'icon': Icons.fitness_center},
+                          {'name': 'Gentle Stretch', 'icon': Icons.accessibility_new},
+                        ];
+                        return _buildExerciseItem(exercises[index]['name']! as String, exercises[index]['icon']! as IconData);
+                      },
                     ),
                   ),
                   
                   const SizedBox(height: 24),
                   
-                  // Log symptoms button
-                    Align(
-                      alignment: Alignment.centerRight,
+                  // Log symptoms button - Fixed responsive
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minWidth: 150,
+                        maxWidth: 250,
+                      ),
                       child: SizedBox(
-                        width: 200,
                         height: 56,
                         child: ElevatedButton(
                           onPressed: () {
@@ -328,6 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
+                  ),
                   
                   const SizedBox(height: 80), // Space for bottom navigation
                 ],
@@ -354,6 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMealItem(String name, String imageUrl) {
     return Container(
       width: 140,
+      constraints: const BoxConstraints(minWidth: 120, maxWidth: 160),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -367,20 +383,20 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: [
-          Container(
-            width: 120,
-            height: 120,
-            margin: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              image: DecorationImage(
-                image: AssetImage(imageUrl),
-                fit: BoxFit.cover,
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                image: DecorationImage(
+                  image: AssetImage(imageUrl),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 12, left: 8, right: 8),
             child: Text(
               name,
               style: const TextStyle(
@@ -388,6 +404,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 2,
             ),
           ),
         ],
@@ -397,7 +416,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildExerciseItem(String name, IconData iconData) {
     return Container(
-      width: 160,
+      width: 140,
+      constraints: const BoxConstraints(minWidth: 120, maxWidth: 160),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -409,32 +429,36 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3E5F5),
-              borderRadius: BorderRadius.circular(36),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3E5F5),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Icon(iconData, color: const Color(0xFFE91E63), size: 28),
             ),
-            child: Icon(iconData, color: const Color(0xFFE91E63), size: 36),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(
-              name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF5A5A5A),
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+            const SizedBox(height: 12),
+            Flexible(
+              child: Text(
+                name,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF5A5A5A),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

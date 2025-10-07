@@ -137,7 +137,7 @@ class _PregnancyJourneyDetailPageState extends State<PregnancyJourneyDetailPage>
       try {
         expectedDeliveryDate = DateTime.parse(expectedDeliveryDateStr);
       } catch (e) {
-
+        // Invalid date format, will use null
       }
     }
 

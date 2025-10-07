@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'patientDashboard.dart';
+import 'patient_dashboard.dart';
 import 'services/session_manager.dart';
 import 'services/user_management_service.dart';
 import 'services/backend_service.dart';
@@ -20,6 +20,7 @@ class PatientProfile extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Safe Mother',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF9F7F9),

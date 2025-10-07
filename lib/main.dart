@@ -4,7 +4,7 @@ import 'firebase_options.dart';
 import 'signin.dart';
 import 'services/session_manager.dart';
 import 'services/firebase_service.dart';
-import 'patientDashboard.dart';
+import 'patient_dashboard.dart';
 import 'pages/doctor/doctor_dashboard.dart';
 
 void main() async {
@@ -34,6 +34,7 @@ class SafeMotherApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Safe Mother',
+      debugShowCheckedModeBanner: false, // This removes the debug banner
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8),
