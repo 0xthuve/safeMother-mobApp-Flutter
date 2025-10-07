@@ -92,7 +92,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
         _recentLogs = logs;
       });
     } catch (e) {
-      print('Error loading recent logs: $e');
+
     }
   }
 
@@ -190,7 +190,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
     int maxLines = 1,
   }) {
     return Container(
-      margin: EdgeInsets.only(bottom: 20),
+      margin: EdgeInsets.only(bottom: 10),
       child: TextFormField(
         controller: controller,
         keyboardType: keyboardType,
@@ -235,8 +235,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
 
   Widget _buildKickCounter() {
     return Container(
-      padding: EdgeInsets.all(20),
-      margin: EdgeInsets.only(bottom: 20),
+      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -353,8 +353,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
     };
 
     return Container(
-      padding: EdgeInsets.all(20),
-      margin: EdgeInsets.only(bottom: 20),
+      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
@@ -386,8 +386,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
           ),
           SizedBox(height: 16),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: _moodOptions.map((mood) {
               final isSelected = _mood == mood;
               return GestureDetector(
@@ -397,7 +397,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                   });
                 },
                 child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? (moodColors[mood] ?? Colors.grey)
@@ -450,7 +450,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
   }) {
     return Container(
       padding: EdgeInsets.all(16),
-      margin: EdgeInsets.only(bottom: 20),
+      margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
@@ -584,7 +584,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
           // Content
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -615,76 +615,25 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                     ],
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
 
-                  // Baby Kicks Counter Section
+                  // Health Log Form Content
                   Container(
-                    padding: EdgeInsets.all(20),
-                    child: Row(
+                    padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Health Log Form
                         Container(
                           padding: EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(15),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color(0xFF7B1FA2).withOpacity(0.3),
-                                blurRadius: 10,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.favorite,
-                            color: Color(0xFF7B1FA2),
-                            size: 28,
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Health Journal',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D1B69),
-                                ),
-                              ),
-                              Text(
-                                'Track your pregnancy journey',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF666666),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Health Log Form Content
-                  Container(
-                    padding: EdgeInsets.fromLTRB(20, 0, 20, 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Beautiful Health Log Form
-                        Container(
-                          padding: EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
                                 color: Color(0xFF7B1FA2).withOpacity(0.1),
-                                blurRadius: 15,
-                                offset: Offset(0, 5),
+                                blurRadius: 10,
+                                offset: Offset(0, 3),
                               ),
                             ],
                           ),
@@ -720,7 +669,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: 24),
+                                SizedBox(height: 12),
 
                                 // Blood Pressure
                                 _buildCustomTextField(

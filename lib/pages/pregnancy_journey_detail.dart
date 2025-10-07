@@ -39,7 +39,7 @@ class _PregnancyJourneyDetailPageState extends State<PregnancyJourneyDetailPage>
         });
       }
     } catch (e) {
-      print('Error loading pregnancy progress: $e');
+
       setState(() {
         _isLoading = false;
       });
@@ -137,7 +137,7 @@ class _PregnancyJourneyDetailPageState extends State<PregnancyJourneyDetailPage>
       try {
         expectedDeliveryDate = DateTime.parse(expectedDeliveryDateStr);
       } catch (e) {
-        print('Error parsing expected delivery date: $e');
+        // Invalid date format, will use null
       }
     }
 

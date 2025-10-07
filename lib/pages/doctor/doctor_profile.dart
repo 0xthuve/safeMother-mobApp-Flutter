@@ -45,9 +45,9 @@ class _DoctorProfileState extends State<DoctorProfile> {
         try {
           final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
           actualPatientCount = acceptedPatients.length;
-          print('Doctor Profile: Found $actualPatientCount accepted patients for doctor $userId');
+
         } catch (e) {
-          print('Error getting patient count: $e');
+          // Error getting patient count, using default value
         }
       }
       
@@ -100,7 +100,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
         });
       }
     } catch (e) {
-      print('Error loading doctor data: $e');
+
       // Fallback data - still try to get patient count
       final userName = await SessionManager.getUserName();
       final userEmail = await SessionManager.getUserEmail();
@@ -112,7 +112,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
           final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
           fallbackPatientCount = acceptedPatients.length;
         } catch (e2) {
-          print('Error getting patient count in fallback: $e2');
+          // Fallback also failed, using default count
         }
       }
       

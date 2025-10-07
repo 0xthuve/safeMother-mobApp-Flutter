@@ -33,7 +33,7 @@ class _PatientRequestsPageState extends State<PatientRequestsPage> {
       final userId = await SessionManager.getUserId();
       if (userId != null) {
         // Use the Firebase UID directly (no hash conversion needed)
-        print('PatientRequestsPage: userId=$userId');
+
         
         final requests = await _backendService.getPatientRequestsForDoctor(userId);
         
@@ -54,7 +54,7 @@ class _PatientRequestsPageState extends State<PatientRequestsPage> {
               };
             }
           } catch (e) {
-            print('Could not load patient data for ${request.patientId}: $e');
+
             // Fallback data when Firebase access is denied
             patientDetails[request.patientId] = {
               'fullName': 'Patient ${request.patientId.substring(0, 8)}',
@@ -72,7 +72,7 @@ class _PatientRequestsPageState extends State<PatientRequestsPage> {
         });
       }
     } catch (e) {
-      print('Error loading patient requests: $e');
+
       setState(() {
         _isLoading = false;
       });

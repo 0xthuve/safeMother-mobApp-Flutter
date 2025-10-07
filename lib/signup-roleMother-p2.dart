@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'patientDashboard.dart';
+import 'signin.dart';
 import 'services/backend_service.dart';
 import 'services/session_manager.dart';
 import 'models/pregnancy_tracking.dart';
@@ -23,8 +23,8 @@ class DeliveryDetailsApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother - Delivery Details',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
@@ -190,22 +190,26 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
       final success = await _backendService.savePregnancyTracking(pregnancyTracking);
       
       if (success) {
+        // Clear session to ensure user needs to log in again
+        await SessionManager.clearSession();
+        
         // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Pregnancy details saved successfully!'),
+              content: Text('Registration completed successfully! Please sign in to continue.'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
             ),
           );
         }
 
-        // Navigate to patient dashboard
+        // Navigate to sign in page
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const HomeScreen(),
+              builder: (context) => const SignInApp(),
             ),
           );
         }
@@ -213,7 +217,6 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
         throw Exception('Failed to save pregnancy details');
       }
     } catch (e) {
-      print('Error saving pregnancy details: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -638,7 +641,6 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
   }
 }
 
-// Dummy Next Page
 class NextPage extends StatelessWidget {
   const NextPage({super.key});
 

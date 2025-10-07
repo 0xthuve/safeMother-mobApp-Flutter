@@ -108,7 +108,7 @@ class AppointmentService {
       await _saveAllAppointments(appointments);
       return true;
     } catch (e) {
-      print('Error booking appointment: $e');
+
       return false;
     }
   }
@@ -188,7 +188,7 @@ class AppointmentService {
       await _saveAllAppointments(appointments);
       return true;
     } catch (e) {
-      print('Error updating appointment status: $e');
+
       return false;
     }
   }
@@ -225,7 +225,7 @@ class AppointmentService {
       await _saveAllAppointments(appointments);
       return true;
     } catch (e) {
-      print('Error rescheduling appointment: $e');
+
       return false;
     }
   }
@@ -248,7 +248,7 @@ class AppointmentService {
       await _saveAllAppointments(appointments);
       return true;
     } catch (e) {
-      print('Error cancelling appointment: $e');
+
       return false;
     }
   }

@@ -6,7 +6,9 @@ import '../../services/backend_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/firebase_service.dart';
 import '../../models/patient_doctor_link.dart';
-import '../../models/symptom_log.dart';
+import '../../models/meal.dart';
+import '../../models/exercise.dart';
+
 
 class DoctorPatientManagement extends StatefulWidget {
   final int? initialTabIndex;
@@ -48,15 +50,13 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         throw Exception('User not logged in');
       }
 
-      print('DEBUG: Loading patients for doctor: $userId');
-      final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
-      print('DEBUG: Found ${acceptedPatients.length} accepted patient links');
+  final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
       
       List<Map<String, dynamic>> patientsWithData = [];
 
       for (final patientLink in acceptedPatients) {
         try {
-          print('DEBUG: Loading data for patient: ${patientLink.patientId}');
+          // ...existing code...
           final patientData = await FirebaseService.getUserData(patientLink.patientId);
           if (patientData != null) {
             // Ensure safe type handling for dynamic data
@@ -74,12 +74,12 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
               'link': patientLink,
               'data': safePatientData,
             });
-            print('DEBUG: Successfully loaded data for patient: ${safePatientData['fullName'] ?? 'Unknown'}');
+            // ...existing code...
           } else {
-            print('DEBUG: No data found for patient: ${patientLink.patientId}');
+            // ...existing code...
           }
         } catch (e) {
-          print('Could not load patient data for ${patientLink.patientId}: $e');
+          // ...existing code...
         }
       }
 
@@ -88,9 +88,9 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         _isLoadingPatients = false;
       });
       
-      print('DEBUG: Final patients loaded: ${_patientsWithData.length}');
+  // ...existing code...
     } catch (e) {
-      print('Error loading patients: $e');
+  // ...existing code...
       setState(() {
         _patientsWithData = [];
         _isLoadingPatients = false;
@@ -109,15 +109,13 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         throw Exception('User not logged in');
       }
 
-      print('DEBUG: Loading pending requests for doctor: $userId');
-      final pendingRequests = await _backendService.getPatientRequestsForDoctor(userId);
-      print('DEBUG: Found ${pendingRequests.length} pending requests');
+  final pendingRequests = await _backendService.getPatientRequestsForDoctor(userId);
       
       List<Map<String, dynamic>> requestsWithData = [];
 
       for (final request in pendingRequests) {
         try {
-          print('DEBUG: Loading data for requesting patient: ${request.patientId}');
+          // ...existing code...
           final patientData = await FirebaseService.getUserData(request.patientId);
           if (patientData != null) {
             // Ensure safe type handling for dynamic data
@@ -135,12 +133,12 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
               'link': request,
               'data': safePatientData,
             });
-            print('DEBUG: Successfully loaded data for requesting patient: ${safePatientData['fullName'] ?? 'Unknown'}');
+            // ...existing code...
           } else {
-            print('DEBUG: No data found for requesting patient: ${request.patientId}');
+            // ...existing code...
           }
         } catch (e) {
-          print('Could not load requesting patient data for ${request.patientId}: $e');
+          // ...existing code...
         }
       }
 
@@ -149,9 +147,9 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         _isLoadingRequests = false;
       });
       
-      print('DEBUG: Final pending requests loaded: ${_pendingRequestsWithData.length}');
+  // ...existing code...
     } catch (e) {
-      print('Error loading pending requests: $e');
+  // ...existing code...
       setState(() {
         _pendingRequestsWithData = [];
         _isLoadingRequests = false;
@@ -622,6 +620,22 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFFF9800),
                       side: const BorderSide(color: Color(0xFFFF9800)),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _viewPrescriptionHistory(patientWithData),
+                    icon: const Icon(Icons.receipt_long, size: 18),
+                    label: const Text('Prescriptions'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF9C27B0),
+                      side: const BorderSide(color: Color(0xFF9C27B0)),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -1667,7 +1681,6 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         }
       }
     } catch (e) {
-      print('Error handling patient request: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1692,6 +1705,14 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
     showDialog(
       context: context,
       builder: (context) => _ExerciseDialog(patientData: patientData),
+    );
+  }
+
+  void _viewPrescriptionHistory(Map<String, dynamic> patientWithData) {
+    final patientData = patientWithData['data'] as Map<String, dynamic>;
+    showDialog(
+      context: context,
+      builder: (context) => _PrescriptionHistoryDialog(patientData: patientData),
     );
   }
 
@@ -1952,7 +1973,6 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         Navigator.pop(context);
       }
       
-      print('Error unlinking patient: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1987,6 +2007,37 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
     'Calcium Rich',
     'Custom Plan'
   ];
+  
+  List<Map<String, dynamic>> currentMeals = [];
+  bool isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentRecommendations();
+  }
+  
+  Future<void> _loadCurrentRecommendations() async {
+    try {
+      final backendService = BackendService();
+      final recommendations = await backendService.getDoctorRecommendations(widget.patientData['uid']);
+      if (recommendations != null && recommendations['meals'] != null) {
+        setState(() {
+          currentMeals = List<Map<String, dynamic>>.from(recommendations['meals']);
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading current recommendations: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2030,6 +2081,59 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
               ),
             ),
             const SizedBox(height: 20),
+            
+            // Show currently prescribed meals
+            if (isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (currentMeals.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue[600], size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Currently Prescribed Meals:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...currentMeals.map((meal) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.fiber_manual_record, size: 8, color: Colors.blue[600]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              meal['name'] ?? 'Unknown Meal',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )).toList(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             const Text(
               'Select Meal Plan:',
               style: TextStyle(
@@ -2076,14 +2180,27 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('$selectedMealPlan assigned to $name'),
-                          backgroundColor: const Color(0xFF4CAF50),
-                        ),
-                      );
+                    onPressed: () async {
+                      try {
+                        // Save the meal plan as doctor recommendations
+                        await _saveMealPlanRecommendation(widget.patientData['uid'], selectedMealPlan);
+                        
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('$selectedMealPlan assigned to $name'),
+                            backgroundColor: const Color(0xFF4CAF50),
+                          ),
+                        );
+                      } catch (e) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error assigning meal plan: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4CAF50),
@@ -2099,6 +2216,134 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
         ),
       ),
     );
+  }
+
+  Future<void> _saveMealPlanRecommendation(String patientId, String mealPlan) async {
+    try {
+      final doctorId = await SessionManager.getUserId();
+      if (doctorId == null) {
+        throw Exception('Doctor not logged in');
+      }
+
+      // Convert meal plan selection to actual meal recommendations
+      List<Meal> recommendedMeals = _getMealsForPlan(mealPlan);
+
+      // Get existing exercise recommendations if any
+      final backendService = BackendService();
+      final existingRecommendations = await backendService.getDoctorRecommendations(patientId);
+
+      final recommendations = {
+        'patientId': patientId,
+        'doctorId': doctorId,
+        'meals': recommendedMeals.map((meal) => meal.toJson()).toList(),
+        'exercises': existingRecommendations?['exercises'] ?? [], // Keep existing exercises
+        'prescribedAt': DateTime.now().toIso8601String(),
+        'mealPlan': mealPlan,
+      };
+
+      final success = await backendService.saveDoctorRecommendations(patientId, recommendations);
+      
+      if (!success) {
+        throw Exception('Failed to save recommendations to database');
+      }
+
+      print('Successfully saved meal plan recommendation: $mealPlan for patient: $patientId');
+    } catch (e) {
+      print('Error saving meal plan recommendation: $e');
+      rethrow;
+    }
+  }
+
+  List<Meal> _getMealsForPlan(String mealPlan) {
+    switch (mealPlan) {
+      case 'Balanced Nutrition':
+        return [
+          Meal(
+            id: 'balanced_1',
+            name: 'Avocado Toast',
+            description: 'Whole grain toast with avocado, rich in healthy fats',
+            imageUrl: 'assets/avocado.png',
+            category: 'breakfast',
+            nutritionalBenefits: ['Healthy Fats', 'Folate', 'Fiber'],
+            calories: 320,
+            isPregnancySafe: true,
+            preparation: 'Toast bread, mash avocado, spread on toast',
+            ingredients: ['Whole grain bread', 'Avocado', 'Salt', 'Lemon'],
+          ),
+          Meal(
+            id: 'balanced_2',
+            name: 'Greek Yogurt with Berries',
+            description: 'Protein-rich yogurt with antioxidant berries',
+            imageUrl: 'assets/yogurt.png',
+            category: 'snack',
+            nutritionalBenefits: ['Protein', 'Probiotics', 'Antioxidants'],
+            calories: 180,
+            isPregnancySafe: true,
+            preparation: 'Mix yogurt with fresh berries',
+            ingredients: ['Greek yogurt', 'Mixed berries', 'Honey'],
+          ),
+        ];
+      case 'High Protein':
+        return [
+          Meal(
+            id: 'protein_1',
+            name: 'Protein Smoothie',
+            description: 'High-protein smoothie for muscle development',
+            imageUrl: 'assets/banana.png',
+            category: 'breakfast',
+            nutritionalBenefits: ['Protein', 'Vitamins', 'Minerals'],
+            calories: 350,
+            isPregnancySafe: true,
+            preparation: 'Blend all ingredients until smooth',
+            ingredients: ['Protein powder', 'Banana', 'Milk', 'Spinach'],
+          ),
+        ];
+      case 'Low Sodium':
+        return [
+          Meal(
+            id: 'lowsodium_1',
+            name: 'Fresh Fruit Salad',
+            description: 'Low sodium fresh fruit mix',
+            imageUrl: 'assets/banana.png',
+            category: 'snack',
+            nutritionalBenefits: ['Vitamins', 'Minerals', 'Fiber'],
+            calories: 120,
+            isPregnancySafe: true,
+            preparation: 'Cut and mix fresh fruits',
+            ingredients: ['Apple', 'Banana', 'Orange', 'Grapes'],
+          ),
+        ];
+      case 'Diabetic Friendly':
+        return [
+          Meal(
+            id: 'diabetic_1',
+            name: 'Chia Seed Pudding',
+            description: 'Low glycemic index pudding',
+            imageUrl: 'assets/chia_seed.png',
+            category: 'breakfast',
+            nutritionalBenefits: ['Omega-3', 'Fiber', 'Protein'],
+            calories: 200,
+            isPregnancySafe: true,
+            preparation: 'Mix chia seeds with almond milk, refrigerate overnight',
+            ingredients: ['Chia seeds', 'Almond milk', 'Stevia', 'Vanilla'],
+          ),
+        ];
+      default:
+        return [
+          Meal(
+            id: 'default_1',
+            name: 'Balanced Meal',
+            description: 'A well-balanced nutritious meal',
+            imageUrl: 'assets/coconut.png',
+            category: 'lunch',
+            nutritionalBenefits: ['Balanced nutrition'],
+            calories: 300,
+            isPregnancySafe: true,
+            preparation: 'Prepare as recommended by doctor',
+            ingredients: ['Various healthy ingredients'],
+          ),
+        ];
+    }
   }
 }
 
@@ -2124,6 +2369,37 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
     'Pelvic Floor Exercises',
     'Custom Routine'
   ];
+  
+  List<Map<String, dynamic>> currentExercises = [];
+  bool isLoading = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentRecommendations();
+  }
+  
+  Future<void> _loadCurrentRecommendations() async {
+    try {
+      final backendService = BackendService();
+      final recommendations = await backendService.getDoctorRecommendations(widget.patientData['uid']);
+      if (recommendations != null && recommendations['exercises'] != null) {
+        setState(() {
+          currentExercises = List<Map<String, dynamic>>.from(recommendations['exercises']);
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading current exercise recommendations: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2131,42 +2407,101 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
     
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.9,
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.fitness_center, color: Color(0xFF2196F3), size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Recommend Exercise',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
+                Row(
+                  children: [
+                    const Icon(Icons.fitness_center, color: Color(0xFF2196F3), size: 24),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Recommend Exercise',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
                     ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Patient: $name',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF666666),
                   ),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
+                const SizedBox(height: 20),
+            
+            // Show currently prescribed exercises
+            if (isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (currentExercises.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Patient: $name',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Color(0xFF666666),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue[600], size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Currently Prescribed Exercises:',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...currentExercises.map((exercise) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: [
+                          Icon(Icons.fiber_manual_record, size: 8, color: Colors.blue[600]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              exercise['name'] ?? 'Unknown Exercise',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )).toList(),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 16),
+            ],
+            
             const Text(
               'Select Exercise Types (Multiple Selection):',
               style: TextStyle(
@@ -2275,7 +2610,7 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       if (selectedExercises.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -2285,40 +2620,601 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
                         );
                         return;
                       }
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Exercise plan assigned to $name',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              if (selectedExercises.length > 1) ...[
-                                const SizedBox(height: 4),
+
+                      try {
+                        // Save the exercise plan as doctor recommendations
+                        await _saveExerciseRecommendation(widget.patientData['uid'], selectedExercises);
+                        
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  'Selected: ${selectedExercises.join(', ')}',
-                                  style: const TextStyle(fontSize: 12),
+                                  'Exercise plan assigned to $name',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                              ] else
-                                Text(selectedExercises.first),
-                            ],
+                                if (selectedExercises.length > 1) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Selected: ${selectedExercises.join(', ')}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ] else
+                                  Text(selectedExercises.first),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFF2196F3),
+                            duration: const Duration(seconds: 4),
+                            behavior: SnackBarBehavior.floating,
                           ),
-                          backgroundColor: const Color(0xFF2196F3),
-                          duration: const Duration(seconds: 4),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                        );
+                      } catch (e) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error assigning exercises: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2196F3),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text('Assign'),
+                      child: const Text('Assign'),
+                    ),
                   ),
+                ],
+              ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveExerciseRecommendation(String patientId, List<String> selectedExercises) async {
+    try {
+      final doctorId = await SessionManager.getUserId();
+      if (doctorId == null) {
+        throw Exception('Doctor not logged in');
+      }
+
+      // Convert exercise selections to actual exercise recommendations
+      List<Exercise> recommendedExercises = _getExercisesForSelection(selectedExercises);
+
+      // First, get existing meal recommendations if any
+      final backendService = BackendService();
+      final existingRecommendations = await backendService.getDoctorRecommendations(patientId);
+
+      final recommendations = {
+        'patientId': patientId,
+        'doctorId': doctorId,
+        'meals': existingRecommendations?['meals'] ?? [], // Keep existing meals
+        'exercises': recommendedExercises.map((exercise) => exercise.toJson()).toList(),
+        'prescribedAt': DateTime.now().toIso8601String(),
+        'exerciseTypes': selectedExercises,
+      };
+
+      final success = await backendService.saveDoctorRecommendations(patientId, recommendations);
+      
+      if (!success) {
+        throw Exception('Failed to save recommendations to database');
+      }
+
+      print('Successfully saved exercise recommendations: $selectedExercises for patient: $patientId');
+    } catch (e) {
+      print('Error saving exercise recommendations: $e');
+      rethrow;
+    }
+  }
+
+  List<Exercise> _getExercisesForSelection(List<String> selectedExercises) {
+    List<Exercise> exercises = [];
+
+    for (String exerciseType in selectedExercises) {
+      switch (exerciseType) {
+        case 'Light Walking':
+          exercises.add(Exercise(
+            id: 'walking_1',
+            name: 'Light Walking',
+            description: 'Gentle walking exercise safe for pregnancy',
+            icon: Icons.directions_walk,
+            duration: '30 minutes',
+            difficulty: 'easy',
+            benefits: ['Cardiovascular health', 'Mood improvement', 'Energy boost'],
+            isPregnancySafe: true,
+            instructions: 'Walk at a comfortable pace for 30 minutes daily',
+            trimester: 'all',
+          ));
+          break;
+        case 'Prenatal Yoga':
+          exercises.add(Exercise(
+            id: 'yoga_1',
+            name: 'Prenatal Yoga',
+            description: 'Gentle yoga poses designed for pregnancy',
+            icon: Icons.self_improvement,
+            duration: '45 minutes',
+            difficulty: 'easy',
+            benefits: ['Flexibility', 'Relaxation', 'Better sleep', 'Pain relief'],
+            isPregnancySafe: true,
+            instructions: 'Follow prenatal yoga routines with certified instructor',
+            trimester: 'all',
+          ));
+          break;
+        case 'Swimming':
+          exercises.add(Exercise(
+            id: 'swimming_1',
+            name: 'Swimming',
+            description: 'Low-impact full-body workout in water',
+            icon: Icons.pool,
+            duration: '30 minutes',
+            difficulty: 'moderate',
+            benefits: ['Full body workout', 'Joint support', 'Reduces swelling'],
+            isPregnancySafe: true,
+            instructions: 'Swim laps or do water aerobics in shallow water',
+            trimester: 'all',
+          ));
+          break;
+        case 'Stationary Cycling':
+          exercises.add(Exercise(
+            id: 'cycling_1',
+            name: 'Stationary Cycling',
+            description: 'Safe cardio exercise with back support',
+            icon: Icons.directions_bike,
+            duration: '25 minutes',
+            difficulty: 'moderate',
+            benefits: ['Cardio fitness', 'Leg strength', 'Low impact'],
+            isPregnancySafe: true,
+            instructions: 'Cycle at moderate intensity with proper posture',
+            trimester: 'first,second',
+          ));
+          break;
+        case 'Stretching Exercises':
+          exercises.add(Exercise(
+            id: 'stretching_1',
+            name: 'Pregnancy Stretches',
+            description: 'Gentle stretches to relieve pregnancy discomfort',
+            icon: Icons.spa,
+            duration: '15 minutes',
+            difficulty: 'easy',
+            benefits: ['Flexibility', 'Muscle relaxation', 'Stress relief'],
+            isPregnancySafe: true,
+            instructions: 'Hold each stretch for 15-30 seconds, breathe deeply',
+            trimester: 'all',
+          ));
+          break;
+        case 'Breathing Exercises':
+          exercises.add(Exercise(
+            id: 'breathing_1',
+            name: 'Breathing Exercises',
+            description: 'Deep breathing techniques for relaxation',
+            icon: Icons.air,
+            duration: '10 minutes',
+            difficulty: 'easy',
+            benefits: ['Stress relief', 'Better oxygen flow', 'Relaxation'],
+            isPregnancySafe: true,
+            instructions: 'Practice deep breathing exercises 2-3 times daily',
+            trimester: 'all',
+          ));
+          break;
+        case 'Pelvic Floor Exercises':
+          exercises.add(Exercise(
+            id: 'pelvic_1',
+            name: 'Pelvic Floor Exercises',
+            description: 'Kegel exercises to strengthen pelvic floor',
+            icon: Icons.favorite,
+            duration: '10 minutes',
+            difficulty: 'easy',
+            benefits: ['Pelvic strength', 'Better bladder control', 'Labor preparation'],
+            isPregnancySafe: true,
+            instructions: 'Contract and hold pelvic muscles for 3-5 seconds, repeat',
+            trimester: 'all',
+          ));
+          break;
+        case 'Custom Routine':
+          exercises.add(Exercise(
+            id: 'custom_1',
+            name: 'Custom Exercise Routine',
+            description: 'Personalized exercise plan by doctor',
+            icon: Icons.fitness_center,
+            duration: '30 minutes',
+            difficulty: 'varies',
+            benefits: ['Customized benefits', 'Targeted fitness'],
+            isPregnancySafe: true,
+            instructions: 'Follow the custom routine as prescribed by your doctor',
+            trimester: 'all',
+          ));
+          break;
+        default:
+          exercises.add(Exercise(
+            id: 'default_exercise',
+            name: exerciseType,
+            description: 'Recommended exercise for pregnancy',
+            icon: Icons.fitness_center,
+            duration: '20 minutes',
+            difficulty: 'easy',
+            benefits: ['General fitness'],
+            isPregnancySafe: true,
+            instructions: 'Follow exercise guidelines',
+            trimester: 'all',
+          ));
+      }
+    }
+
+    return exercises;
+  }
+}
+
+// Prescription History Dialog
+class _PrescriptionHistoryDialog extends StatefulWidget {
+  final Map<String, dynamic> patientData;
+
+  const _PrescriptionHistoryDialog({required this.patientData});
+
+  @override
+  State<_PrescriptionHistoryDialog> createState() => _PrescriptionHistoryDialogState();
+}
+
+class _PrescriptionHistoryDialogState extends State<_PrescriptionHistoryDialog> {
+  Map<String, dynamic>? recommendations;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrescriptionHistory();
+  }
+
+  Future<void> _loadPrescriptionHistory() async {
+    try {
+      final backendService = BackendService();
+      final data = await backendService.getDoctorRecommendations(widget.patientData['uid']);
+      setState(() {
+        recommendations = data;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading prescription history: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name = widget.patientData['fullName'] ?? 'Unknown Patient';
+
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        height: MediaQuery.of(context).size.height * 0.7,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.receipt_long, color: Color(0xFF9C27B0), size: 24),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Prescription History',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Patient: $name',
+              style: const TextStyle(
+                fontSize: 16,
+                color: Color(0xFF666666),
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            if (isLoading)
+              const Expanded(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (recommendations == null || 
+                    (recommendations!['meals']?.isEmpty ?? true) && 
+                    (recommendations!['exercises']?.isEmpty ?? true))
+              const Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.info_outline, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text(
+                        'No prescriptions found',
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'This patient has no meal plans or exercises prescribed yet.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Show prescribed date
+                      if (recommendations!['prescribedAt'] != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.green[200]!),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.schedule, color: Colors.green[600], size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Last Prescribed: ${_formatDate(recommendations!['prescribedAt'])}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.green[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                      
+                      // Meal Plans Section
+                      if (recommendations!['meals']?.isNotEmpty ?? false) ...[
+                        const Text(
+                          'Prescribed Meal Plans',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4CAF50),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ...List<Map<String, dynamic>>.from(recommendations!['meals']).map((meal) => 
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.green[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green[200]!),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  meal['name'] ?? 'Unknown Meal',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (meal['description'] != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    meal['description'],
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                                if (meal['calories'] != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Calories: ${meal['calories']}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                                if (meal['nutritionalBenefits'] != null) ...[
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    children: List<String>.from(meal['nutritionalBenefits']).map((benefit) => 
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green[100],
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          benefit,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.green[700],
+                                          ),
+                                        ),
+                                      ),
+                                    ).toList(),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ).toList(),
+                        const SizedBox(height: 20),
+                      ],
+                      
+                      // Exercise Plans Section
+                      if (recommendations!['exercises']?.isNotEmpty ?? false) ...[
+                        const Text(
+                          'Prescribed Exercises',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2196F3),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ...List<Map<String, dynamic>>.from(recommendations!['exercises']).map((exercise) => 
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.blue[200]!),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  exercise['name'] ?? 'Unknown Exercise',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (exercise['description'] != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    exercise['description'],
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                                if (exercise['duration'] != null || exercise['difficulty'] != null) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      if (exercise['duration'] != null) ...[
+                                        Icon(Icons.schedule, size: 16, color: Colors.blue[600]),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          exercise['duration'],
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      ],
+                                      if (exercise['duration'] != null && exercise['difficulty'] != null)
+                                        const SizedBox(width: 16),
+                                      if (exercise['difficulty'] != null) ...[
+                                        Icon(Icons.trending_up, size: 16, color: Colors.blue[600]),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          exercise['difficulty'].toString().toUpperCase(),
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ],
+                                if (exercise['benefits'] != null) ...[
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 4,
+                                    children: List<String>.from(exercise['benefits']).map((benefit) => 
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue[100],
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          benefit,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.blue[700],
+                                          ),
+                                        ),
+                                      ),
+                                    ).toList(),
+                                  ),
+                                ],
+                                if (exercise['instructions'] != null) ...[
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[100],
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(Icons.info_outline, size: 16, color: Colors.blue[600]),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            exercise['instructions'],
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: Colors.blue[700],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ).toList(),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9C27B0),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: const Text('Close'),
                 ),
               ],
             ),
@@ -2326,5 +3222,15 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
         ),
       ),
     );
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return 'Unknown';
+    try {
+      final date = DateTime.parse(dateStr);
+      return '${date.day}/${date.month}/${date.year} at ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return 'Unknown date';
+    }
   }
 }

@@ -10,7 +10,6 @@ class FamilyLinkApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother - Family Link',
       theme: ThemeData(
         fontFamily: 'Lexend',

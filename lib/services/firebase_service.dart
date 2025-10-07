@@ -33,12 +33,12 @@ class FirebaseService {
       // Try to use Firebase first
       _auth.currentUser;
       _useMockService = false;
-      print('Using Firebase service');
+
     } catch (e) {
       // If Firebase is not configured, use mock service
       _useMockService = true;
       await FirebaseMockService.initialize();
-      print('Using Firebase mock service');
+
     }
   }
 
@@ -433,18 +433,18 @@ class FirebaseService {
     }
 
     try {
-      print('Fetching ONLY real doctors from Firebase database...');
+
       
       // Check if user is authenticated
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
-        print('ERROR: User not authenticated - cannot fetch doctors');
-        print('Please make sure the user is logged in to view doctors');
+
+
         return [];
       }
       
-      print('User authenticated: ${currentUser.email}');
-      print('Querying Firebase for healthcare professionals...');
+
+
       
       final querySnapshot = await _firestore
           .collection('users')
@@ -452,13 +452,13 @@ class FirebaseService {
           .where('role', isEqualTo: 'doctor')
           .get();
 
-      print('Found ${querySnapshot.docs.length} healthcare professionals in Firebase');
+
       
       List<Map<String, dynamic>> doctors = [];
       
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
-        print('Processing doctor: ${data['fullName']} - ${data['specialization']}');
+
         
         // Convert Firebase document to Doctor model format
         final firebaseUid = data['uid'] ?? doc.id;
@@ -491,22 +491,22 @@ class FirebaseService {
       // Sort by name
       doctors.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
       
-      print('Returning ${doctors.length} doctors from Firebase');
+
       return doctors;
     } catch (e) {
-      print('❌ ERROR fetching doctors from Firebase: $e');
+
       
       if (e.toString().contains('permission-denied')) {
-        print('🔒 PERMISSION DENIED - Firebase security rules are blocking access');
-        print('💡 SOLUTION: Check Firebase security rules or user authentication');
-        print('📝 Current user: ${_auth.currentUser?.email ?? 'Not authenticated'}');
+
+
+
       } else if (e.toString().contains('network')) {
-        print('🌐 NETWORK ERROR - Check internet connection');
+
       } else {
-        print('🔥 FIREBASE ERROR - Check Firebase configuration');
+
       }
       
-      print('✅ NO HARDCODED DOCTORS - Only real database doctors will be shown');
+
       return [];
     }
   }
@@ -559,7 +559,7 @@ class FirebaseService {
             : DateTime.now().toIso8601String(),
       };
     } catch (e) {
-      print('Error fetching doctor by ID from Firebase: $e');
+
       return null;
     }
   }
@@ -610,7 +610,7 @@ class FirebaseService {
       doctors.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
       return doctors;
     } catch (e) {
-      print('Error fetching doctors by specialization from Firebase: $e');
+
       return [];
     }
   }
@@ -653,7 +653,7 @@ class FirebaseService {
       list.sort();
       return list;
     } catch (e) {
-      print('Error fetching specializations from Firebase: $e');
+
       return [];
     }
   }
@@ -665,17 +665,17 @@ class FirebaseService {
     }
 
     try {
-      print('Fetching total patient count from Firebase database...');
+
       
       // Check if user is authenticated
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
-        print('ERROR: User not authenticated - cannot fetch patient count');
+
         return 0;
       }
       
-      print('User authenticated: ${currentUser.email}');
-      print('Querying Firebase for patients...');
+
+
       
       final querySnapshot = await _firestore
           .collection('users')
@@ -683,20 +683,20 @@ class FirebaseService {
           .get();
 
       final patientCount = querySnapshot.docs.length;
-      print('Found $patientCount patients in Firebase database');
+
       
       return patientCount;
     } catch (e) {
-      print('❌ ERROR fetching patient count from Firebase: $e');
+
       
       if (e.toString().contains('permission-denied')) {
-        print('🔒 PERMISSION DENIED - Firebase security rules are blocking access');
-        print('💡 SOLUTION: Check Firebase security rules or user authentication');
-        print('📝 Current user: ${_auth.currentUser?.email ?? 'Not authenticated'}');
+
+
+
       } else if (e.toString().contains('network')) {
-        print('🌐 NETWORK ERROR - Check internet connection');
+
       } else {
-        print('🔥 FIREBASE ERROR - Check Firebase configuration');
+
       }
       
       return 0;
@@ -742,7 +742,7 @@ class FirebaseService {
       }
       return null;
     } catch (e) {
-      print('Error checking existing patient-doctor link: $e');
+
       return null;
     }
   }
@@ -769,10 +769,10 @@ class FirebaseService {
       };
 
       final docRef = await _firestore.collection('patient_doctor_links').add(linkData);
-      print('Patient-doctor link created in Firebase: ${docRef.id}');
+
       return docRef.id;
     } catch (e) {
-      print('Error creating patient-doctor link in Firebase: $e');
+
       return null;
     }
   }
@@ -784,7 +784,7 @@ class FirebaseService {
     }
 
     try {
-      print('Fetching patient requests for doctor: $doctorId from Firebase');
+
       
       // Use a simpler query to avoid composite index requirements
       final querySnapshot = await _firestore
@@ -822,10 +822,10 @@ class FirebaseService {
       // Sort by creation date in code
       requests.sort((a, b) => (b['createdAt'] as DateTime).compareTo(a['createdAt'] as DateTime));
 
-      print('Found ${requests.length} patient requests for doctor $doctorId');
+
       return requests;
     } catch (e) {
-      print('Error fetching patient requests from Firebase: $e');
+
       return [];
     }
   }
@@ -837,7 +837,7 @@ class FirebaseService {
     }
 
     try {
-      print('Fetching accepted patients for doctor: $doctorId from Firebase');
+
       
       // Use a simpler query to avoid composite index requirements
       final querySnapshot = await _firestore
@@ -875,10 +875,10 @@ class FirebaseService {
       // Sort by linked date in code
       patients.sort((a, b) => (b['linkedDate'] as DateTime).compareTo(a['linkedDate'] as DateTime));
 
-      print('Found ${patients.length} accepted patients for doctor $doctorId');
+
       return patients;
     } catch (e) {
-      print('Error fetching accepted patients from Firebase: $e');
+
       return [];
     }
   }
@@ -895,10 +895,10 @@ class FirebaseService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('Patient request accepted in Firebase: $linkId');
+
       return true;
     } catch (e) {
-      print('Error accepting patient request in Firebase: $e');
+
       return false;
     }
   }
@@ -916,10 +916,10 @@ class FirebaseService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('Patient request declined in Firebase: $linkId');
+
       return true;
     } catch (e) {
-      print('Error declining patient request in Firebase: $e');
+
       return false;
     }
   }
@@ -937,10 +937,10 @@ class FirebaseService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      print('Patient removed from doctor in Firebase: $linkId');
+
       return true;
     } catch (e) {
-      print('Error removing patient from doctor in Firebase: $e');
+
       return false;
     }
   }
@@ -979,7 +979,7 @@ class FirebaseService {
             : DateTime.now(),
       };
     } catch (e) {
-      print('Error fetching patient by ID from Firebase: $e');
+
       return null;
     }
   }
@@ -991,7 +991,7 @@ class FirebaseService {
     }
 
     try {
-      print('Fetching linked doctors for patient: $patientId from Firebase');
+
       
       final querySnapshot = await _firestore
           .collection('patient_doctor_links')
@@ -1028,7 +1028,7 @@ class FirebaseService {
             });
           }
         } catch (e) {
-          print('Could not load doctor data for ${data['doctorId']}: $e');
+
           // Add basic info even if doctor details fail
           linkedDoctors.add({
             'linkId': doc.id,
@@ -1054,10 +1054,10 @@ class FirebaseService {
       // Sort by creation date (most recent first)
       linkedDoctors.sort((a, b) => (b['createdAt'] as DateTime).compareTo(a['createdAt'] as DateTime));
       
-      print('Found ${linkedDoctors.length} linked doctors for patient $patientId');
+
       return linkedDoctors;
     } catch (e) {
-      print('Error fetching linked doctors from Firebase: $e');
+
       return [];
     }
   }
@@ -1084,10 +1084,10 @@ class FirebaseService {
       };
 
       final docRef = await _firestore.collection('symptom_logs').add(symptomLogData);
-      print('Symptom log saved to Firebase: ${docRef.id}');
+
       return docRef.id;
     } catch (e) {
-      print('Error saving symptom log to Firebase: $e');
+
       return null;
     }
   }
@@ -1099,36 +1099,36 @@ class FirebaseService {
     }
 
     try {
-      print('Fetching symptom logs for patient: $patientId from Firebase');
+
       
       // Check if current user is the patient or has doctor access
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
-        print('Error: No authenticated user');
+
         return [];
       }
 
       // If the current user is not the patient, verify doctor-patient relationship
       if (currentUser.uid != patientId) {
-        print('Current user (${currentUser.uid}) is not the patient ($patientId), checking doctor access...');
+
         
         // Get current user's role
         final currentUserData = await getUserData(currentUser.uid);
         if (currentUserData == null || 
             currentUserData['accountType'] != 'healthcare' || 
             currentUserData['role'] != 'doctor') {
-          print('Error: Current user is not a doctor');
+
           return [];
         }
 
         // Verify doctor-patient relationship
         final hasAccess = await verifyDoctorPatientRelationship(currentUser.uid, patientId);
         if (!hasAccess) {
-          print('Error: Doctor does not have access to patient data');
+
           return [];
         }
         
-        print('Doctor access verified for patient $patientId');
+
       }
       
       final querySnapshot = await _firestore
@@ -1170,14 +1170,14 @@ class FirebaseService {
         }
       });
       
-      print('Found ${logs.length} symptom logs for patient $patientId');
+
       return logs;
     } catch (e) {
-      print('Error fetching symptom logs from Firebase: $e');
+
       
       if (e.toString().contains('permission-denied')) {
-        print('Permission denied - this might be due to Firestore security rules');
-        print('Make sure the user has proper access to symptom logs');
+
+
       }
       
       return [];
@@ -1195,7 +1195,7 @@ class FirebaseService {
     }
 
     try {
-      print('Fetching symptom logs for patient: $patientId from $startDate to $endDate');
+
       
       // First get all logs for the patient, then filter by date in code
       // This avoids needing composite indexes
@@ -1249,10 +1249,10 @@ class FirebaseService {
         return dateB.compareTo(dateA); // Descending order
       });
       
-      print('Found ${logs.length} symptom logs in date range for patient $patientId');
+
       return logs;
     } catch (e) {
-      print('Error fetching symptom logs by date range from Firebase: $e');
+
       return [];
     }
   }
@@ -1264,7 +1264,7 @@ class FirebaseService {
     }
 
     try {
-      print('Fetching symptom logs for all patients of doctor: $doctorId');
+
       
       // First get all accepted patients for this doctor
       final acceptedPatients = await getAcceptedPatientsForDoctor(doctorId);
@@ -1281,16 +1281,16 @@ class FirebaseService {
             patientLogs[patientId] = logs;
           }
         } catch (e) {
-          print('Error fetching logs for patient $patientId: $e');
+
           // Continue with other patients even if one fails
           continue;
         }
       }
       
-      print('Found symptom logs for ${patientLogs.length} patients of doctor $doctorId');
+
       return patientLogs;
     } catch (e) {
-      print('Error fetching symptom logs for doctor patients: $e');
+
       return {};
     }
   }
@@ -1313,7 +1313,7 @@ class FirebaseService {
 
       return querySnapshot.docs.isNotEmpty;
     } catch (e) {
-      print('Error verifying doctor-patient relationship: $e');
+
       return false;
     }
   }
@@ -1331,10 +1331,10 @@ class FirebaseService {
       };
 
       await _firestore.collection('symptom_logs').doc(logId).update(updateData);
-      print('Symptom log updated in Firebase: $logId');
+
       return true;
     } catch (e) {
-      print('Error updating symptom log in Firebase: $e');
+
       return false;
     }
   }
@@ -1347,11 +1347,106 @@ class FirebaseService {
 
     try {
       await _firestore.collection('symptom_logs').doc(logId).delete();
-      print('Symptom log deleted from Firebase: $logId');
+
       return true;
     } catch (e) {
-      print('Error deleting symptom log from Firebase: $e');
+
       return false;
+    }
+  }
+
+  // Get doctor recommendations for a patient
+  static Future<Map<String, dynamic>?> getDoctorRecommendations(String userId) async {
+    if (_useMockService) {
+      return null;
+    }
+
+    try {
+      // Simple query without orderBy to avoid index requirement
+      final querySnapshot = await _firestore
+          .collection('doctor_recommendations')
+          .where('patientId', isEqualTo: userId)
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        // Get the most recent document manually (since we can't use orderBy without index)
+        var mostRecentDoc = querySnapshot.docs.first;
+        DateTime? mostRecentTime;
+        
+        for (var doc in querySnapshot.docs) {
+          final data = doc.data();
+          if (data['updatedAt'] != null) {
+            final docTime = (data['updatedAt'] as Timestamp).toDate();
+            if (mostRecentTime == null || docTime.isAfter(mostRecentTime)) {
+              mostRecentTime = docTime;
+              mostRecentDoc = doc;
+            }
+          }
+        }
+        
+        final data = mostRecentDoc.data();
+        print('Found doctor recommendations for patient $userId: $data');
+        return data;
+      }
+      
+      print('No doctor recommendations found for patient $userId');
+      return null;
+    } catch (e) {
+      print('Error getting doctor recommendations: $e');
+      return null;
+    }
+  }
+
+  // Save doctor recommendations for a patient
+  static Future<bool> saveDoctorRecommendations(String patientId, Map<String, dynamic> recommendations) async {
+    if (_useMockService) {
+      return true;
+    }
+
+    try {
+      final now = DateTime.now();
+      final docData = {
+        ...recommendations,
+        'patientId': patientId,
+        'createdAt': Timestamp.fromDate(now),
+        'updatedAt': Timestamp.fromDate(now),
+      };
+
+      // Use auto-generated document ID instead of patient ID to avoid conflicts
+      final docRef = await _firestore.collection('doctor_recommendations').add(docData);
+      
+      print('Successfully saved doctor recommendations for patient $patientId with doc ID: ${docRef.id}');
+      print('Saved data: $docData');
+      return true;
+    } catch (e) {
+      print('Error saving doctor recommendations: $e');
+      return false;
+    }
+  }
+
+  // Get all prescriptions made by a specific doctor
+  static Future<List<Map<String, dynamic>>> getDoctorPrescriptionsByDoctorId(String doctorId) async {
+    if (_useMockService) {
+      return [];
+    }
+
+    try {
+      final querySnapshot = await _firestore
+          .collection('doctor_recommendations')
+          .where('doctorId', isEqualTo: doctorId)
+          .get();
+      
+      List<Map<String, dynamic>> prescriptions = [];
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        prescriptions.add(data);
+      }
+      
+      print('Found ${prescriptions.length} prescriptions for doctor $doctorId');
+      return prescriptions;
+    } catch (e) {
+      print('Error getting prescriptions by doctor ID: $e');
+      return [];
     }
   }
 }

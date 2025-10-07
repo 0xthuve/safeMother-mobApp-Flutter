@@ -8,6 +8,7 @@ import '../../services/route_guard.dart';
 import '../../services/user_management_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/backend_service.dart';
+import '../../services/firebase_service.dart';
 import '../patient_requests_page.dart';
 
 
@@ -26,6 +27,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   List<PatientDoctorLink> _pendingRequests = [];
   List<PatientDoctorLink> _acceptedPatients = [];
   int _totalPatientsCount = 0;
+  List<Map<String, dynamic>> _recentPrescriptions = [];
   bool _isLoading = true;
 
   @override
@@ -51,13 +53,16 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       if (userId != null) {
         try {
           // Use the Firebase UID directly (no hash conversion needed)
-          print('Doctor dashboard: userId=$userId');
+          // ...existing code...
           
           pendingRequests = await _backendService.getPatientRequestsForDoctor(userId);
           acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
           totalPatientsCount = await _backendService.getTotalPatientCount();
+          
+          // Load recent prescriptions made by this doctor
+          _recentPrescriptions = await _loadRecentPrescriptions(userId);
         } catch (e) {
-          print('Error loading patient data: $e');
+          // ...existing code...
         }
       }
       
@@ -82,7 +87,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
 
         // No hardcoded appointments - use real appointment data only
         final List<Appointment> realAppointments = [];
-        // TODO: In future, load real appointments from database based on accepted patients
+  // ...existing code...
         // For now, keeping empty to show only real data
 
         setState(() {
@@ -122,7 +127,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         });
       }
     } catch (e) {
-      print('Error loading dashboard data: $e');
+  // ...existing code...
       // Fallback to basic data
       final userName = await SessionManager.getUserName();
       final userEmail = await SessionManager.getUserEmail();
@@ -156,6 +161,83 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     }
   }
 
+  Future<List<Map<String, dynamic>>> _loadRecentPrescriptions(String doctorId) async {
+    try {
+      List<Map<String, dynamic>> prescriptions = [];
+      
+      // Method 1: Get prescriptions from accepted patients
+      for (final patient in _acceptedPatients) {
+        try {
+          final recommendations = await _backendService.getDoctorRecommendations(patient.patientId);
+          if (recommendations != null && recommendations['doctorId'] == doctorId) {
+            final patientData = await FirebaseService.getUserData(patient.patientId);
+            
+            prescriptions.add({
+              'patientId': patient.patientId,
+              'patientName': patientData?['fullName'] ?? 'Unknown Patient',
+              'recommendations': recommendations,
+              'prescribedAt': recommendations['prescribedAt'] ?? recommendations['createdAt']?.toString(),
+            });
+          }
+        } catch (e) {
+          print('Error loading prescription for patient ${patient.patientId}: $e');
+        }
+      }
+      
+      // Method 2: Also check Firebase directly for any prescriptions made by this doctor
+      // This helps catch prescriptions that might not show up through the patient relationship
+      try {
+        final allDoctorPrescriptions = await FirebaseService.getDoctorPrescriptionsByDoctorId(doctorId);
+        for (final prescription in allDoctorPrescriptions) {
+          // Check if we already have this prescription from Method 1
+          final existingIndex = prescriptions.indexWhere((p) => 
+            p['patientId'] == prescription['patientId'] && 
+            p['prescribedAt'] == prescription['prescribedAt']);
+          
+          if (existingIndex == -1) {
+            // This is a new prescription not found in Method 1
+            try {
+              final patientData = await FirebaseService.getUserData(prescription['patientId']);
+              prescriptions.add({
+                'patientId': prescription['patientId'],
+                'patientName': patientData?['fullName'] ?? 'Unknown Patient',
+                'recommendations': prescription,
+                'prescribedAt': prescription['prescribedAt'] ?? prescription['createdAt']?.toString(),
+              });
+            } catch (e) {
+              print('Error loading patient data for ${prescription['patientId']}: $e');
+              // Add prescription without patient name
+              prescriptions.add({
+                'patientId': prescription['patientId'],
+                'patientName': 'Unknown Patient',
+                'recommendations': prescription,
+                'prescribedAt': prescription['prescribedAt'] ?? prescription['createdAt']?.toString(),
+              });
+            }
+          }
+        }
+      } catch (e) {
+        print('Error loading doctor prescriptions directly: $e');
+        // Continue with Method 1 results only
+      }
+      
+      // Sort by prescription date (most recent first)
+      prescriptions.sort((a, b) {
+        final dateA = a['prescribedAt'] as String?;
+        final dateB = b['prescribedAt'] as String?;
+        if (dateA == null && dateB == null) return 0;
+        if (dateA == null) return 1;
+        if (dateB == null) return -1;
+        return dateB.compareTo(dateA);
+      });
+      
+      return prescriptions.take(5).toList(); // Return only the 5 most recent
+    } catch (e) {
+      print('Error loading recent prescriptions: $e');
+      return [];
+    }
+  }
+
   void _onItemTapped(int index) {
     if (index == _currentIndex) return;
     DoctorNavigationHandler.navigateToScreen(context, index);
@@ -179,6 +261,13 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         elevation: 0,
         automaticallyImplyLeading: false, // Remove back arrow
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              _loadDashboardData(); // Refresh all dashboard data
+            },
+            tooltip: 'Refresh Dashboard',
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.white),
             onPressed: () {
@@ -389,6 +478,53 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                     )
                   else
                     ...(_pendingRequests.take(3).map((request) => _buildPatientRequestCard(request))),
+
+                  const SizedBox(height: 24),
+
+                  // Recent Prescriptions Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Recent Prescriptions',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      if (_recentPrescriptions.isNotEmpty)
+                        TextButton(
+                          onPressed: () {
+                            // Navigate to doctor patient management page (My Patients tab)
+                            DoctorNavigationHandler.navigateToPatientManagement(context, initialTab: 0);
+                          },
+                          child: const Text('View All'),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_recentPrescriptions.isEmpty)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'No recent prescriptions',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ..._recentPrescriptions.map((prescription) => _buildPrescriptionCard(prescription)),
 
                   const SizedBox(height: 24),
 
@@ -642,6 +778,167 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       return '${difference.inMinutes} minutes ago';
     } else {
       return 'Just now';
+    }
+  }
+
+  Widget _buildPrescriptionCard(Map<String, dynamic> prescription) {
+    final recommendations = prescription['recommendations'] as Map<String, dynamic>;
+    final meals = recommendations['meals'] as List<dynamic>? ?? [];
+    final exercises = recommendations['exercises'] as List<dynamic>? ?? [];
+    final mealPlan = recommendations['mealPlan'] as String?;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1976D2).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                child: const Icon(
+                  Icons.medical_services,
+                  color: Color(0xFF1976D2),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      prescription['patientName'] ?? 'Unknown Patient',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF333333),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Patient ID: ${prescription['patientId']}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'PRESCRIBED',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (mealPlan != null) ...[
+            Row(
+              children: [
+                const Icon(Icons.restaurant, size: 16, color: Colors.orange),
+                const SizedBox(width: 4),
+                Text(
+                  'Meal Plan: $mealPlan',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.orange,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+          ],
+          Row(
+            children: [
+              if (meals.isNotEmpty) ...[
+                const Icon(Icons.restaurant_menu, size: 16, color: Colors.blue),
+                const SizedBox(width: 4),
+                Text(
+                  '${meals.length} meal${meals.length == 1 ? '' : 's'}',
+                  style: const TextStyle(fontSize: 14, color: Colors.blue),
+                ),
+                const SizedBox(width: 16),
+              ],
+              if (exercises.isNotEmpty) ...[
+                const Icon(Icons.fitness_center, size: 16, color: Colors.green),
+                const SizedBox(width: 4),
+                Text(
+                  '${exercises.length} exercise${exercises.length == 1 ? '' : 's'}',
+                  style: const TextStyle(fontSize: 14, color: Colors.green),
+                ),
+              ],
+            ],
+          ),
+          if (prescription['prescribedAt'] != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Prescribed: ${_formatPrescriptionDate(prescription['prescribedAt'])}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatPrescriptionDate(String? dateString) {
+    if (dateString == null) return 'Unknown';
+    
+    try {
+      DateTime date;
+      if (dateString.contains('T')) {
+        date = DateTime.parse(dateString);
+      } else {
+        // Handle Timestamp string format
+        date = DateTime.now(); // Fallback
+      }
+      
+      final now = DateTime.now();
+      final difference = now.difference(date);
+      
+      if (difference.inDays > 0) {
+        return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
+      } else if (difference.inHours > 0) {
+        return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
+      } else if (difference.inMinutes > 0) {
+        return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
+      } else {
+        return 'Just now';
+      }
+    } catch (e) {
+      return 'Recently';
     }
   }
 

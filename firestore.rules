@@ -153,6 +153,39 @@ service cloud.firestore {
                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
     }
 
+    // Doctor Recommendations - for meal and exercise prescriptions
+    match /doctor_recommendations/{recommendationId} {
+      // Patients can read their own recommendations
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.patientId;
+      
+      // Doctors can create and update recommendations for their patients
+      allow create, update: if request.auth != null && 
+                               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
+                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+      
+      // Doctors can read recommendations they created (using doctorId field)
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.doctorId;
+      
+      // Doctors can read ANY recommendations to see their prescription history
+      // This allows the dashboard to load all prescriptions made by the doctor
+      allow read: if request.auth != null && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+      
+      // Allow doctors to query by doctorId (for dashboard prescription history)
+      allow list: if request.auth != null && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+
+      // Allow patients to query their own recommendations (for patient dashboard)
+      allow list: if request.auth != null;
+    }
+
     // Allow public read access to some collections for demonstration purposes
     // Remove this in production and implement proper access control
     match /public_data/{document} {

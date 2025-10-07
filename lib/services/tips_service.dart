@@ -74,7 +74,7 @@ class TipsService {
       await prefs.setString(tipsKey, tipsData);
       return true;
     } catch (e) {
-      print('Error saving tips: $e');
+
       return false;
     }
   }
@@ -733,7 +733,7 @@ Remember, some sleep disruption is normal during pregnancy. Focus on rest when p
       tips.add(newTip);
       return await _saveTips(tips);
     } catch (e) {
-      print('Error adding tip: $e');
+
       return false;
     }
   }

@@ -32,7 +32,7 @@ class _AcceptedPatientsPageState extends State<AcceptedPatientsPage> {
       }
 
       // Use the Firebase UID directly (no hash conversion needed)
-      print('AcceptedPatientsPage: userId=$userId');
+
 
       // Get accepted patients directly from Firebase
       final acceptedPatients = await _backendService.getAcceptedPatientsForDoctor(userId);
@@ -54,7 +54,7 @@ class _AcceptedPatientsPageState extends State<AcceptedPatientsPage> {
             };
           }
         } catch (e) {
-          print('Could not load patient data for ${patient.patientId}: $e');
+
           // Fallback data when Firebase access is denied
           patientDetails[patient.patientId] = {
             'fullName': 'Patient ${patient.patientId.substring(0, 8)}',
@@ -71,7 +71,7 @@ class _AcceptedPatientsPageState extends State<AcceptedPatientsPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading accepted patients: $e');
+
       setState(() {
         _isLoading = false;
       });
@@ -117,7 +117,7 @@ class _AcceptedPatientsPageState extends State<AcceptedPatientsPage> {
         }
       }
     } catch (e) {
-      print('Error removing patient: $e');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

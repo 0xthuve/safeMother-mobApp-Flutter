@@ -1,10 +1,10 @@
 // navigation_handler.dart
 import 'package:flutter/material.dart';
-import 'patientDashboard.dart';
-import 'patientDashboardLog.dart';
-import 'reminderPatientDashboard.dart';
-import 'patientDashboardTip.dart';
-import 'chatPatient.dart';
+import 'patient_dashboard.dart';
+import 'patient_dashboard_log.dart';
+import 'reminder_patient_dashboard.dart';
+import 'patient_dashboard_tip.dart';
+import 'chat_patient.dart';
 
 class NavigationHandler {
   static void navigateToScreen(BuildContext context, int index) {

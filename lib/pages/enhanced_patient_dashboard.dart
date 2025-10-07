@@ -6,7 +6,7 @@ import '../widgets/pregnancy_progress_widget.dart';
 import '../models/appointment.dart';
 import '../models/reminder.dart';
 import '../models/medical_record.dart';
-import '../utils/demo_data_initializer.dart';
+
 
 class EnhancedPatientDashboard extends StatefulWidget {
   const EnhancedPatientDashboard({Key? key}) : super(key: key);
@@ -35,9 +35,6 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
     setState(() => isLoading = true);
     
     try {
-      // Initialize all demo data
-      await DemoDataInitializer.initializeAllDemoData();
-      
       // Get user ID from session manager
       final userId = await SessionManager.getUserId() ?? '1';
       
@@ -66,7 +63,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
         isLoading = false;
       });
     } catch (e) {
-      print('Error loading dashboard data: $e');
+
       setState(() => isLoading = false);
     }
   }
@@ -80,47 +77,51 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
     }
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _loadDashboardData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Welcome Section
-              _buildWelcomeSection(),
-              const SizedBox(height: 24),
-              
-              // Pregnancy Progress Widget
-              PregnancyProgressWidget(
-                showRefreshButton: true,
-                onTap: () {
-                  // Optional: Navigate to detailed pregnancy tracking page
-                  print('Pregnancy progress widget tapped');
-                },
-              ),
-              const SizedBox(height: 24),
-              
-              // Quick Stats Cards
-              _buildQuickStatsCards(),
-              const SizedBox(height: 24),
-              
-              // Today's Reminders
-              _buildTodayReminders(),
-              const SizedBox(height: 24),
-              
-              // Upcoming Appointments
-              _buildUpcomingAppointments(),
-              const SizedBox(height: 24),
-              
-              // Recent Medical Records
-              _buildRecentMedicalRecords(),
-              const SizedBox(height: 24),
-              
-              // Quick Actions
-              _buildQuickActions(),
-            ],
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadDashboardData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome Section
+                _buildWelcomeSection(),
+                const SizedBox(height: 20),
+                
+                // Pregnancy Progress Widget
+                PregnancyProgressWidget(
+                  showRefreshButton: true,
+                  onTap: () {
+                    // Optional: Navigate to detailed pregnancy tracking page
+                  },
+                ),
+                const SizedBox(height: 20),
+                
+                // Quick Stats Cards
+                _buildQuickStatsCards(),
+                const SizedBox(height: 20),
+                
+                // Today's Reminders
+                _buildTodayReminders(),
+                const SizedBox(height: 20),
+                
+                // Upcoming Appointments
+                _buildUpcomingAppointments(),
+                const SizedBox(height: 20),
+                
+                // Recent Medical Records
+                _buildRecentMedicalRecords(),
+                const SizedBox(height: 20),
+                
+                // Quick Actions
+                _buildQuickActions(),
+                
+                // Bottom padding for better scrolling
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
@@ -141,38 +142,49 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
       child: Row(
         children: [
           Expanded(
+            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Welcome back!',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade800,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Welcome back!',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Hope you\'re feeling well today',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade600,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'Hope you\'re feeling well today',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.favorite,
-              color: Colors.pink.shade400,
-              size: 32,
+          const SizedBox(width: 12),
+          Flexible(
+            flex: 1,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.favorite,
+                color: Colors.pink.shade400,
+                size: 32,
+              ),
             ),
           ),
         ],
@@ -215,7 +227,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -229,21 +241,30 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 6),
+          FittedBox(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
+          const SizedBox(height: 2),
+          FittedBox(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -292,6 +313,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
           ),
           const SizedBox(width: 12),
           Expanded(
+            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -301,6 +323,8 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (reminder.description.isNotEmpty)
                   Text(
@@ -309,15 +333,22 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
                       fontSize: 12,
                       color: Colors.grey.shade600,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
               ],
             ),
           ),
-          Text(
-            _formatTime(reminder.reminderDate),
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
+          const SizedBox(width: 8),
+          Flexible(
+            flex: 1,
+            child: Text(
+              _formatTime(reminder.reminderDate),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.end,
             ),
           ),
         ],
@@ -358,60 +389,80 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
           Row(
             children: [
               Expanded(
+                flex: 3,
                 child: Text(
                   appointment.reason,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(appointment.status),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  appointment.status.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+              const SizedBox(width: 8),
+              Flexible(
+                flex: 1,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(appointment.status),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: FittedBox(
+                    child: Text(
+                      appointment.status.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Row(
+          Wrap(
+            spacing: 16,
+            runSpacing: 4,
             children: [
-              Icon(
-                Icons.calendar_today,
-                size: 16,
-                color: Colors.grey.shade600,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _formatAppointmentDate(appointment.appointmentDate),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              Text(
-                _formatAppointmentDate(appointment.appointmentDate),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Icon(
-                Icons.access_time,
-                size: 16,
-                color: Colors.grey.shade600,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                appointment.timeSlot,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.access_time,
+                    size: 16,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    appointment.timeSlot,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -424,6 +475,8 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
                 color: Colors.grey.shade600,
                 fontStyle: FontStyle.italic,
               ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],
@@ -467,6 +520,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
           ),
           const SizedBox(width: 12),
           Expanded(
+            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -476,6 +530,8 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 Text(
                   record.recordType.replaceAll('_', ' ').toUpperCase(),
@@ -483,15 +539,22 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
                     fontSize: 12,
                     color: Colors.grey.shade600,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          Text(
-            _formatRecordDate(record.recordDate),
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
+          const SizedBox(width: 8),
+          Flexible(
+            flex: 1,
+            child: Text(
+              _formatRecordDate(record.recordDate),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.end,
             ),
           ),
         ],
@@ -562,24 +625,29 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color,
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 6),
+            FittedBox(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

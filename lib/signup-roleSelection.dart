@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'signup-roleMother.dart'; // keep this for SignupMotherForm()
-import 'linkFamMem.dart';
+import 'link_fam_mem.dart';
 import 'pages/doctor/doctor_registration.dart';
+import 'signin.dart';
 
 void main() {
   runApp(const RoleSelectionApp());
@@ -13,8 +14,8 @@ class RoleSelectionApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Safe Mother - Role Selection',
       debugShowCheckedModeBanner: false,
-      title: 'Safe Mother - Role Select',
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
@@ -198,6 +199,51 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with SingleTi
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      // Back button
+                      Row(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.purple[100]!.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: IconButton(
+                              onPressed: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignInScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.arrow_back_ios,
+                                color: Color(0xFF7B1FA2),
+                                size: 20,
+                              ),
+                              padding: const EdgeInsets.all(12),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Back to Login',
+                            style: TextStyle(
+                              color: Color(0xFF9575CD),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      
                       // Top: logo + title
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 8),

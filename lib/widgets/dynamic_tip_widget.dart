@@ -52,7 +52,6 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading today\'s tip: $e');
       setState(() {
         _isLoading = false;
       });
@@ -189,13 +188,16 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Use column layout for narrow screens to prevent overflow
+          final isNarrow = constraints.maxWidth < 350;
+          
+          if (isNarrow) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header row
                 Row(
                   children: [
                     const Text(
@@ -226,6 +228,7 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                 
                 const SizedBox(height: 8),
                 
+                // Title
                 Text(
                   _todaysTip!.title,
                   style: const TextStyle(
@@ -233,10 +236,13 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                 ),
                 
                 const SizedBox(height: 8),
                 
+                // Description
                 Text(
                   _todaysTip!.description,
                   style: const TextStyle(
@@ -250,33 +256,32 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                 
                 const SizedBox(height: 16),
                 
-                // Action buttons
-                Row(
+                // Action buttons - responsive
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: _showTipDetail,
-                        child: Container(
-                          height: 36,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF3E5F5),
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'Read More',
-                              style: TextStyle(
-                                color: Color(0xFF7B1FA2),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
+                    GestureDetector(
+                      onTap: _showTipDetail,
+                      child: Container(
+                        height: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3E5F5),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            'Read More',
+                            style: TextStyle(
+                              color: Color(0xFF7B1FA2),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
                     GestureDetector(
                       onTap: _navigateToLearnPage,
                       child: Container(
@@ -301,44 +306,168 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                   ],
                 ),
               ],
-            ),
-          ),
+            );
+          }
           
-          const SizedBox(width: 16),
-          
-          // Tip image
-          GestureDetector(
-            onTap: _showTipDetail,
-            child: Container(
-              width: 100,
-              height: 120,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: const Color(0xFFE91E63).withOpacity(0.1),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  _todaysTip!.imageAsset,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE91E63).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+          // Wide layout - use Row
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          "Today's Tip",
+                          style: TextStyle(
+                            color: Color(0xFF9575CD),
+                            fontSize: 14,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE91E63).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _todaysTip!.category,
+                            style: const TextStyle(
+                              color: Color(0xFFE91E63),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    Text(
+                      _todaysTip!.title,
+                      style: const TextStyle(
+                        color: Color(0xFF7B1FA2),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
                       ),
-                      child: Icon(
-                        _getCategoryIcon(_todaysTip!.category),
-                        color: const Color(0xFFE91E63),
-                        size: 40,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    Text(
+                      _todaysTip!.description,
+                      style: const TextStyle(
+                        color: Color(0xFF5A5A5A),
+                        fontSize: 14,
+                        height: 1.5,
                       ),
-                    );
-                  },
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _showTipDetail,
+                            child: Container(
+                              height: 36,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3E5F5),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'Read More',
+                                  style: TextStyle(
+                                    color: Color(0xFF7B1FA2),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _navigateToLearnPage,
+                            child: Container(
+                              height: 36,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE91E63),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'Learn More',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ),
-        ],
+              
+              const SizedBox(width: 12),
+              
+              // Tip image - flexible size
+              GestureDetector(
+                onTap: _showTipDetail,
+                child: Container(
+                  width: 80,
+                  height: 100,
+                  constraints: const BoxConstraints(minWidth: 60, maxWidth: 100),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFFE91E63).withOpacity(0.1),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.asset(
+                      _todaysTip!.imageAsset,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE91E63).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            _getCategoryIcon(_todaysTip!.category),
+                            color: const Color(0xFFE91E63),
+                            size: 32,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

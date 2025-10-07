@@ -34,7 +34,6 @@ class _ProfileSummaryCardState extends State<ProfileSummaryCard> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading user data: $e');
       setState(() {
         _isLoading = false;
       });
