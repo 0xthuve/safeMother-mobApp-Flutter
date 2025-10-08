@@ -55,10 +55,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   
   // Removed pregnancy data variables
 
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-  final TextEditingController _contactController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
@@ -153,11 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isLoading = false;
         });
 
-        // Update text controllers
-        _nameController.text = _userName;
-        _ageController.text = _userAge;
-        _contactController.text = _userContact;
-        _emailController.text = _userEmail;
+
       }
     } catch (e) {
 
@@ -194,186 +186,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 
 
-
-  Future<void> _saveUserData(String key, String value) async {
-    try {
-      // Update Firebase data
-      Map<String, dynamic> updateData = {};
-      
-      switch (key) {
-        case 'userName':
-          updateData['fullName'] = value;
-          break;
-        case 'userAge':
-          updateData['age'] = int.tryParse(value) ?? 0;
-          break;
-        case 'userContact':
-          updateData['phone'] = value;
-          updateData['contact'] = value;
-          break;
-        case 'userEmail':
-          updateData['email'] = value;
-          break;
-      }
-
-      final success = await UserManagementService.updateUserProfile(updateData);
-      
-      if (success) {
-        // Also save to local preferences as backup
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(key, value);
-        
-        // Update the local state variables immediately instead of reloading everything
-        setState(() {
-          switch (key) {
-            case 'userName':
-              _userName = value;
-              break;
-            case 'userAge':
-              _userAge = value;
-              break;
-            case 'userContact':
-              _userContact = value;
-              break;
-            case 'userEmail':
-              _userEmail = value;
-              break;
-          }
-        });
-      } else {
-        throw Exception('Failed to update profile');
-      }
-    } catch (e) {
-
-      rethrow; // Re-throw the error so it can be handled in the UI
-    }
-  }
-
-  void _showEditPopup(String field, String currentValue, TextEditingController controller) {
-    controller.text = currentValue;
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Edit $field',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111611),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    hintText: 'Enter your $field',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF5F5F5),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          color: Color(0xFF638763),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () async {
-                        if (controller.text.isNotEmpty) {
-                          Navigator.of(context).pop(); // Close edit dialog first
-                          
-                          // Show loading indicator
-                          _showLoadingDialog();
-
-                          try {
-                            String key = '';
-                            if (field == 'Name') {
-                              key = 'userName';
-                            } else if (field == 'Age') {
-                              key = 'userAge';
-                            } else if (field == 'Contact') {
-                              key = 'userContact';
-                            } else if (field == 'Email') {
-                              key = 'userEmail';
-                            }
-
-                            await _saveUserData(key, controller.text);
-                            
-                            // Dismiss loading dialog
-                            _dismissLoadingDialog();
-                            
-                            // Navigate to dashboard with success message
-                            _navigateToDashboard('$field updated successfully!');
-                          } catch (e) {
-                            // Dismiss loading dialog even on error
-                            _dismissLoadingDialog();
-                            
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Failed to update $field: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE91E63),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   void _showChangePasswordPopup() {
     _passwordController.clear();
@@ -523,117 +335,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showNotificationPreferencesPopup() {
-    bool emailNotifications = true;
-    bool pushNotifications = true;
-    bool smsNotifications = false;
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Notification Preferences',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111611),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SwitchListTile(
-                      title: const Text('Email Notifications'),
-                      value: emailNotifications,
-                      onChanged: (value) {
-                        setState(() {
-                          emailNotifications = value;
-                        });
-                      },
-                      activeThumbColor: const Color(0xFFE91E63),
-                    ),
-                    SwitchListTile(
-                      title: const Text('Push Notifications'),
-                      value: pushNotifications,
-                      onChanged: (value) {
-                        setState(() {
-                          pushNotifications = value;
-                        });
-                      },
-                      activeThumbColor: const Color(0xFFE91E63),
-                    ),
-                    SwitchListTile(
-                      title: const Text('SMS Notifications'),
-                      value: smsNotifications,
-                      onChanged: (value) {
-                        setState(() {
-                          smsNotifications = value;
-                        });
-                      },
-                      activeThumbColor: const Color(0xFFE91E63),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(
-                              color: Color(0xFF638763),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            
-                            // Navigate to dashboard after saving preferences
-                            _navigateToDashboard('Notification preferences saved!');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE91E63),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Save',
-                            style: TextStyle(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   void _showLinkedMembersPopup() {
     showDialog(
       context: context,
@@ -653,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Linked Family Members',
+                  'Link Family Members',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -1169,27 +870,19 @@ void _showPrivacySettingsPopup() {
                                   ),
                                   child: Column(
                                     children: [
-                                      _buildModernInfoRow('Name', _userName, Icons.person, () {
-                                        _showEditPopup('Name', _userName, _nameController);
-                                      }),
+                                      _buildReadOnlyInfoRow('Name', _userName, Icons.person),
                                       
                                       const Divider(height: 32, color: Color(0xFFE0E0E0)),
                                       
-                                      _buildModernInfoRow('Email', _userEmail, Icons.email, () {
-                                        _showEditPopup('Email', _userEmail, _emailController);
-                                      }),
+                                      _buildReadOnlyInfoRow('Email', _userEmail, Icons.email),
                                       
                                       const Divider(height: 32, color: Color(0xFFE0E0E0)),
                                       
-                                      _buildModernInfoRow('Age', _userAge.isEmpty ? 'Not set' : _userAge, Icons.cake, () {
-                                        _showEditPopup('Age', _userAge, _ageController);
-                                      }),
+                                      _buildReadOnlyInfoRow('Age', _userAge.isEmpty ? 'Not set' : _userAge, Icons.cake),
                                       
                                       const Divider(height: 32, color: Color(0xFFE0E0E0)),
                                       
-                                      _buildModernInfoRow('Contact', _userContact.isEmpty ? 'Not set' : _userContact, Icons.phone, () {
-                                        _showEditPopup('Contact', _userContact, _contactController);
-                                      }),
+                                      _buildReadOnlyInfoRow('Contact', _userContact.isEmpty ? 'Not set' : _userContact, Icons.phone),
                                     ],
                                   ),
                                 ),
@@ -1254,8 +947,6 @@ void _showPrivacySettingsPopup() {
                             ),
                             child: Column(
                               children: [
-                                _buildModernSettingRow('Notification Preferences', Icons.notifications, _showNotificationPreferencesPopup),
-                                const Divider(height: 1, color: Color(0xFFE0E0E0)),
                                 _buildModernSettingRow('Privacy Settings', Icons.privacy_tip, _showPrivacySettingsPopup),
                               ],
                             ),
@@ -1271,7 +962,7 @@ void _showPrivacySettingsPopup() {
                           const SizedBox(height: 32),
                           
                           // Family & Support Section
-                          _buildSectionHeader('Family & Support', Icons.family_restroom),
+                          _buildSectionHeader('Family & Doctor Link', Icons.family_restroom),
                           const SizedBox(height: 16),
                           
                           Container(
@@ -1289,9 +980,9 @@ void _showPrivacySettingsPopup() {
                             ),
                             child: Column(
                               children: [
-                                _buildModernSettingRow('Linked Family Members', Icons.family_restroom, _showLinkedMembersPopup),
+                                _buildModernSettingRow('Link Family Members', Icons.family_restroom, _showLinkedMembersPopup),
                                 const Divider(height: 1, color: Color(0xFFE0E0E0)),
-                                _buildModernSettingRow('Linked Doctors', Icons.local_hospital, _showLinkedDoctorsPopup),
+                                _buildModernSettingRow('Link Doctors', Icons.local_hospital, _showLinkedDoctorsPopup),
                               ],
                             ),
                           ),
@@ -1336,53 +1027,44 @@ void _showPrivacySettingsPopup() {
     );
   }
 
-  Widget _buildModernInfoRow(String title, String value, IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE91E63).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: const Color(0xFFE91E63), size: 18),
+  Widget _buildReadOnlyInfoRow(String title, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE91E63).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2D3748),
-                    ),
+            child: Icon(icon, color: const Color(0xFFE91E63), size: 18),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2D3748),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF666666),
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const Icon(
-              Icons.edit,
-              color: Color(0xFF9CA3AF),
-              size: 18,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

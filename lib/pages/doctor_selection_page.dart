@@ -47,11 +47,16 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
         
         // Load all doctors
         final doctors = await _backendService.getAllDoctors();
-
+        print('DEBUG: Loaded ${doctors.length} doctors from backend');
+        
+        // Log each doctor's details
+        for (var doctor in doctors) {
+          print('DEBUG: Doctor - Name: ${doctor.name}, Specialization: ${doctor.specialization}, Hospital: ${doctor.hospital}, Available: ${doctor.isAvailable}');
+        }
         
         // Load linked doctors for this patient
         final linkedDoctors = await _backendService.getLinkedDoctors(userId);
-
+        print('DEBUG: User has ${linkedDoctors.length} linked doctors');
         
         setState(() {
           _doctors = doctors;
@@ -65,16 +70,36 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
         });
       }
     } catch (e) {
-
+      print('ERROR: Failed to load doctors: $e');
+      String errorMessage = 'Unable to load doctors. ';
+      
+      if (e.toString().contains('permission-denied')) {
+        errorMessage += 'Database permission issue. Please check Firestore security rules.';
+      } else if (e.toString().contains('network')) {
+        errorMessage += 'Please check your internet connection and try again.';
+      } else {
+        errorMessage += 'An unexpected error occurred.';
+      }
+      
+      errorMessage += '\n\nError details: $e';
+      
       setState(() {
-        _errorMessage = 'Unable to load doctors. Please check your internet connection and try again.\n\nError: $e';
+        _errorMessage = errorMessage;
         _isLoading = false;
       });
     }
   }
 
   List<Doctor> get _filteredDoctors {
-    return _doctors.where((doctor) {
+    print('DoctorSelectionPage: Filtering ${_doctors.length} doctors');
+    
+    // Temporarily bypass all filtering for debugging
+    if (_doctors.isNotEmpty) {
+      print('DoctorSelectionPage: BYPASS FILTERING - Returning all ${_doctors.length} doctors');
+      return _doctors;
+    }
+    
+    final filtered = _doctors.where((doctor) {
       final matchesSearch = doctor.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
                            doctor.specialization.toLowerCase().contains(_searchQuery.toLowerCase()) ||
                            doctor.hospital.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -82,8 +107,13 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
       final matchesSpecialization = _selectedSpecialization == 'All' || 
                                    doctor.specialization == _selectedSpecialization;
       
+      print('DoctorSelectionPage: Doctor ${doctor.name} - matchesSearch: $matchesSearch, matchesSpecialization: $matchesSpecialization, isAvailable: ${doctor.isAvailable}');
+      
       return matchesSearch && matchesSpecialization && doctor.isAvailable;
     }).toList();
+    
+    print('DoctorSelectionPage: Filtered to ${filtered.length} doctors');
+    return filtered;
   }
 
   Future<void> _linkWithDoctor(Doctor doctor) async {
@@ -409,6 +439,21 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                     ),
                   ),
                 
+                // Debug Info Section
+                if (_doctors.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'DEBUG: Total doctors loaded: ${_doctors.length}, Filtered: ${_filteredDoctors.length}',
+                      style: const TextStyle(fontSize: 12, color: Colors.blue),
+                    ),
+                  ),
+                
                 // Doctors List
                 Expanded(
                   child: _errorMessage != null
@@ -483,8 +528,8 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                                   const SizedBox(height: 8),
                                   Text(
                                     _doctors.isEmpty 
-                                    ? 'Healthcare professionals will appear here when they register on the platform through Firebase.'
-                                    : 'Try adjusting your search or filters',
+                                        ? 'No healthcare professionals found in the database.\n\nTo get started:\n\n1. Healthcare professionals need to register through the signup portal\n2. Choose "I\'m a Healthcare Professional" during signup\n3. Complete the doctor registration form\n\nOnce doctors register, they will appear here for you to connect with.'
+                                        : 'Try adjusting your search or filters',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,
@@ -493,19 +538,66 @@ class _DoctorSelectionPageState extends State<DoctorSelectionPage> {
                               ),
                               if (_doctors.isEmpty) ...[
                                 const SizedBox(height: 24),
-                                const Icon(
-                                  Icons.cloud_sync,
-                                  size: 32,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Connected to Firebase Database',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                    fontStyle: FontStyle.italic,
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    // Show information about registering as healthcare professional
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Register as Healthcare Professional'),
+                                        content: const Text(
+                                          'To register as a healthcare professional:\n\n'
+                                          '1. Go to the app\'s main signup page\n'
+                                          '2. Select "I\'m a Healthcare Professional"\n'
+                                          '3. Complete the registration form\n'
+                                          '4. Once verified, you\'ll appear in this list\n\n'
+                                          'Healthcare professionals need to provide:\n'
+                                          '• Medical license number\n'
+                                          '• Hospital/clinic affiliation\n'
+                                          '• Specialization\n'
+                                          '• Years of experience'
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: const Text('Got it'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.person_add, color: Colors.white),
+                                  label: const Text(
+                                    'Register as Healthcare Professional',
+                                    style: TextStyle(color: Colors.white),
                                   ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF4CAF50),
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.cloud_sync,
+                                      size: 16,
+                                      color: Colors.grey,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Connected to Firebase Database',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ],

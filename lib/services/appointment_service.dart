@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import '../models/appointment.dart';
 
 class AppointmentService {
@@ -274,5 +275,37 @@ class AppointmentService {
     } catch (e) {
       return false;
     }
+  }
+
+  // Real-time listener for patient appointments
+  Stream<List<Appointment>> getPatientAppointmentsStream(String patientId) {
+    return _firestore
+        .collection(_collectionName)
+        .where('patientId', isEqualTo: patientId)
+        .orderBy('appointmentDate', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Appointment.fromMap(data);
+      }).toList();
+    });
+  }
+
+  // Real-time listener for doctor appointments
+  Stream<List<Appointment>> getDoctorAppointmentsStream(String doctorId) {
+    return _firestore
+        .collection(_collectionName)
+        .where('doctorId', isEqualTo: doctorId)
+        .orderBy('appointmentDate', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return Appointment.fromMap(data);
+      }).toList();
+    });
   }
 }

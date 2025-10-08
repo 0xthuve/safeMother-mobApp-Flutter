@@ -180,6 +180,333 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
     });
   }
 
+  void _showHistoryPopup() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            height: MediaQuery.of(context).size.height * 0.7,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF7B1FA2).withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7B1FA2).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.history,
+                        color: Color(0xFF7B1FA2),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Recent Health Logs',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2D1B69),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(
+                        Icons.close,
+                        color: Color(0xFF666666),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                
+                // Content
+                Expanded(
+                  child: _recentLogs.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF7B1FA2).withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.history_outlined,
+                                  size: 50,
+                                  color: Color(0xFF7B1FA2),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'No Health Logs Yet',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF2D1B69),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Start logging your health data to see your history here',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF666666),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: _recentLogs.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final log = _recentLogs[index];
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFFF5E8FF).withOpacity(0.3),
+                                    const Color(0xFFF9F7F9).withOpacity(0.3),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                  color: const Color(0xFFE0E0E0),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Date header
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF7B1FA2).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: const Icon(
+                                          Icons.calendar_today,
+                                          color: Color(0xFF7B1FA2),
+                                          size: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        '${log.logDate.day}/${log.logDate.month}/${log.logDate.year}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF2D1B69),
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF4CAF50).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          log.mood,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: Color(0xFF4CAF50),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  
+                                  // Health metrics
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildPopupLogInfoItem(
+                                          Icons.favorite,
+                                          'BP',
+                                          log.bloodPressure,
+                                          const Color(0xFF7B1FA2),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: _buildPopupLogInfoItem(
+                                          Icons.monitor_weight,
+                                          'Weight',
+                                          '${log.weight}kg',
+                                          const Color(0xFF9C27B0),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildPopupLogInfoItem(
+                                          Icons.child_friendly,
+                                          'Kicks',
+                                          log.babyKicks,
+                                          const Color(0xFFFF9800),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: _buildPopupLogInfoItem(
+                                          Icons.bedtime,
+                                          'Sleep',
+                                          '${log.sleepHours}h',
+                                          const Color(0xFF3F51B5),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  
+                                  if (log.symptoms.isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFF5722).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.healing,
+                                            color: Color(0xFFFF5722),
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Symptoms: ${log.symptoms}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF2D1B69),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                  
+                                  if (log.additionalNotes?.isNotEmpty == true) ...[
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.note_add,
+                                            color: Color(0xFF4CAF50),
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Notes: ${log.additionalNotes}',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF2D1B69),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                
+                // Close button
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFF7B1FA2),
+                        Color(0xFF9C27B0),
+                      ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    child: const Text(
+                      'Close',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildCustomTextField({
     required TextEditingController controller,
     required String label,
@@ -589,7 +916,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header with back button
+                  // Header with back button and history icon
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -611,7 +938,21 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(width: 48), // For balance
+                      IconButton(
+                        onPressed: _showHistoryPopup,
+                        icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7B1FA2).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.history,
+                            color: Color(0xFF7B1FA2),
+                            size: 24,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
 
@@ -976,161 +1317,6 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                         ),
 
                         const SizedBox(height: 32),
-
-                        // Old Recent Logs Section (keeping for reference)
-                        if (_recentLogs.isNotEmpty) ...[
-                          Container(
-                            padding: EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color(0xFF9C27B0).withOpacity(0.1),
-                                  blurRadius: 15,
-                                  offset: Offset(0, 5),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: Color(
-                                          0xFF9C27B0,
-                                        ).withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Icon(
-                                        Icons.history,
-                                        color: Color(0xFF9C27B0),
-                                        size: 24,
-                                      ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text(
-                                      'Recent Health Logs',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF2D1B69),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 16),
-                                ListView.separated(
-                                  shrinkWrap: true,
-                                  physics: NeverScrollableScrollPhysics(),
-                                  itemCount: _recentLogs.length,
-                                  separatorBuilder: (context, index) =>
-                                      SizedBox(height: 12),
-                                  itemBuilder: (context, index) {
-                                    final log = _recentLogs[index];
-                                    return Container(
-                                      padding: EdgeInsets.all(16),
-                                      decoration: BoxDecoration(
-                                        color: Color(0xFFF8F9FA),
-                                        borderRadius: BorderRadius.circular(15),
-                                        border: Border.all(
-                                          color: Color(0xFFE0E0E0),
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Container(
-                                                padding: EdgeInsets.all(8),
-                                                decoration: BoxDecoration(
-                                                  color: Color(
-                                                    0xFF9C27B0,
-                                                  ).withOpacity(0.1),
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                ),
-                                                child: Icon(
-                                                  Icons.calendar_today,
-                                                  color: Color(0xFF9C27B0),
-                                                  size: 16,
-                                                ),
-                                              ),
-                                              SizedBox(width: 8),
-                                              Text(
-                                                '${log.logDate.day}/${log.logDate.month}/${log.logDate.year}',
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Color(0xFF2D1B69),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 12),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: _buildLogInfoItem(
-                                                  Icons.favorite,
-                                                  'BP',
-                                                  log.bloodPressure,
-                                                  Color(0xFF7B1FA2),
-                                                ),
-                                              ),
-                                              Expanded(
-                                                child: _buildLogInfoItem(
-                                                  Icons.monitor_weight,
-                                                  'Weight',
-                                                  '${log.weight}kg',
-                                                  Color(0xFF9C27B0),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 8),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: _buildLogInfoItem(
-                                                  Icons.sentiment_satisfied,
-                                                  'Mood',
-                                                  log.mood,
-                                                  Color(0xFF4CAF50),
-                                                ),
-                                              ),
-                                              Expanded(
-                                                child: _buildLogInfoItem(
-                                                  Icons.child_friendly,
-                                                  'Kicks',
-                                                  log.babyKicks,
-                                                  Color(0xFFFF9800),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          if (log.symptoms.isNotEmpty) ...[
-                                            SizedBox(height: 8),
-                                            _buildLogInfoItem(
-                                              Icons.healing,
-                                              'Symptoms',
-                                              log.symptoms,
-                                              Color(0xFFFF5722),
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
@@ -1173,6 +1359,56 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPopupLogInfoItem(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 14),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Color(0xFF666666),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2D1B69),
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ],
+      ),
     );
   }
 }

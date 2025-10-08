@@ -58,23 +58,37 @@ class Doctor {
 
   factory Doctor.fromMap(Map<String, dynamic> map) {
     return Doctor(
-      id: map['id'],
+      id: map['id']?.toString(),
       firebaseUid: map['firebaseUid'],
-      name: map['name'],
-      email: map['email'],
-      phone: map['phone'],
-      specialization: map['specialization'],
-      licenseNumber: map['licenseNumber'],
-      hospital: map['hospital'],
-      experience: map['experience'],
-      bio: map['bio'],
+      name: map['name'] ?? 'Unknown Doctor',
+      email: map['email'] ?? '',
+      phone: map['phone'] ?? '',
+      specialization: map['specialization'] ?? 'General Practice',
+      licenseNumber: map['licenseNumber'] ?? '',
+      hospital: map['hospital'] ?? 'Unknown Hospital',
+      experience: map['experience'] ?? '0 years',
+      bio: map['bio'] ?? 'Healthcare professional',
       profileImage: map['profileImage'] ?? '',
-      rating: map['rating']?.toDouble() ?? 0.0,
+      rating: (map['rating'] is num) ? map['rating'].toDouble() : 0.0,
       totalPatients: map['totalPatients'] ?? 0,
-      isAvailable: map['isAvailable'] == 1,
-      createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
+      isAvailable: map['isAvailable'] == true || map['isAvailable'] == 1,
+      createdAt: _parseDateTime(map['createdAt']),
+      updatedAt: _parseDateTime(map['updatedAt']),
     );
+  }
+
+  static DateTime _parseDateTime(dynamic dateValue) {
+    if (dateValue == null) return DateTime.now();
+    if (dateValue is DateTime) return dateValue;
+    if (dateValue is String) {
+      try {
+        return DateTime.parse(dateValue);
+      } catch (e) {
+        print('Error parsing date: $dateValue - $e');
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
   }
 
   Doctor copyWith({

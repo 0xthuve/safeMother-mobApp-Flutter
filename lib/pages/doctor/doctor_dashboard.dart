@@ -248,62 +248,131 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     return RouteGuard.doctorRouteGuard(
       context: context,
       child: Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Doctor Portal',
-          style: TextStyle(
-            color: Color.fromARGB(255, 255, 255, 255),
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            letterSpacing: 0.5,
-          ),
-        ),
-        //backgroundColor: const Color(0xFF2563EB), // Modern blue
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 22),
-              onPressed: () {
-                _loadDashboardData();
-              },
-              tooltip: 'Refresh Dashboard',
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withOpacity(0.1),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        body: Stack(
+          children: [
+            // Soft gradient background
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFE3F2FD), Color(0xFFF8F6F8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
               ),
             ),
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            child: IconButton(
-              icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
-              onPressed: () {
-                // Handle notifications
-              },
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white.withOpacity(0.1),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            
+            // Decorative shapes
+            Positioned(
+              top: 120,
+              left: -30,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFBBDEFB).withOpacity(0.4),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+            
+            Positioned(
+              top: -60,
+              right: -40,
+              child: Transform.rotate(
+                angle: 0.5,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(80),
+                    color: const Color(0xFF90CAF9).withOpacity(0.3),
+                  ),
+                ),
+              ),
+            ),
+            
+            SafeArea(
+              child: Column(
+                children: [
+                  // Custom header with refresh and notification buttons
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Doctor Portal',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF1976D2),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue[100]!.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.refresh_rounded,
+                                  color: Color(0xFF1976D2),
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  _loadDashboardData();
+                                },
+                                padding: const EdgeInsets.all(12),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.blue[100]!.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.notifications_none_rounded,
+                                  color: Color(0xFF1976D2),
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  // Handle notifications
+                                },
+                                padding: const EdgeInsets.all(12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Scrollable content
+                  Expanded(
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1976D2)),
+                          ))
+                        : SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -313,17 +382,20 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF2563EB), Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                        colors: [Color(0xFF1976D2), Color(0xFF42A5F5), Color(0xFF90CAF9)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFFE3F2FD).withOpacity(0.8),
+                        width: 1,
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2563EB).withOpacity(0.25),
-                          blurRadius: 20,
+                          color: Colors.blue[100]!,
+                          blurRadius: 25,
                           offset: const Offset(0, 10),
-                          spreadRadius: 0,
                         ),
                       ],
                     ),
@@ -396,7 +468,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                           'Today\'s Appointments',
                           _todayAppointments.length.toString(),
                           Icons.calendar_today_rounded,
-                          const Color(0xFF3B82F6), // Modern blue
+                          const Color(0xFF1976D2), // Blue theme
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -405,7 +477,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                           'Total Patients',
                           _totalPatientsCount.toString(),
                           Icons.people_rounded,
-                          const Color(0xFF10B981), // Modern emerald
+                          const Color(0xFF42A5F5), // Light blue
                         ),
                       ),
                     ],
@@ -423,7 +495,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                             'My Patients',
                             _acceptedPatients.length.toString(),
                             Icons.medical_services_rounded,
-                            const Color(0xFF8B5CF6), // Modern purple
+                            const Color(0xFF5C6BC0), // Indigo blue
                           ),
                         ),
                       ),
@@ -438,7 +510,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                             'Pending Requests',
                             _pendingRequests.length.toString(),
                             Icons.pending_actions_rounded,
-                            const Color(0xFFF59E0B), // Modern amber
+                            const Color(0xFF26A69A), // Teal blue
                           ),
                         ),
                       ),
@@ -450,15 +522,29 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3B82F6).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              const Color(0xFF1976D2).withOpacity(0.15),
+                              const Color(0xFF1976D2).withOpacity(0.08),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1976D2).withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: const Icon(
                           Icons.calendar_today_rounded,
-                          color: Color(0xFF3B82F6),
-                          size: 20,
+                          color: Color(0xFF1976D2),
+                          size: 22,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -536,15 +622,29 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF59E0B).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  const Color(0xFF26A69A).withOpacity(0.15),
+                                  const Color(0xFF26A69A).withOpacity(0.08),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF26A69A).withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: const Icon(
                               Icons.pending_actions_rounded,
-                              color: Color(0xFFF59E0B),
-                              size: 20,
+                              color: Color(0xFF26A69A),
+                              size: 22,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -678,14 +778,20 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       ),
                     ),
                   ),
+                          ],
+                        ),
+                      ),
+                  ),
                 ],
               ),
             ),
-      bottomNavigationBar: DoctorBottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onItemTapped,
+          ],
+        ),
+        bottomNavigationBar: DoctorBottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: _onItemTapped,
+        ),
       ),
-    ),
     );
   }
 
@@ -693,13 +799,26 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            color.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.08),
-            blurRadius: 20,
+            color: color.withOpacity(0.15),
+            blurRadius: 25,
             offset: const Offset(0, 8),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.white,
+            blurRadius: 8,
+            offset: const Offset(0, -2),
             spreadRadius: 0,
           ),
         ],
@@ -711,10 +830,24 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  color.withOpacity(0.15),
+                  color.withOpacity(0.08),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Icon(
               icon, 
@@ -722,23 +855,23 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
               size: 28,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             value,
             style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF1F2937),
-              letterSpacing: -1,
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF1976D2),
+              letterSpacing: -1.2,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF6B7280),
-              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              color: Color(0xFF5E7489),
+              fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
           ),
@@ -749,31 +882,64 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
 
   Widget _buildAppointmentCard(Appointment appointment) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            const Color(0xFF1976D2).withOpacity(0.03),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: const Color(0xFF1976D2).withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+            spreadRadius: 0,
+          ),
+          BoxShadow(
+            color: Colors.white,
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+            spreadRadius: 0,
           ),
         ],
+        border: Border.all(
+          color: const Color(0xFF1976D2).withOpacity(0.1),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
           Container(
-            width: 50,
-            height: 50,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: const Color(0xFF1976D2).withOpacity(0.1), // Blue theme
-              borderRadius: BorderRadius.circular(25),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF1976D2).withOpacity(0.15),
+                  const Color(0xFF1976D2).withOpacity(0.08),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF1976D2).withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: const Icon(
-              Icons.calendar_today,
-              color: Color(0xFF1976D2), // Blue theme
+              Icons.calendar_today_rounded,
+              color: Color(0xFF1976D2),
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -784,42 +950,60 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 Text(
                   appointment.timeSlot,
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF333333),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1976D2),
+                    letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   'Patient ID: ${appointment.patientId}',
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Colors.grey,
+                    color: Color(0xFF5E7489),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   appointment.reason.isNotEmpty ? appointment.reason : 'No reason specified',
                   style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
+                    fontSize: 13,
+                    color: Color(0xFF8B9DC3),
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _getStatusColor(appointment.status).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  _getStatusColor(appointment.status).withOpacity(0.15),
+                  _getStatusColor(appointment.status).withOpacity(0.08),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: _getStatusColor(appointment.status).withOpacity(0.2),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: Text(
               appointment.status.toUpperCase(),
               style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
                 color: _getStatusColor(appointment.status),
+                letterSpacing: 0.5,
               ),
             ),
           ),

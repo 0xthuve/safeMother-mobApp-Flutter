@@ -607,13 +607,22 @@ class BackendService {
 
   Future<List<Doctor>> getAllDoctors() async {
     try {
+      print('BackendService: getAllDoctors - Starting to fetch doctors from Firebase');
       // Get doctors from Firebase instead of SharedPreferences
       final doctorsData = await FirebaseService.getAllDoctors();
+      print('BackendService: getAllDoctors - Received ${doctorsData.length} doctors from Firebase');
       
-      return doctorsData.map((data) => Doctor.fromMap(data)).toList();
+      final doctors = doctorsData.map((data) {
+        print('BackendService: getAllDoctors - Converting doctor data: ${data['name']} (${data['specialization']})');
+        return Doctor.fromMap(data);
+      }).toList();
+      
+      print('BackendService: getAllDoctors - Successfully converted ${doctors.length} doctors');
+      return doctors;
     } catch (e) {
-
-      return [];
+      print('BackendService: getAllDoctors - ERROR: $e');
+      print('BackendService: getAllDoctors - Stack trace: ${StackTrace.current}');
+      throw e; // Re-throw the exception instead of returning empty list
     }
   }
 

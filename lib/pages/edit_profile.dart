@@ -149,29 +149,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         backgroundColor: const Color(0xFFE91E63),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          if (!_isLoading)
-            TextButton(
-              onPressed: _isSaving ? null : _saveProfile,
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text(
-                      'Save',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-            ),
-        ],
       ),
       body: _isLoading
           ? const Center(

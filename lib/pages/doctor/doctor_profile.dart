@@ -150,44 +150,65 @@ class _DoctorProfileState extends State<DoctorProfile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: Colors.white, 
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            letterSpacing: 0.5,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFFE3F2FD),
+              const Color(0xFFF8F6F8),
+            ],
           ),
         ),
-        backgroundColor: const Color(0xFF2563EB), // Modern blue
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
-        actions: [
-          if (!_isLoading && _doctor != null)
-            Container(
-              margin: const EdgeInsets.only(right: 12),
-              child: IconButton(
-                icon: const Icon(Icons.edit_rounded, color: Colors.white, size: 22),
-                onPressed: _navigateToEditProfile,
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Profile',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1976D2),
+                        letterSpacing: -1.5,
+                      ),
+                    ),
+                    if (!_isLoading && _doctor != null)
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              const Color(0xFF1976D2).withOpacity(0.15),
+                              const Color(0xFF1976D2).withOpacity(0.08),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1976D2).withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.edit_rounded, color: Color(0xFF1976D2), size: 24),
+                          onPressed: _navigateToEditProfile,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            ),
-        ],
-      ),
-      body: _isLoading
+              Expanded(
+                child: _isLoading
           ? const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1976D2)),
@@ -213,14 +234,14 @@ class _DoctorProfileState extends State<DoctorProfile> {
                         padding: const EdgeInsets.all(32),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF2563EB), Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                            colors: [Color(0xFF1976D2), Color(0xFF1565C0), Color(0xFF0D47A1)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF2563EB).withOpacity(0.25),
+                              color: const Color(0xFF1976D2).withOpacity(0.25),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                               spreadRadius: 0,
@@ -314,24 +335,44 @@ class _DoctorProfileState extends State<DoctorProfile> {
                       Container(
                         width: double.infinity,
                         margin: const EdgeInsets.only(top: 8, bottom: 12),
-                        child: ElevatedButton.icon(
-                          onPressed: _navigateToEditProfile,
-                          icon: const Icon(Icons.edit, color: Colors.white),
-                          label: const Text(
-                            'Edit Profile',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color(0xFF1976D2),
+                                const Color(0xFF1565C0),
+                              ],
                             ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF1976D2).withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1976D2),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          child: ElevatedButton.icon(
+                            onPressed: _navigateToEditProfile,
+                            icon: const Icon(Icons.edit, color: Colors.white),
+                            label: const Text(
+                              'Edit Profile',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            elevation: 2,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -340,30 +381,55 @@ class _DoctorProfileState extends State<DoctorProfile> {
                       Container(
                         width: double.infinity,
                         margin: const EdgeInsets.only(bottom: 12),
-                        child: ElevatedButton.icon(
-                          onPressed: _showSignOutDialog,
-                          icon: const Icon(Icons.logout, color: Colors.white),
-                          label: const Text(
-                            'Sign Out',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.red.shade500,
+                                Colors.red.shade600,
+                              ],
                             ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.red.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                          child: ElevatedButton.icon(
+                            onPressed: _showSignOutDialog,
+                            icon: const Icon(Icons.logout, color: Colors.white),
+                            label: const Text(
+                              'Sign Out',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                            elevation: 2,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
       bottomNavigationBar: DoctorBottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: _onItemTapped,

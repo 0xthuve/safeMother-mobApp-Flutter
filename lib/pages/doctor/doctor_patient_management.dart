@@ -179,55 +179,71 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'My Patients',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            letterSpacing: -0.5,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFFE3F2FD),
+              const Color(0xFFF8F6F8),
+            ],
           ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF2563EB),
-                const Color(0xFF1D4ED8),
-                const Color(0xFF1E40AF),
-              ],
-            ),
-          ),
-        ),
-        // actions: [
-        //   Container(
-        //     margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-        //     decoration: BoxDecoration(
-        //       color: Colors.white.withOpacity(0.2),
-        //       borderRadius: BorderRadius.circular(12),
-        //     ),
-        //     child: IconButton(
-        //       icon: const Icon(Icons.person_add_rounded, color: Colors.white, size: 24),
-        //       onPressed: () {
-        //         // TODO: Implement add patient functionality
-        //         ScaffoldMessenger.of(context).showSnackBar(
-        //           const SnackBar(
-        //             content: Text('Add patient feature coming soon!'),
-        //             backgroundColor: Color(0xFF10B981),
-        //           ),
-        //         );
-        //       },
-        //     ),
-        //   ),
-        // ],
-      ),
-      body: Column(
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'My Patients',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1976D2),
+                        letterSpacing: -1.5,
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFF1976D2).withOpacity(0.15),
+                            const Color(0xFF1976D2).withOpacity(0.08),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1976D2).withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.person_add_rounded, color: Color(0xFF1976D2), size: 24),
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Add patient feature coming soon!'),
+                              backgroundColor: Color(0xFF1976D2),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
         children: [
           // Enhanced Tab Bar
           Container(
@@ -269,14 +285,14 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
                         decoration: BoxDecoration(
                           gradient: _selectedTabIndex == 0 ? LinearGradient(
                             colors: [
-                              const Color(0xFF2563EB),
-                              const Color(0xFF1D4ED8),
+                              const Color(0xFF1976D2),
+                              const Color(0xFF1565C0),
                             ],
                           ) : null,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: _selectedTabIndex == 0 ? [
                             BoxShadow(
-                              color: const Color(0xFF2563EB).withOpacity(0.3),
+                              color: const Color(0xFF1976D2).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -335,14 +351,14 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
                         decoration: BoxDecoration(
                           gradient: _selectedTabIndex == 1 ? LinearGradient(
                             colors: [
-                              const Color(0xFF2563EB),
-                              const Color(0xFF1D4ED8),
+                              const Color(0xFF1976D2),
+                              const Color(0xFF1565C0),
                             ],
                           ) : null,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: _selectedTabIndex == 1 ? [
                             BoxShadow(
-                              color: const Color(0xFF2563EB).withOpacity(0.3),
+                              color: const Color(0xFF1976D2).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -474,8 +490,13 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
             child: _selectedTabIndex == 0 
                 ? _buildPatientsTab()
                 : _buildRequestsTab(),
+            ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       bottomNavigationBar: DoctorBottomNavigationBar(
         currentIndex: _currentIndex,
@@ -612,20 +633,22 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
           end: Alignment.bottomRight,
           colors: [
             Colors.white,
-            const Color(0xFFFAFBFC),
+            const Color(0xFF1976D2).withOpacity(0.03),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1E293B).withOpacity(0.08),
+            color: const Color(0xFF1976D2).withOpacity(0.08),
             blurRadius: 20,
             offset: const Offset(0, 8),
+            spreadRadius: 0,
           ),
           BoxShadow(
-            color: const Color(0xFF1E293B).withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.white,
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+            spreadRadius: 0,
           ),
         ],
         border: Border.all(

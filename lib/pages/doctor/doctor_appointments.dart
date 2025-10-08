@@ -341,51 +341,68 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Appointments',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            letterSpacing: -0.5,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFFE3F2FD),
+              const Color(0xFFF8F6F8),
+            ],
           ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF2563EB),
-                const Color(0xFF1D4ED8),
-                const Color(0xFF1E40AF),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
-              onPressed: () {
-                _showAddAppointmentDialog();
-              },
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Enhanced Filter Section
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Appointments',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1976D2),
+                        letterSpacing: -1.5,
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFF1976D2).withOpacity(0.15),
+                            const Color(0xFF1976D2).withOpacity(0.08),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF1976D2).withOpacity(0.2),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.add_rounded, color: Color(0xFF1976D2), size: 24),
+                        onPressed: () {
+                          _showAddAppointmentDialog();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    // Enhanced Filter Section
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -477,8 +494,13 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
                           return _buildAppointmentCard(appointment);
                         },
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       bottomNavigationBar: DoctorBottomNavigationBar(
         currentIndex: _currentIndex,

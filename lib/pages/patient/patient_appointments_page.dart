@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 import '../../services/appointment_service.dart';
 import '../../services/session_manager.dart';
 import '../../models/appointment.dart';
@@ -22,74 +23,102 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
   List<Appointment> _upcomingAppointments = [];
   List<Appointment> _pastAppointments = [];
   bool _isLoading = true;
+  StreamSubscription<List<Appointment>>? _appointmentsSubscription;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadAppointments();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (mounted) _loadAppointments();
+    _setupRealtimeListener();
   }
 
   @override
   void dispose() {
+    _appointmentsSubscription?.cancel();
     _tabController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadAppointments() async {
+  Future<void> _setupRealtimeListener() async {
     setState(() => _isLoading = true);
 
     try {
       final userId = await SessionManager.getUserId();
       if (userId == null) throw Exception('User not logged in');
 
-      final appointments =
-          await _appointmentService.getPatientAppointments(userId);
+      // Cancel any existing subscription
+      _appointmentsSubscription?.cancel();
 
-      final now = DateTime.now();
-      final todayOnly = DateTime(now.year, now.month, now.day);
-
-      final activeStatuses = [
-        'pending',
-        'scheduled',
-        'rescheduled',
-        'confirmed'
-      ];
-
-      setState(() {
-        _allAppointments = appointments;
-
-        _upcomingAppointments = appointments.where((a) {
-          final appointmentDateOnly = DateTime(
-              a.appointmentDate.year, a.appointmentDate.month, a.appointmentDate.day);
-          final isNotPast = appointmentDateOnly.isAfter(todayOnly) ||
-              appointmentDateOnly.isAtSameMomentAs(todayOnly);
-          final status = a.status.toLowerCase().trim();
-          return isNotPast && activeStatuses.contains(status);
-        }).toList();
-
-        _pastAppointments = appointments.where((a) {
-          final appointmentDateOnly = DateTime(
-              a.appointmentDate.year, a.appointmentDate.month, a.appointmentDate.day);
-          final isPastDate = appointmentDateOnly.isBefore(todayOnly);
-          final status = a.status.toLowerCase().trim();
-          return isPastDate || status == 'cancelled' || status == 'completed';
-        }).toList();
-
-        _isLoading = false;
-      });
+      // Set up real-time listener
+      _appointmentsSubscription = _appointmentService
+          .getPatientAppointmentsStream(userId)
+          .listen(
+        (appointments) {
+          if (mounted) {
+            _processAppointments(appointments);
+          }
+        },
+        onError: (error) {
+          if (mounted) {
+            setState(() => _isLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to load appointments: $error')),
+            );
+          }
+        },
+      );
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load appointments: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to setup real-time listener: $e')),
+        );
+      }
     }
+  }
+
+  void _processAppointments(List<Appointment> appointments) {
+    final now = DateTime.now();
+    final todayOnly = DateTime(now.year, now.month, now.day);
+
+    final activeStatuses = [
+      'pending',
+      'scheduled',
+      'rescheduled',
+      'confirmed'
+    ];
+
+    setState(() {
+      _allAppointments = appointments;
+
+      _upcomingAppointments = appointments.where((a) {
+        final appointmentDateOnly = DateTime(
+            a.appointmentDate.year, a.appointmentDate.month, a.appointmentDate.day);
+        final isNotPast = appointmentDateOnly.isAfter(todayOnly) ||
+            appointmentDateOnly.isAtSameMomentAs(todayOnly);
+        final status = a.status.toLowerCase().trim();
+        return isNotPast && activeStatuses.contains(status);
+      }).toList();
+
+      _pastAppointments = appointments.where((a) {
+        final appointmentDateOnly = DateTime(
+            a.appointmentDate.year, a.appointmentDate.month, a.appointmentDate.day);
+        final isPastDate = appointmentDateOnly.isBefore(todayOnly);
+        final status = a.status.toLowerCase().trim();
+        return isPastDate || status == 'cancelled' || status == 'completed';
+      }).toList();
+
+      _isLoading = false;
+    });
+  }
+
+  // Manual refresh method for pull-to-refresh
+  Future<void> _refreshAppointments() async {
+    // The real-time listener will automatically update,
+    // but we can show a loading indicator briefly
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(milliseconds: 500));
+    // The listener will handle the actual refresh
   }
 
   Future<void> _cancelAppointment(Appointment appointment) async {
@@ -117,7 +146,7 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
           appointment.id!,
           'Cancelled by patient',
         );
-        _loadAppointments();
+        // Real-time listener will automatically update the UI
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Appointment cancelled successfully'),
@@ -136,7 +165,7 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
     const doctorId = "0AludVmmD2OXGCn1i3M5UElBMSG2";
     const doctorName = "Dr. Sarah Johnson";
 
-    final result = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const AppointmentBookingPage(
@@ -146,7 +175,7 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
       ),
     );
 
-    if (result == true) _loadAppointments();
+    // Real-time listener will automatically update when new appointment is booked
   }
 
   Widget _buildAppointmentCard(Appointment appointment) {
@@ -159,10 +188,6 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
       'scheduled',
       'rescheduled'
     ].contains(appointment.status.toLowerCase().trim());
-
-    final canJoinCall = appointment.status.toLowerCase() == 'confirmed' &&
-        appointment.isVideoCallEnabled &&
-        appointment.videoCallUrl?.isNotEmpty == true;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -252,31 +277,15 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
               ),
               const SizedBox(height: 8),
             ],
-            if (canCancel || canJoinCall) ...[
+            if (canCancel) ...[
               const Divider(),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (canJoinCall)
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Video call feature coming soon!')),
-                        );
-                      },
-                      icon: const Icon(Icons.videocam),
-                      label: const Text('Join Call'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  if (canCancel)
-                    TextButton(
-                      onPressed: () => _cancelAppointment(appointment),
-                      child: const Text('Cancel', style: TextStyle(color: Colors.red)),
-                    ),
+                  TextButton(
+                    onPressed: () => _cancelAppointment(appointment),
+                    child: const Text('Cancel', style: TextStyle(color: Colors.red)),
+                  ),
                 ],
               ),
             ],
@@ -361,7 +370,7 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              _loadAppointments();
+              _refreshAppointments();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Refreshing appointments...'),
@@ -386,7 +395,7 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadAppointments,
+              onRefresh: _refreshAppointments,
               child: TabBarView(
                 controller: _tabController,
                 children: [

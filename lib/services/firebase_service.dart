@@ -438,13 +438,15 @@ class FirebaseService {
       // Check if user is authenticated
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
-
-
+        print('DEBUG getAllDoctors: User not authenticated');
         return [];
       }
       
-
-
+      print('DEBUG getAllDoctors: User authenticated, querying for healthcare professionals...');
+      
+      // First, let's check all users to see what's in the database
+      final allUsersQuery = await _firestore.collection('users').get();
+      print('DEBUG getAllDoctors: Total users in database: ${allUsersQuery.docs.length}');
       
       final querySnapshot = await _firestore
           .collection('users')
@@ -452,7 +454,7 @@ class FirebaseService {
           .where('role', isEqualTo: 'doctor')
           .get();
 
-
+      print('DEBUG getAllDoctors: Found ${querySnapshot.docs.length} healthcare professional documents');
       
       List<Map<String, dynamic>> doctors = [];
       
@@ -491,23 +493,21 @@ class FirebaseService {
       // Sort by name
       doctors.sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
       
-
+      print('DEBUG getAllDoctors: Returning ${doctors.length} doctors');
       return doctors;
     } catch (e) {
-
+      print('ERROR getAllDoctors: $e');
       
       if (e.toString().contains('permission-denied')) {
-
-
-
+        print('ERROR getAllDoctors: Permission denied - check Firestore rules');
+        throw Exception('Permission denied: Cannot access doctor data. Please check your authentication.');
       } else if (e.toString().contains('network')) {
-
+        print('ERROR getAllDoctors: Network error');
+        throw Exception('Network error: Please check your internet connection and try again.');
       } else {
-
+        print('ERROR getAllDoctors: Unknown error');
+        throw Exception('Failed to load doctors: ${e.toString()}');
       }
-      
-
-      return [];
     }
   }
 

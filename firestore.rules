@@ -14,6 +14,9 @@ service cloud.firestore {
                   resource.data.get('accountType', '') == 'healthcare' && 
                   resource.data.get('role', '') == 'doctor';
       
+      // Allow all authenticated users to list/query healthcare professionals (doctors)
+      allow list: if request.auth != null;
+      
       // Allow doctors to read basic patient information for medical purposes
       allow read: if request.auth != null && 
                   exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -93,42 +96,32 @@ service cloud.firestore {
                             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
     }
     
-    // Appointments - both patients and doctors can manage
-    match /appointments/{appointmentId} {
-      // Allow patients to create appointments
-      allow create: if request.auth != null && 
-                       request.auth.uid == request.resource.data.patientId;
-      
-      // Allow reading and updating appointments for both patient and doctor
-      allow read, update: if request.auth != null && 
-                             (request.auth.uid == resource.data.patientId || 
-                              request.auth.uid == resource.data.doctorId);
-      
-      // Allow doctors to create appointments (for booking on behalf of patients)
-      allow create: if request.auth != null && 
-                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
-                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
-      
-      // Allow deleting appointments (for cancellation)
-      allow delete: if request.auth != null && 
-                       (request.auth.uid == resource.data.patientId || 
-                        request.auth.uid == resource.data.doctorId);
-      
-      // Enhanced listing permissions for appointments
-      allow list: if request.auth != null;
-      
-      // Allow patients to query their own appointments
-      allow list: if request.auth != null && 
-                     request.query.where[0].field == 'patientId' && 
-                     request.query.where[0].value == request.auth.uid;
-      
-      // Allow doctors to query appointments where they are the doctor
-      allow list: if request.auth != null && 
-                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
-    }
+// Appointments - both patients and doctors can manage
+match /appointments/{appointmentId} {
+  // Allow patients to create appointments
+  allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.patientId;
+
+  // Allow doctors to create appointments (for booking on behalf of patients)
+  allow create: if request.auth != null && 
+                   exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+
+  // Allow read & update for both patient and doctor
+  allow read, update: if request.auth != null && 
+                         (request.auth.uid == resource.data.patientId || 
+                          request.auth.uid == resource.data.doctorId);
+
+ allow delete: if request.auth != null &&
+                 (request.auth.uid == resource.data.patientId ||
+                  request.auth.uid == resource.data.doctorId);
+
+// ✅ FIXED: Allow both patient & doctor to list their own appointments
+allow list: if request.auth != null;
+
+}
+
     
     // Symptom Logs - comprehensive health tracking for pregnancy
     match /symptom_logs/{logId} {
