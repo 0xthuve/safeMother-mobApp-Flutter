@@ -7,6 +7,7 @@ import '../../navigation/doctor_bottom_navigation.dart';
 import '../../services/backend_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/firebase_service.dart';
+import '../../services/nutrition_exercise_service.dart';
 import '../../models/patient_doctor_link.dart';
 import '../../models/meal.dart';
 import '../../models/exercise.dart';
@@ -2343,7 +2344,9 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
     'High Fiber',
     'Iron Rich',
     'Calcium Rich',
-    'Custom Plan'
+    'Folate & Vitamin B12 Rich',
+    'Omega-3 Rich',
+    'Hydration Focused'
   ];
   
   List<Map<String, dynamic>> currentMeals = [];
@@ -2384,12 +2387,19 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
+        width: MediaQuery.of(context).size.width > 600 
+            ? MediaQuery.of(context).size.width * 0.6
+            : MediaQuery.of(context).size.width * 0.9,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxWidth: 500,
+        ),
         padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Row(
               children: [
                 const Icon(Icons.restaurant, color: Color(0xFF4CAF50), size: 24),
@@ -2481,9 +2491,14 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              height: 200,
-              child: ListView.builder(
+            Flexible(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.3,
+                  minHeight: 150,
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
                 itemCount: mealPlanOptions.length,
                 itemBuilder: (context, index) {
                   final option = mealPlanOptions[index];
@@ -2500,6 +2515,7 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
                   );
                 },
               ),
+            ),
             ),
             const SizedBox(height: 20),
             Row(
@@ -2550,7 +2566,7 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
                 ),
               ],
             ),
-          ],
+          ]),
         ),
       ),
     );
@@ -2564,7 +2580,7 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
       }
 
       // Convert meal plan selection to actual meal recommendations
-      List<Meal> recommendedMeals = _getMealsForPlan(mealPlan);
+      List<Meal> recommendedMeals = await _getMealsForPlan(mealPlan);
 
       // Get existing exercise recommendations if any
       final backendService = BackendService();
@@ -2592,95 +2608,55 @@ class _MealPlanDialogState extends State<_MealPlanDialog> {
     }
   }
 
-  List<Meal> _getMealsForPlan(String mealPlan) {
-    switch (mealPlan) {
-      case 'Balanced Nutrition':
-        return [
-          Meal(
-            id: 'balanced_1',
-            name: 'Avocado Toast',
-            description: 'Whole grain toast with avocado, rich in healthy fats',
-            imageUrl: 'assets/avocado.png',
-            category: 'breakfast',
-            nutritionalBenefits: ['Healthy Fats', 'Folate', 'Fiber'],
-            calories: 320,
-            isPregnancySafe: true,
-            preparation: 'Toast bread, mash avocado, spread on toast',
-            ingredients: ['Whole grain bread', 'Avocado', 'Salt', 'Lemon'],
-          ),
-          Meal(
-            id: 'balanced_2',
-            name: 'Greek Yogurt with Berries',
-            description: 'Protein-rich yogurt with antioxidant berries',
-            imageUrl: 'assets/yogurt.png',
-            category: 'snack',
-            nutritionalBenefits: ['Protein', 'Probiotics', 'Antioxidants'],
-            calories: 180,
-            isPregnancySafe: true,
-            preparation: 'Mix yogurt with fresh berries',
-            ingredients: ['Greek yogurt', 'Mixed berries', 'Honey'],
-          ),
-        ];
-      case 'High Protein':
-        return [
-          Meal(
-            id: 'protein_1',
-            name: 'Protein Smoothie',
-            description: 'High-protein smoothie for muscle development',
-            imageUrl: 'assets/banana.png',
-            category: 'breakfast',
-            nutritionalBenefits: ['Protein', 'Vitamins', 'Minerals'],
-            calories: 350,
-            isPregnancySafe: true,
-            preparation: 'Blend all ingredients until smooth',
-            ingredients: ['Protein powder', 'Banana', 'Milk', 'Spinach'],
-          ),
-        ];
-      case 'Low Sodium':
-        return [
-          Meal(
-            id: 'lowsodium_1',
-            name: 'Fresh Fruit Salad',
-            description: 'Low sodium fresh fruit mix',
-            imageUrl: 'assets/banana.png',
-            category: 'snack',
-            nutritionalBenefits: ['Vitamins', 'Minerals', 'Fiber'],
-            calories: 120,
-            isPregnancySafe: true,
-            preparation: 'Cut and mix fresh fruits',
-            ingredients: ['Apple', 'Banana', 'Orange', 'Grapes'],
-          ),
-        ];
-      case 'Diabetic Friendly':
-        return [
-          Meal(
-            id: 'diabetic_1',
-            name: 'Chia Seed Pudding',
-            description: 'Low glycemic index pudding',
-            imageUrl: 'assets/chia_seed.png',
-            category: 'breakfast',
-            nutritionalBenefits: ['Omega-3', 'Fiber', 'Protein'],
-            calories: 200,
-            isPregnancySafe: true,
-            preparation: 'Mix chia seeds with almond milk, refrigerate overnight',
-            ingredients: ['Chia seeds', 'Almond milk', 'Stevia', 'Vanilla'],
-          ),
-        ];
-      default:
-        return [
-          Meal(
-            id: 'default_1',
-            name: 'Balanced Meal',
-            description: 'A well-balanced nutritious meal',
-            imageUrl: 'assets/coconut.png',
-            category: 'lunch',
-            nutritionalBenefits: ['Balanced nutrition'],
-            calories: 300,
-            isPregnancySafe: true,
-            preparation: 'Prepare as recommended by doctor',
-            ingredients: ['Various healthy ingredients'],
-          ),
-        ];
+  Future<List<Meal>> _getMealsForPlan(String mealPlan) async {
+    try {
+      print('Doctor: Getting meals for plan: $mealPlan');
+      final nutritionService = NutritionExerciseService();
+      final meals = await nutritionService.getMealsByCategory(mealPlan);
+      
+      print('Doctor: Found ${meals.length} meals for category: $mealPlan');
+      if (meals.isNotEmpty) {
+        print('Doctor: Sample meal from category: ${meals.first.name}');
+      }
+      
+      // Return a selection of meals from the category (limit to 5-6 meals per plan)
+      if (meals.isNotEmpty) {
+        return meals.take(6).toList();
+      }
+      
+      print('Doctor: No meals found for category $mealPlan, using fallback');
+      // Fallback to a default balanced meal if category not found
+      return [
+        Meal(
+          id: 'default_1',
+          name: 'Balanced Meal',
+          description: 'A well-balanced nutritious meal',
+          imageUrl: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+          category: mealPlan,
+          nutritionalBenefits: ['Balanced nutrition'],
+          calories: 300,
+          isPregnancySafe: true,
+          preparation: 'Prepare as recommended by doctor',
+          ingredients: ['Various healthy ingredients'],
+        ),
+      ];
+    } catch (e) {
+      print('Error getting meals for plan $mealPlan: $e');
+      // Fallback meal
+      return [
+        Meal(
+          id: 'fallback_1',
+          name: 'Nutritious Meal',
+          description: 'Doctor recommended meal',
+          imageUrl: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+          category: mealPlan,
+          nutritionalBenefits: ['Essential nutrients'],
+          calories: 250,
+          isPregnancySafe: true,
+          preparation: 'Follow doctor recommendations',
+          ingredients: ['Healthy ingredients'],
+        ),
+      ];
     }
   }
 }
@@ -2700,12 +2676,13 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
   List<String> exerciseOptions = [
     'Light Walking',
     'Prenatal Yoga',
+    'Prenatal Pilates',
     'Swimming',
     'Stationary Cycling',
     'Stretching Exercises',
     'Breathing Exercises',
     'Pelvic Floor Exercises',
-    'Custom Routine'
+    'Light Resistance Band Exercises'
   ];
   
   List<Map<String, dynamic>> currentExercises = [];
@@ -3086,6 +3063,20 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
             trimester: 'all',
           ));
           break;
+        case 'Prenatal Pilates':
+          exercises.add(Exercise(
+            id: 'pilates_1',
+            name: 'Prenatal Pilates',
+            description: 'Gentle core and posture work — great complement to yoga',
+            icon: Icons.accessibility_new,
+            duration: '40 minutes',
+            difficulty: 'easy',
+            benefits: ['Core strength', 'Posture improvement', 'Balance', 'Flexibility'],
+            isPregnancySafe: true,
+            instructions: 'Focus on gentle core exercises and posture alignment with prenatal modifications',
+            trimester: 'all',
+          ));
+          break;
         case 'Swimming':
           exercises.add(Exercise(
             id: 'swimming_1',
@@ -3153,6 +3144,20 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
             benefits: ['Pelvic strength', 'Better bladder control', 'Labor preparation'],
             isPregnancySafe: true,
             instructions: 'Contract and hold pelvic muscles for 3-5 seconds, repeat',
+            trimester: 'all',
+          ));
+          break;
+        case 'Light Resistance Band Exercises':
+          exercises.add(Exercise(
+            id: 'resistance_1',
+            name: 'Light Resistance Band Exercises',
+            description: 'For arm, leg, and back strength (important for carrying baby)',
+            icon: Icons.fitness_center,
+            duration: '25 minutes',
+            difficulty: 'easy',
+            benefits: ['Arm strength', 'Leg strength', 'Back strength', 'Posture support'],
+            isPregnancySafe: true,
+            instructions: 'Use light resistance bands for gentle strength training, focus on controlled movements',
             trimester: 'all',
           ));
           break;

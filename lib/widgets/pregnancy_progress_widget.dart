@@ -191,46 +191,113 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with refresh and trimester badge
-            Row(
-              children: [
-                const Text(
-                  'Your Pregnancy Journey',
-                  style: TextStyle(
-                    color: Color(0xFF7B1FA2),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const Spacer(),
-                if (widget.showRefreshButton)
-                  IconButton(
-                    onPressed: _loadPregnancyProgress,
-                    icon: const Icon(
-                      Icons.refresh,
-                      color: Color(0xFF7B1FA2),
-                      size: 20,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE91E63).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '$trimester Trimester',
-                    style: const TextStyle(
-                      color: Color(0xFFE91E63),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+            // Header with refresh and trimester badge - Responsive
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 280;
+                
+                if (isWide) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Your Pregnancy Journey',
+                          style: const TextStyle(
+                            color: Color(0xFF7B1FA2),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (widget.showRefreshButton) ...[
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: _loadPregnancyProgress,
+                          icon: const Icon(
+                            Icons.refresh,
+                            color: Color(0xFF7B1FA2),
+                            size: 20,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE91E63).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$trimester Trimester',
+                            style: const TextStyle(
+                              color: Color(0xFFE91E63),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  // Narrow layout - stack vertically
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Your Pregnancy Journey',
+                              style: const TextStyle(
+                                color: Color(0xFF7B1FA2),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (widget.showRefreshButton)
+                            IconButton(
+                              onPressed: _loadPregnancyProgress,
+                              icon: const Icon(
+                                Icons.refresh,
+                                color: Color(0xFF7B1FA2),
+                                size: 20,
+                              ),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE91E63).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$trimester Trimester',
+                            style: const TextStyle(
+                              color: Color(0xFFE91E63),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
             
             const SizedBox(height: 20),
@@ -547,6 +614,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
             height: 60,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
               itemCount: milestones.length,
               itemBuilder: (context, index) {
                 final milestone = milestones[index];
@@ -623,6 +691,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
             fontWeight: FontWeight.w600,
           ),
           overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
         const SizedBox(height: 8),
         

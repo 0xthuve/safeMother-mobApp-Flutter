@@ -165,10 +165,23 @@ class _HomeScreenState extends State<HomeScreen> {
           SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Responsive padding based on screen width
+                  final horizontalPadding = constraints.maxWidth > 600 
+                      ? 32.0 
+                      : constraints.maxWidth > 400 
+                          ? 20.0 
+                          : 16.0;
+                  
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: 16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                   // Header with profile - Fixed responsive layout
                   Row(
                     children: [
@@ -348,9 +361,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               )
                             : ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
                                 itemCount: _todaysMeals.length,
-                                separatorBuilder: (context, index) => const SizedBox(width: 16),
+                                separatorBuilder: (context, index) => const SizedBox(width: 12),
                                 itemBuilder: (context, index) {
                                   final meal = _todaysMeals[index];
                                   return _buildMealItem(meal);
@@ -439,9 +452,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               )
                             : ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
                                 itemCount: _todaysExercises.length,
-                                separatorBuilder: (context, index) => const SizedBox(width: 12),
+                                separatorBuilder: (context, index) => const SizedBox(width: 10),
                                 itemBuilder: (context, index) {
                                   final exercise = _todaysExercises[index];
                                   return _buildExerciseItem(exercise);
@@ -483,8 +496,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   
-                  const SizedBox(height: 80), // Space for bottom navigation
-                ],
+                        const SizedBox(height: 80), // Space for bottom navigation
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -506,20 +522,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   
   Widget _buildMealItem(Meal meal) {
-    return Container(
-      width: 140,
-      constraints: const BoxConstraints(minWidth: 120, maxWidth: 160),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+    return GestureDetector(
+      onTap: () {
+        _showMealDetails(meal);
+      },
+      child: Container(
+        width: 140,
+        constraints: const BoxConstraints(minWidth: 120, maxWidth: 160),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
         child: Column(
           children: [
             Expanded(
@@ -532,23 +552,41 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: meal.imageUrl.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          meal.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(12),
+                        child: meal.imageUrl.startsWith('http')
+                            ? Image.network(
+                                meal.imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade200,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.restaurant,
+                                      color: Colors.grey,
+                                      size: 40,
+                                    ),
+                                  );
+                                },
+                              )
+                            : Image.asset(
+                                meal.imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade200,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.restaurant,
+                                      color: Colors.grey,
+                                      size: 40,
+                                    ),
+                                  );
+                                },
                               ),
-                              child: const Icon(
-                                Icons.restaurant,
-                                color: Colors.grey,
-                                size: 40,
-                              ),
-                            );
-                          },
-                        ),
                       )
                     : Container(
                         decoration: BoxDecoration(
@@ -592,7 +630,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildExerciseItem(Exercise exercise) {
@@ -602,7 +641,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Container(
         width: 130,
-        constraints: const BoxConstraints(minWidth: 115, maxWidth: 145),
+        constraints: const BoxConstraints(minWidth: 110, maxWidth: 150),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -698,6 +737,311 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
+
+  void _showMealDetails(Meal meal) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.restaurant_menu,
+                color: const Color(0xFF4CAF50),
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  meal.name,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Food Image
+                Container(
+                  width: double.infinity,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey.shade100,
+                  ),
+                  child: meal.imageUrl.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: meal.imageUrl.startsWith('http')
+                              ? Image.network(
+                                  meal.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.restaurant,
+                                        color: Colors.grey,
+                                        size: 60,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Image.asset(
+                                  meal.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.restaurant,
+                                        color: Colors.grey,
+                                        size: 60,
+                                      ),
+                                    );
+                                  },
+                                ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.restaurant,
+                            color: Colors.grey,
+                            size: 60,
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Calories and Category
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE91E63).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.local_fire_department,
+                            color: Color(0xFFE91E63),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${meal.calories} cal',
+                            style: const TextStyle(
+                              color: Color(0xFFE91E63),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        meal.category,
+                        style: const TextStyle(
+                          color: Color(0xFF4CAF50),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Description
+                const Text(
+                  'Description:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  meal.description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Nutritional Benefits
+                const Text(
+                  'Nutritional Benefits:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: meal.nutritionalBenefits.map((benefit) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2196F3).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF2196F3).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      benefit,
+                      style: const TextStyle(
+                        color: Color(0xFF2196F3),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )).toList(),
+                ),
+                const SizedBox(height: 16),
+                
+                // Ingredients
+                const Text(
+                  'Ingredients:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ...meal.ingredients.map((ingredient) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.fiber_manual_record,
+                        size: 8,
+                        color: Color(0xFF9E9E9E),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          ingredient,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF666666),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )).toList(),
+                const SizedBox(height: 16),
+                
+                // Preparation
+                const Text(
+                  'Preparation:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  meal.preparation,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
+                    height: 1.4,
+                  ),
+                ),
+                
+                // Pregnancy Safety Badge
+                if (meal.isPregnancySafe) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CAF50).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFF4CAF50).withOpacity(0.3),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.verified_user,
+                          color: Color(0xFF4CAF50),
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Safe for Pregnancy',
+                            style: TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Close',
+                style: TextStyle(
+                  color: Color(0xFF666666),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   void _showExerciseDetails(Exercise exercise) {
     showDialog(
