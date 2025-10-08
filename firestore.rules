@@ -21,6 +21,12 @@ service cloud.firestore {
                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor' &&
                   resource.data.get('role', '') == 'patient';
       
+      // Allow doctors to read any user data they need for appointments
+      allow read: if request.auth != null && 
+                  exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                  get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                  get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+      
       // Allow authenticated doctors to count total patients (for dashboard statistics)
       allow read: if request.auth != null && 
                   resource.data.get('role', '') == 'patient' &&
@@ -89,9 +95,39 @@ service cloud.firestore {
     
     // Appointments - both patients and doctors can manage
     match /appointments/{appointmentId} {
-      allow read, write: if request.auth != null && 
-                            (request.auth.uid == resource.data.patientId || 
-                             request.auth.uid == resource.data.doctorId);
+      // Allow patients to create appointments
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.patientId;
+      
+      // Allow reading and updating appointments for both patient and doctor
+      allow read, update: if request.auth != null && 
+                             (request.auth.uid == resource.data.patientId || 
+                              request.auth.uid == resource.data.doctorId);
+      
+      // Allow doctors to create appointments (for booking on behalf of patients)
+      allow create: if request.auth != null && 
+                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+      
+      // Allow deleting appointments (for cancellation)
+      allow delete: if request.auth != null && 
+                       (request.auth.uid == resource.data.patientId || 
+                        request.auth.uid == resource.data.doctorId);
+      
+      // Enhanced listing permissions for appointments
+      allow list: if request.auth != null;
+      
+      // Allow patients to query their own appointments
+      allow list: if request.auth != null && 
+                     request.query.where[0].field == 'patientId' && 
+                     request.query.where[0].value == request.auth.uid;
+      
+      // Allow doctors to query appointments where they are the doctor
+      allow list: if request.auth != null && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
     }
     
     // Symptom Logs - comprehensive health tracking for pregnancy

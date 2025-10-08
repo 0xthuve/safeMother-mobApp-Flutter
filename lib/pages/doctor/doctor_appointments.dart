@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../navigation/doctor_navigation_handler.dart';
 import '../../navigation/doctor_bottom_navigation.dart';
 import '../../models/appointment.dart';
 import '../../models/patient.dart';
-import '../../models/doctor.dart';
+import '../../services/appointment_service.dart';
+import '../../services/session_manager.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DoctorAppointments extends StatefulWidget {
   const DoctorAppointments({super.key});
@@ -15,10 +18,12 @@ class DoctorAppointments extends StatefulWidget {
 class _DoctorAppointmentsState extends State<DoctorAppointments> {
   final int _currentIndex = 2;
   List<Appointment> _appointments = [];
-  List<Patient> _patients = [];
-  List<Doctor> _doctors = [];
+  Map<String, Patient> _patientsMap = {};
   bool _isLoading = true;
   String _selectedFilter = 'all';
+  final AppointmentService _appointmentService = AppointmentService();
+  String? _currentDoctorId;
+  String _currentDoctorName = 'Loading...';
 
   @override
   void initState() {
@@ -27,109 +32,291 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
   }
 
   Future<void> _loadAppointments() async {
-    // Inject demo data (no database calls for the demo)
-    final now = DateTime.now();
-    _patients = [
-      Patient(
-        id: 1001,
-        name: 'Emily Clark',
-        email: 'emily.clark@example.com',
-        phone: '+1-555-2001',
-        dateOfBirth: DateTime(1995, 6, 12),
-        bloodType: 'O+',
-        emergencyContact: 'John Clark',
-        emergencyPhone: '+1-555-3001',
-        medicalHistory: 'Anemia',
-        allergies: 'Penicillin',
-        currentMedications: 'Prenatal vitamins',
-        lastVisit: now.subtract(const Duration(days: 14)),
-        assignedDoctorId: 1,
-        createdAt: now,
-        updatedAt: now,
-      ),
-      Patient(
-        id: 1002,
-        name: 'Sophia Martinez',
-        email: 'sophia.martinez@example.com',
-        phone: '+1-555-2002',
-        dateOfBirth: DateTime(1992, 3, 24),
-        bloodType: 'A-',
-        emergencyContact: 'Carlos Martinez',
-        emergencyPhone: '+1-555-3002',
-        medicalHistory: 'Hypothyroidism',
-        allergies: '',
-        currentMedications: 'Levothyroxine',
-        lastVisit: now.subtract(const Duration(days: 7)),
-        assignedDoctorId: 1,
-        createdAt: now,
-        updatedAt: now,
-      ),
-    ];
+    try {
+      setState(() {
+        _isLoading = true;
+      });
 
-    _doctors = [
-      Doctor(
-        id: 1,
-        name: 'Dr. Sarah Johnson',
-        email: 'sarah.johnson@hospital.com',
-        phone: '+1-555-0101',
-        specialization: 'Obstetrics & Gynecology',
-        licenseNumber: 'MD123456',
-        hospital: 'City General Hospital',
-        experience: '10 years',
-        bio: 'Specialized in high-risk pregnancies and maternal-fetal medicine.',
-        rating: 4.8,
-        totalPatients: 150,
-        isAvailable: true,
-        createdAt: now,
-        updatedAt: now,
-      ),
-    ];
+      // Get current doctor ID from session
+      _currentDoctorId = await SessionManager.getUserId();
+      
+      if (_currentDoctorId == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
 
-    _appointments = [
-      Appointment(
-        id: 101,
-        doctorId: 1,
-        patientId: 1001,
-        appointmentDate: now,
-        timeSlot: '09:00 AM - 09:30 AM',
-        status: 'scheduled',
-        reason: 'Routine prenatal checkup',
-        notes: 'Monitor iron levels',
-        prescription: '',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      Appointment(
-        id: 102,
-        doctorId: 1,
-        patientId: 1002,
-        appointmentDate: now.add(const Duration(hours: 1)),
-        timeSlot: '10:00 AM - 10:30 AM',
-        status: 'rescheduled',
-        reason: 'Ultrasound review',
-        notes: 'New scan results to discuss',
-        prescription: '',
-        createdAt: now,
-        updatedAt: now,
-      ),
-      Appointment(
-        id: 103,
-        doctorId: 1,
-        patientId: 1002,
-        appointmentDate: now.subtract(const Duration(days: 1)),
-        timeSlot: '01:00 PM - 01:30 PM',
-        status: 'completed',
-        reason: 'Diet consultation',
-        notes: 'Provided nutrition plan',
-        prescription: 'Prenatal vitamins',
-        createdAt: now,
-        updatedAt: now,
-      ),
-    ];
+      // Load current doctor's name
+      try {
+        final FirebaseFirestore firestore = FirebaseFirestore.instance;
+        final doctorDoc = await firestore
+            .collection('users')
+            .doc(_currentDoctorId!)
+            .get();
+        
+        if (doctorDoc.exists && doctorDoc.data() != null) {
+          final doctorData = doctorDoc.data()!;
+          print('Doctor data fields: ${doctorData.keys.toList()}');
+          
+          String doctorName = doctorData['name']?.toString() ?? 
+                            doctorData['fullName']?.toString() ?? 
+                            doctorData['firstName']?.toString() ?? 
+                            'Unknown Doctor';
+          
+          if (doctorData['firstName'] != null && doctorData['lastName'] != null) {
+            doctorName = '${doctorData['firstName']} ${doctorData['lastName']}';
+          }
+          
+          _currentDoctorName = 'Dr. $doctorName';
+          print('Loaded doctor name: $_currentDoctorName');
+        }
+      } catch (e) {
+        print('Error loading doctor name: $e');
+        _currentDoctorName = 'Dr. Unknown';
+      }
 
-    setState(() {
-      _isLoading = false;
-    });
+      // Load appointments for the current doctor
+      final appointments = await _appointmentService.getDoctorAppointments(_currentDoctorId!);
+      
+      // Debug: Print all appointment details
+      print('Found ${appointments.length} appointments for doctor $_currentDoctorId');
+      for (final appointment in appointments) {
+        print('Appointment: ${appointment.id}, Patient: ${appointment.patientId}, Date: ${appointment.appointmentDate}, Status: ${appointment.status}');
+      }
+      
+      // Load patient data for each appointment
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      _patientsMap.clear();
+      
+      for (final appointment in appointments) {
+        if (!_patientsMap.containsKey(appointment.patientId)) {
+          try {
+            // First try to get basic user info from users collection
+            final userDoc = await firestore
+                .collection('users')
+                .doc(appointment.patientId)
+                .get();
+            
+            if (userDoc.exists && userDoc.data() != null) {
+              final userData = userDoc.data()!;
+              print('Found user data for ${appointment.patientId}: ${userData['name'] ?? userData['fullName'] ?? 'No name field'}');
+              print('User data fields: ${userData.keys.toList()}');
+              
+              try {
+                // Try to get additional patient-specific data from patients collection
+                final patientDoc = await firestore
+                    .collection('patients')
+                    .doc(appointment.patientId)
+                    .get();
+                
+                // Helper function to safely parse dates
+                String safeDate(dynamic dateValue, DateTime defaultDate) {
+                  if (dateValue == null) return defaultDate.toIso8601String();
+                  if (dateValue is String) {
+                    try {
+                      DateTime.parse(dateValue); // Validate the string
+                      return dateValue;
+                    } catch (e) {
+                      return defaultDate.toIso8601String();
+                    }
+                  }
+                  if (dateValue is DateTime) return dateValue.toIso8601String();
+                  return defaultDate.toIso8601String();
+                }
+                
+                // Start with user data
+                final now = DateTime.now();
+                final defaultBirthDate = now.subtract(const Duration(days: 365 * 25));
+                
+                // Get patient name from various possible fields
+                String patientName = userData['name']?.toString() ?? 
+                                   userData['fullName']?.toString() ?? 
+                                   userData['firstName']?.toString() ?? 
+                                   'Unknown Patient';
+                
+                // If we have both first and last name, combine them
+                if (userData['firstName'] != null && userData['lastName'] != null) {
+                  patientName = '${userData['firstName']} ${userData['lastName']}';
+                }
+                
+                // Combine user and patient data safely
+                final combinedData = <String, dynamic>{
+                  'id': appointment.patientId,
+                  'name': patientName,
+                  'email': userData['email']?.toString() ?? '',
+                  'phone': userData['phone']?.toString() ?? '',
+                  'dateOfBirth': safeDate(userData['dateOfBirth'], defaultBirthDate),
+                  'bloodType': userData['bloodType']?.toString() ?? 'Unknown',
+                  'emergencyContact': userData['emergencyContact']?.toString() ?? '',
+                  'emergencyPhone': userData['emergencyPhone']?.toString() ?? '',
+                  'medicalHistory': userData['medicalHistory']?.toString() ?? '',
+                  'allergies': userData['allergies']?.toString() ?? '',
+                  'currentMedications': userData['currentMedications']?.toString() ?? '',
+                  'lastVisit': safeDate(userData['lastVisit'], now),
+                  'assignedDoctorId': _currentDoctorId,
+                  'createdAt': safeDate(userData['createdAt'], now),
+                  'updatedAt': safeDate(userData['updatedAt'], now),
+                };
+                
+                // Override with patient-specific data if available
+                if (patientDoc.exists) {
+                  final patientData = patientDoc.data()!;
+                  print('Found additional patient data for ${appointment.patientId}');
+                  
+                  // Safely merge patient data
+                  patientData.forEach((key, value) {
+                    if (value != null) {
+                      if (key.contains('Date') || key == 'lastVisit' || key == 'createdAt' || key == 'updatedAt') {
+                        combinedData[key] = safeDate(value, now);
+                      } else {
+                        combinedData[key] = value.toString();
+                      }
+                    }
+                  });
+                }
+                
+                _patientsMap[appointment.patientId] = Patient.fromMap(combinedData);
+                print('Successfully loaded patient: ${combinedData['name']}');
+              } catch (e) {
+                print('Error processing patient data for ${appointment.patientId}: $e');
+                // Get patient name from various possible fields
+                String fallbackName = userData['name']?.toString() ?? 
+                                     userData['fullName']?.toString() ?? 
+                                     userData['firstName']?.toString() ?? 
+                                     'Unknown Patient';
+                
+                if (userData['firstName'] != null && userData['lastName'] != null) {
+                  fallbackName = '${userData['firstName']} ${userData['lastName']}';
+                }
+                
+                // Create a simple patient with basic user data only
+                _patientsMap[appointment.patientId] = Patient(
+                  id: appointment.patientId,
+                  name: fallbackName,
+                  email: userData['email']?.toString() ?? '',
+                  phone: userData['phone']?.toString() ?? '',
+                  dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
+                  bloodType: 'Unknown',
+                  emergencyContact: '',
+                  emergencyPhone: '',
+                  lastVisit: DateTime.now(),
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                );
+              }
+            } else {
+              print('No user data found for patient ID: ${appointment.patientId}');
+              print('User document exists: ${userDoc.exists}, Data: ${userDoc.data()}');
+              
+              // Try to get patient data directly from patients collection
+              try {
+                final patientDoc = await firestore
+                    .collection('patients')
+                    .doc(appointment.patientId)
+                    .get();
+                
+                if (patientDoc.exists && patientDoc.data() != null) {
+                  final patientData = patientDoc.data()!;
+                  print('Found direct patient data: ${patientData.keys.toList()}');
+                  
+                  String patientName = patientData['name']?.toString() ?? 
+                                     patientData['fullName']?.toString() ?? 
+                                     patientData['firstName']?.toString() ?? 
+                                     'Patient ${appointment.patientId.substring(0, 8)}...';
+                  
+                  if (patientData['firstName'] != null && patientData['lastName'] != null) {
+                    patientName = '${patientData['firstName']} ${patientData['lastName']}';
+                  }
+                  
+                  _patientsMap[appointment.patientId] = Patient(
+                    id: appointment.patientId,
+                    name: patientName,
+                    email: patientData['email']?.toString() ?? '',
+                    phone: patientData['phone']?.toString() ?? '',
+                    dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
+                    bloodType: patientData['bloodType']?.toString() ?? 'Unknown',
+                    emergencyContact: patientData['emergencyContact']?.toString() ?? '',
+                    emergencyPhone: patientData['emergencyPhone']?.toString() ?? '',
+                    lastVisit: DateTime.now(),
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                  );
+                } else {
+                  print('No patient data found either');
+                  // Create a placeholder patient
+                  _patientsMap[appointment.patientId] = Patient(
+                    id: appointment.patientId,
+                    name: 'Patient ${appointment.patientId.substring(0, 8)}...',
+                    email: '',
+                    phone: '',
+                    dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
+                    bloodType: 'Unknown',
+                    emergencyContact: '',
+                    emergencyPhone: '',
+                    lastVisit: DateTime.now(),
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                  );
+                }
+              } catch (e) {
+                print('Error loading direct patient data: $e');
+                // Create a placeholder patient
+                _patientsMap[appointment.patientId] = Patient(
+                  id: appointment.patientId,
+                  name: 'Unknown Patient',
+                  email: '',
+                  phone: '',
+                  dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
+                  bloodType: 'Unknown',
+                  emergencyContact: '',
+                  emergencyPhone: '',
+                  lastVisit: DateTime.now(),
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                );
+              }
+            }
+          } catch (e, stackTrace) {
+            print('Error loading patient ${appointment.patientId}: $e');
+            print('Stack trace: $stackTrace');
+            // Create a placeholder patient on error
+            _patientsMap[appointment.patientId] = Patient(
+              id: appointment.patientId,
+              name: 'Patient ${appointment.patientId.substring(0, 8)}...',
+              email: '',
+              phone: '',
+              dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
+              bloodType: 'Unknown',
+              emergencyContact: '',
+              emergencyPhone: '',
+              lastVisit: DateTime.now(),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+          }
+        }
+      }
+
+      setState(() {
+        _appointments = appointments;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading appointments: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load appointments: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _onItemTapped(int index) {
@@ -142,20 +329,13 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
     return _appointments.where((apt) => apt.status == _selectedFilter).toList();
   }
 
-  Patient? _getPatientById(int patientId) {
-    try {
-      return _patients.firstWhere((p) => p.id == patientId);
-    } catch (e) {
-      return null;
-    }
+  Patient? _getPatientById(String? patientId) {
+    if (patientId == null) return null;
+    return _patientsMap[patientId];
   }
 
-  Doctor? _getDoctorById(int doctorId) {
-    try {
-      return _doctors.firstWhere((d) => d.id == doctorId);
-    } catch (e) {
-      return null;
-    }
+  String _getDoctorName() {
+    return _currentDoctorName;
   }
 
   @override
@@ -246,7 +426,7 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
                     children: [
                       _buildStatCard('Total', _appointments.length.toString(), const Color(0xFF3B82F6)),
                       _buildStatCard('Today', _appointments.where((a) => _isToday(a.appointmentDate)).length.toString(), const Color(0xFF10B981)),
-                      _buildStatCard('Pending', _appointments.where((a) => a.status == 'scheduled').length.toString(), const Color(0xFFF59E0B)),
+                      _buildStatCard('Pending', _appointments.where((a) => a.status == 'pending').length.toString(), const Color(0xFFF59E0B)),
                     ],
                   ),
                 ),
@@ -389,7 +569,6 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
 
   Widget _buildAppointmentCard(Appointment appointment) {
     final patient = _getPatientById(appointment.patientId);
-    final doctor = _getDoctorById(appointment.doctorId);
     final statusColor = _getStatusColor(appointment.status);
     
     return Container(
@@ -537,7 +716,7 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              doctor?.name ?? 'Unknown Doctor',
+                              _getDoctorName(),
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey[600],
@@ -767,7 +946,6 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
 
   void _viewAppointmentDetails(Appointment appointment) {
     final patient = _getPatientById(appointment.patientId);
-    final doctor = _getDoctorById(appointment.doctorId);
     
     showDialog(
       context: context,
@@ -779,7 +957,7 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildDetailRow('Patient', patient?.name ?? 'Unknown'),
-              _buildDetailRow('Doctor', doctor?.name ?? 'Unknown'),
+              _buildDetailRow('Doctor', _getDoctorName()),
               _buildDetailRow('Date', _formatDate(appointment.appointmentDate)),
               _buildDetailRow('Time', appointment.timeSlot),
               _buildDetailRow('Status', appointment.status),
@@ -831,19 +1009,23 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
           children: [
             ListTile(
               title: const Text('Scheduled'),
+              subtitle: const Text('Confirm the appointment'),
               onTap: () => _updateStatus(appointment, 'scheduled'),
             ),
             ListTile(
               title: const Text('Completed'),
+              subtitle: const Text('Mark as completed'),
               onTap: () => _updateStatus(appointment, 'completed'),
             ),
             ListTile(
               title: const Text('Cancelled'),
+              subtitle: const Text('Cancel the appointment'),
               onTap: () => _updateStatus(appointment, 'cancelled'),
             ),
             ListTile(
-              title: const Text('Rescheduled'),
-              onTap: () => _updateStatus(appointment, 'rescheduled'),
+              title: const Text('Reschedule'),
+              subtitle: const Text('Change date and time'),
+              onTap: () => _rescheduleAppointment(appointment),
             ),
           ],
         ),
@@ -851,21 +1033,157 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
     );
   }
 
-  void _updateStatus(Appointment appointment, String newStatus) {
+  void _updateStatus(Appointment appointment, String newStatus) async {
     Navigator.pop(context);
-    // Demo-only: update local list
-    setState(() {
-      final idx = _appointments.indexWhere((a) => a.id == appointment.id);
-      if (idx != -1) {
-        _appointments[idx] = _appointments[idx].copyWith(status: newStatus);
+    
+    try {
+      // Update status in Firebase
+      await FirebaseFirestore.instance
+          .collection('appointments')
+          .doc(appointment.id)
+          .update({
+        'status': newStatus,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update local list
+      setState(() {
+        final idx = _appointments.indexWhere((a) => a.id == appointment.id);
+        if (idx != -1) {
+          _appointments[idx] = _appointments[idx].copyWith(status: newStatus);
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Appointment status updated to $newStatus'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Appointment status updated to $newStatus'),
-        backgroundColor: Colors.green,
-      ),
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update appointment status: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _rescheduleAppointment(Appointment appointment) async {
+    Navigator.pop(context); // Close the status dialog first
+
+    DateTime? selectedDate;
+    String? selectedTimeSlot;
+
+    // Show date picker first
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: appointment.appointmentDate.isAfter(DateTime.now()) 
+          ? appointment.appointmentDate 
+          : DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now().add(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
     );
+
+    if (pickedDate == null) return;
+    selectedDate = pickedDate;
+
+    // Get available time slots for the selected date
+    try {
+      final availableSlots = await _appointmentService.getAvailableTimeSlotsForDate(
+        appointment.doctorId,
+        selectedDate,
+      );
+
+      if (availableSlots.isEmpty && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No available time slots for selected date'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Show time slot selection dialog
+      if (mounted) {
+        selectedTimeSlot = await showDialog<String>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Select Time - ${DateFormat('MMM dd, yyyy').format(selectedDate!)}'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: availableSlots.length,
+                itemBuilder: (context, index) {
+                  final slot = availableSlots[index];
+                  return ListTile(
+                    title: Text(slot),
+                    onTap: () => Navigator.pop(context, slot),
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        );
+      }
+
+      if (selectedTimeSlot == null) return;
+
+      // Update appointment with new date, time, and status
+      await FirebaseFirestore.instance
+          .collection('appointments')
+          .doc(appointment.id)
+          .update({
+        'appointmentDate': Timestamp.fromDate(selectedDate),
+        'timeSlot': selectedTimeSlot,
+        'status': 'rescheduled',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update local list
+      setState(() {
+        final idx = _appointments.indexWhere((a) => a.id == appointment.id);
+        if (idx != -1) {
+          _appointments[idx] = _appointments[idx].copyWith(
+            appointmentDate: selectedDate,
+            timeSlot: selectedTimeSlot,
+            status: 'rescheduled',
+          );
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Appointment rescheduled to ${DateFormat('MMM dd, yyyy').format(selectedDate)} at $selectedTimeSlot'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to reschedule appointment: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

@@ -410,7 +410,7 @@ class BackendService {
     
     final newAppointment = appointment.id == null 
         ? appointment.copyWith(
-            id: appointments.isEmpty ? 1 : appointments.map((a) => a.id!).reduce((a, b) => a > b ? a : b) + 1,
+            id: 'appt_${DateTime.now().millisecondsSinceEpoch}',
           )
         : appointment;
     
@@ -426,7 +426,7 @@ class BackendService {
     
     final newAppointment = appointment.id == null 
         ? appointment.copyWith(
-            id: appointments.isEmpty ? 1 : appointments.map((a) => a.id!).reduce((a, b) => a > b ? a : b) + 1,
+            id: 'appt_${DateTime.now().millisecondsSinceEpoch}',
           )
         : appointment;
     

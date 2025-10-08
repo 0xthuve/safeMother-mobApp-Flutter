@@ -1818,7 +1818,7 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
           final doctor = _doctors.firstWhere(
             (doc) => doc.id == doctorId,
             orElse: () => _doctors.isNotEmpty ? _doctors.first : Doctor(
-              id: doctorId,
+              id: doctorId.toString(),
               name: 'Unknown Doctor',
               email: '',
               phone: '',

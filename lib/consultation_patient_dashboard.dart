@@ -103,7 +103,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       // Use map instead of for-loop for better performance
       final doctors = acceptedDoctors.map((doctorData) {
         return Doctor(
-          id: doctorData['doctorId'] != null ? int.tryParse(doctorData['doctorId'].toString()) : null,
+          id: doctorData['doctorId']?.toString(),
           firebaseUid: doctorData['doctorFirebaseUid'],
           name: doctorData['doctorName'] ?? 'Unknown Doctor',
           email: doctorData['doctorEmail'] ?? '',

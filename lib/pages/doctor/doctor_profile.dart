@@ -55,7 +55,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
       
       if (userData != null) {
         final doctorData = Doctor(
-          id: (userData['id'] as int?) ?? 1,
+          id: (userData['id'] as String?) ?? '1',
           name: userName ?? userData['fullName'] ?? 'Dr. User',
           email: userEmail ?? userData['email'] ?? '',
           phone: userData['phone'] ?? userData['contact'] ?? '',
@@ -78,7 +78,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
       } else {
         // Fallback to demo data
         final fallbackDoctor = Doctor(
-          id: 1,
+          id: '1',
           name: userName ?? 'Dr. User',
           email: userEmail ?? 'doctor@safemother.com',
           phone: '',
@@ -119,7 +119,7 @@ class _DoctorProfileState extends State<DoctorProfile> {
       final now = DateTime.now();
       
       final fallbackDoctor = Doctor(
-        id: 1,
+        id: '1',
         name: userName ?? 'Dr. User',
         email: userEmail ?? 'doctor@safemother.com',
         phone: '',

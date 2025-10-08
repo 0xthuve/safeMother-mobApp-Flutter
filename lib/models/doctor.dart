@@ -1,5 +1,5 @@
 class Doctor {
-  final int? id;
+  final String? id;
   final String? firebaseUid; // Store the original Firebase UID for patient-doctor links
   final String name;
   final String email;
@@ -78,7 +78,7 @@ class Doctor {
   }
 
   Doctor copyWith({
-    int? id,
+    String? id,
     String? firebaseUid,
     String? name,
     String? email,

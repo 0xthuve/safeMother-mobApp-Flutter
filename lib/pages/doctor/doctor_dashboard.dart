@@ -69,7 +69,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       if (userData != null) {
         // Create doctor object from real user data
         final doctorData = Doctor(
-          id: (userData['id'] as int?) ?? 1,
+          id: (userData['id'] as String?) ?? '1',
           name: userName ?? userData['fullName'] ?? 'Dr. User',
           email: userEmail ?? userData['email'] ?? '',
           phone: userData['phone'] ?? userData['contact'] ?? '',
@@ -101,7 +101,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       } else {
         // Fallback to demo data if user data is not available
         final demoDoctor = Doctor(
-          id: 1,
+          id: '1',
           name: userName ?? 'Dr. User',
           email: userEmail ?? 'doctor@safemother.com',
           phone: '',
@@ -134,7 +134,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       final now = DateTime.now();
       
       final fallbackDoctor = Doctor(
-        id: 1,
+        id: '1',
         name: userName ?? 'Dr. User',
         email: userEmail ?? 'doctor@safemother.com',
         phone: '',
