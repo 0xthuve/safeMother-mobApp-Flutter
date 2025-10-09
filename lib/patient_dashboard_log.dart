@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'models/symptom_log.dart';
+import 'models/doctor_alert.dart';
 import 'services/backend_service.dart';
+import 'services/ai_risk_assessment_service.dart';
 import 'bottom_navigation.dart';
 import 'navigation_handler.dart';
 
@@ -13,6 +17,7 @@ class PatientDashboardLog extends StatefulWidget {
 class _PatientDashboardLogState extends State<PatientDashboardLog> {
   final _formKey = GlobalKey<FormState>();
   final BackendService _backendService = BackendService();
+  final AIRiskAssessmentService _aiService = AIRiskAssessmentService();
   final int _currentIndex = 1; // This is the Log tab (index 1)
 
   // Form controllers
@@ -110,7 +115,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
         throw Exception('User not authenticated');
       }
 
-      final symptomLog = SymptomLog(
+      var symptomLog = SymptomLog(
         patientId: user.uid,
         bloodPressure: _bloodPressureController.text,
         weight: _weightController.text,
@@ -135,11 +140,47 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
         updatedAt: now,
       );
 
-      await _backendService.saveSymptomLog(symptomLog);
+      // Save to database first
+      final logId = await _backendService.saveSymptomLog(symptomLog);
+      if (logId != null) {
+        symptomLog = symptomLog.copyWith(id: logId);
+      }
+
+      // Perform AI risk assessment
+      print('🤖 Starting AI risk assessment...');
+      print('📊 Blood Pressure: ${symptomLog.bloodPressure}');
+      print('💡 Symptoms: ${symptomLog.symptoms}');
+      print('🚨 Critical flags: Contractions=${symptomLog.hadContractions}, Headaches=${symptomLog.hadHeadaches}, Swelling=${symptomLog.hadSwelling}');
+      
+      final riskAssessment = await _aiService.analyzeSymptoms(symptomLog);
+      
+      print('🎯 AI Assessment Result: ${riskAssessment.riskLevel.displayName}');
+      print('📈 Confidence: ${(riskAssessment.confidence * 100).toStringAsFixed(1)}%');
+      print('💬 Message: ${riskAssessment.message}');
+      
+      // Update symptom log with risk assessment
+      if (symptomLog.id != null) {
+        await _backendService.updateSymptomLogWithRiskAssessment(
+          symptomLog.id!,
+          {
+            'riskLevel': riskAssessment.riskLevel.displayName,
+            'riskMessage': riskAssessment.message,
+            'riskRecommendations': riskAssessment.recommendations,
+            'riskConfidence': riskAssessment.confidence,
+            'riskAnalysisDate': DateTime.now().toIso8601String(),
+          }
+        );
+      }
+      
+      // Create doctor alerts for high-risk cases
+      await _handleHighRiskAlert(symptomLog, riskAssessment);
+      
+      // Show result to user
+      _showRiskAssessmentDialog(riskAssessment);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Health information saved successfully!'),
+          content: Text('Health information saved and analyzed successfully!'),
           backgroundColor: const Color(0xFF7B1FA2),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -178,6 +219,471 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
       _babyKicks = 0;
       _mood = 'Good';
     });
+  }
+
+  void _showRiskAssessmentDialog(RiskAssessment assessment) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Important health information
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: assessment.riskLevel.color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _getRiskIcon(assessment.riskLevel),
+                  color: assessment.riskLevel.color,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Health Assessment',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: assessment.riskLevel.color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Risk Level Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: assessment.riskLevel.color,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    assessment.riskLevel.displayName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // AI Message
+                Text(
+                  'Assessment Results:',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  assessment.message,
+                  style: const TextStyle(fontSize: 14, height: 1.4),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Recommendations
+                if (assessment.recommendations.isNotEmpty) ...[
+                  Text(
+                    'Recommendations:',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...assessment.recommendations.map((rec) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• ', style: TextStyle(fontSize: 16)),
+                        Expanded(
+                          child: Text(
+                            rec,
+                            style: const TextStyle(fontSize: 14, height: 1.3),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                ],
+                
+                const SizedBox(height: 16),
+                
+                // Confidence and timestamp
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Analysis confidence: ${(assessment.confidence * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                if (assessment.riskLevel == RiskLevel.high) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      border: Border.all(color: Colors.red.shade200),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning, color: Colors.red.shade600, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'High risk detected! Please contact your healthcare provider immediately.',
+                            style: TextStyle(
+                              color: Colors.red.shade700,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            if (assessment.riskLevel == RiskLevel.high)
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _showContactDoctorDialog();
+                },
+                icon: const Icon(Icons.phone, color: Colors.red),
+                label: const Text(
+                  'Contact Doctor',
+                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                ),
+              ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Understood'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  IconData _getRiskIcon(RiskLevel riskLevel) {
+    switch (riskLevel) {
+      case RiskLevel.low:
+        return Icons.check_circle;
+      case RiskLevel.moderate:
+        return Icons.warning;
+      case RiskLevel.high:
+        return Icons.error;
+    }
+  }
+
+  /// Handle high-risk alerts by creating doctor notifications
+  Future<void> _handleHighRiskAlert(SymptomLog symptomLog, RiskAssessment riskAssessment) async {
+    if (riskAssessment.riskLevel != RiskLevel.high) return;
+
+    try {
+      print('🚨 Creating doctor alerts for high-risk case...');
+      
+      // Get patient name
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      
+      final patientName = user.displayName ?? 'Unknown Patient';
+      
+      // Get linked doctors
+      final linkedDoctors = await _backendService.getLinkedDoctorsWithContact(symptomLog.patientId);
+      print('🔍 Found ${linkedDoctors.length} linked doctors');
+      
+      for (final doctor in linkedDoctors) {
+        // Use firebaseUid if available, otherwise fall back to id
+        final doctorId = doctor['firebaseUid'] ?? doctor['id'];
+        print('🔍 Creating alert for doctor: ${doctor['name']} (ID: $doctorId, firebaseUid: ${doctor['firebaseUid']})');
+        
+        final alert = DoctorAlert(
+          patientId: symptomLog.patientId,
+          patientName: patientName,
+          doctorId: doctorId,
+          riskLevel: riskAssessment.riskLevel.displayName,
+          riskMessage: riskAssessment.message,
+          riskFactors: riskAssessment.recommendations,
+          bloodPressure: symptomLog.bloodPressure,
+          symptoms: [symptomLog.symptoms],
+          alertDate: DateTime.now(),
+          symptomLogId: symptomLog.id,
+        );
+        
+        await _backendService.saveDoctorAlert(alert);
+        print('✅ Created alert for doctor: ${doctor['name']} with doctorId: $doctorId');
+      }
+      
+      // TEMPORARY: Also create test alert for current doctor (Firebase UID: 0AludVmmD2OXGCn1i3M5UElBMSG2)
+      // This ensures at least one alert appears in the dashboard for testing
+      final testAlert = DoctorAlert(
+        patientId: symptomLog.patientId,
+        patientName: patientName,
+        doctorId: '0AludVmmD2OXGCn1i3M5UElBMSG2', // Use actual Firebase UID
+        riskLevel: riskAssessment.riskLevel.displayName,
+        riskMessage: riskAssessment.message,
+        riskFactors: riskAssessment.recommendations,
+        bloodPressure: symptomLog.bloodPressure,
+        symptoms: [symptomLog.symptoms],
+        alertDate: DateTime.now(),
+        symptomLogId: symptomLog.id,
+      );
+      
+      await _backendService.saveDoctorAlert(testAlert);
+      print('✅ Created TEST alert for current doctor with Firebase UID: 0AludVmmD2OXGCn1i3M5UElBMSG2');
+      
+      print('🏥 Created ${linkedDoctors.length} doctor alerts');
+    } catch (e) {
+      print('❌ Error creating doctor alerts: $e');
+    }
+  }
+
+  /// Show contact doctor dialog with linked doctors
+  void _showContactDoctorDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.local_hospital, color: Colors.red.shade600),
+              const SizedBox(width: 8),
+              const Text(
+                'Contact Your Doctors',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Container(
+            width: double.maxFinite,
+            constraints: const BoxConstraints(maxHeight: 300),
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _getLinkedDoctors(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+                
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error loading doctors: ${snapshot.error}',
+                      style: TextStyle(color: Colors.red.shade600),
+                    ),
+                  );
+                }
+                
+                final doctors = snapshot.data ?? [];
+                
+                if (doctors.isEmpty) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No doctors linked to your account yet.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please link with a doctor first to enable emergency contact.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                
+                return ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: doctors.length,
+                  separatorBuilder: (context, index) => const Divider(),
+                  itemBuilder: (context, index) {
+                    final doctor = doctors[index];
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Colors.blue.shade100,
+                        child: Icon(
+                          Icons.local_hospital,
+                          color: Colors.blue.shade600,
+                        ),
+                      ),
+                      title: Text(
+                        doctor['name'] ?? 'Unknown Doctor',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(doctor['specialization'] ?? 'General Practice'),
+                          Text(
+                            doctor['hospital'] ?? 'Hospital',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: IconButton(
+                        onPressed: () => _makePhoneCall(doctor['phoneNumber']),
+                        icon: Icon(
+                          Icons.phone,
+                          color: Colors.green.shade600,
+                        ),
+                        tooltip: 'Call ${doctor['name']}',
+                      ),
+                      onTap: () => _makePhoneCall(doctor['phoneNumber']),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Get linked doctors for the current patient
+  Future<List<Map<String, dynamic>>> _getLinkedDoctors() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return [];
+      
+      return await _backendService.getLinkedDoctorsWithContact(user.uid);
+    } catch (e) {
+      print('Error getting linked doctors: $e');
+      return [];
+    }
+  }
+
+  /// Make a phone call to the doctor
+  void _makePhoneCall(String? phoneNumber) async {
+    if (phoneNumber == null || phoneNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Phone number not available'),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+      
+      // For web, we'll show the number so user can call manually
+      if (kIsWeb) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Call Doctor'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Please call this number:'),
+                const SizedBox(height: 8),
+                SelectableText(
+                  phoneNumber,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        // For mobile, launch the phone app
+        if (await canLaunchUrl(phoneUri)) {
+          await launchUrl(phoneUri);
+        } else {
+          throw 'Could not launch phone app';
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to make call: $e'),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+    }
   }
 
   void _showHistoryPopup() {
@@ -1330,35 +1836,6 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
         currentIndex: _currentIndex,
         onTap: _onItemTapped,
       ),
-    );
-  }
-
-  Widget _buildLogInfoItem(
-    IconData icon,
-    String label,
-    String value,
-    Color color,
-  ) {
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 16),
-        SizedBox(width: 4),
-        Text(
-          '$label: ',
-          style: TextStyle(fontSize: 12, color: Color(0xFF666666)),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF2D1B69),
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 

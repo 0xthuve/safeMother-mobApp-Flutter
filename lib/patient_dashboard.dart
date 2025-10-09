@@ -8,6 +8,7 @@ import 'services/backend_service.dart';
 import 'services/nutrition_exercise_service.dart';
 import 'widgets/pregnancy_progress_widget.dart';
 import 'widgets/dynamic_tip_widget.dart';
+import 'widgets/ambulance_button.dart';
 import 'pages/learn_page.dart';
 import 'models/meal.dart';
 import 'models/exercise.dart';
@@ -462,37 +463,99 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                   ),
                   
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   
-                  // Log symptoms button - Fixed responsive
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        minWidth: 150,
-                        maxWidth: 250,
-                      ),
-                      child: SizedBox(
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            NavigationHandler.navigateToScreen(context, 1);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE91E63),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                          ),
-                          child: const Text(
-                            'Log Symptoms',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
+                  // Quick Actions Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Quick Actions',
+                          style: TextStyle(
+                            color: Color(0xFF7B1FA2),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            // Log symptoms button - Equal width
+                            Expanded(
+                              flex: 1,
+                              child: Container(
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFE91E63), Color(0xFFAD1457)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFE91E63).withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    NavigationHandler.navigateToScreen(context, 1);
+                                  },
+                                  icon: const Icon(
+                                    Icons.medical_services,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                  label: const Text(
+                                    'Log Symptoms',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            const SizedBox(width: 10),
+                            
+                            // Emergency ambulance button - Equal width
+                            Expanded(
+                              flex: 1,
+                              child: SizedBox(
+                                height: 56,
+                                child: const AmbulanceButton(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   

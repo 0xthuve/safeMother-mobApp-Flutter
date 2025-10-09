@@ -236,10 +236,50 @@ allow list: if request.auth != null;
 
     // Video Call Sessions - for video consultation functionality
     match /video_calls/{callId} {
-      // Both patients and doctors can manage video call sessions
+      // Patients can create, read and update their video calls
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.patientId;
+      
+      allow read, update: if request.auth != null && 
+                             request.auth.uid == resource.data.patientId;
+      
+      // Doctors can create, read and update video calls for their patients
+      allow create: if request.auth != null && 
+                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+      
+      allow read, update: if request.auth != null && 
+                             request.auth.uid == resource.data.doctorId;
+      
+      // Allow both patients and doctors to join/leave calls
+      allow update: if request.auth != null && 
+                       (request.auth.uid == resource.data.patientId || 
+                        request.auth.uid == resource.data.doctorId) &&
+                       // Only allow status updates and join/leave actions
+                       (request.resource.data.keys().hasOnly(['status', 'startedAt', 'endedAt', 'participantStatus']) ||
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'startedAt', 'endedAt', 'participantStatus']));
+      
+      // Allow listing video calls for patients and doctors
+      allow list: if request.auth != null;
+    }
+
+    // Video Call Rooms - for managing active video call sessions
+    match /video_call_rooms/{roomId} {
+      // Allow participants to read and update room status
       allow read, write: if request.auth != null && 
-                            (request.auth.uid == resource.data.patientId || 
-                             request.auth.uid == resource.data.doctorId);
+                            (request.auth.uid in resource.data.get('participants', []));
+      
+      // Allow creation of rooms for scheduled calls
+      allow create: if request.auth != null;
+    }
+
+    // Video Call Messages - for in-call chat functionality
+    match /video_call_messages/{messageId} {
+      // Allow participants to send and receive messages during calls
+      allow read, create: if request.auth != null && 
+                             exists(/databases/$(database)/documents/video_call_rooms/$(resource.data.roomId)) &&
+                             request.auth.uid in get(/databases/$(database)/documents/video_call_rooms/$(resource.data.roomId)).data.get('participants', []);
     }
 
     // Consultation History - comprehensive consultation tracking
@@ -257,6 +297,26 @@ allow list: if request.auth != null;
       // Doctors can read consultation history for their patients
       allow read: if request.auth != null && 
                      request.auth.uid == resource.data.doctorId;
+    }
+    
+    // Doctor Alerts - high-risk patient notifications for doctors
+    match /doctor_alerts/{alertId} {
+      // Doctors can read their own alerts
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.doctorId;
+      
+      // System can create alerts (for AI risk assessment service)
+      allow create: if request.auth != null;
+      
+      // Doctors can update alerts (mark as read)
+      allow update: if request.auth != null && 
+                       request.auth.uid == resource.data.doctorId;
+      
+      // Allow doctors to query their alerts
+      allow list: if request.auth != null && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
     }
 
     // Allow public read access to some collections for demonstration purposes

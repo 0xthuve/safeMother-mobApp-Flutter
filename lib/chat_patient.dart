@@ -45,7 +45,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = false;
   
   // Groq API credentials
-  final String _apiKey = "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";
+  final String _apiKey = "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";
   final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
   
   // Sample chat messages

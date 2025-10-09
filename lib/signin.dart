@@ -483,7 +483,6 @@ class _SignInFormState extends State<SignInForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
   bool _isLoading = false;
 
   @override
@@ -871,30 +870,10 @@ class _SignInFormState extends State<SignInForm> {
           ),
           const SizedBox(height: 16),
           
-          // Remember me checkbox
+          // Forgot password
           Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Checkbox(
-                value: _rememberMe,
-                onChanged: (value) {
-                  setState(() {
-                    _rememberMe = value ?? false;
-                  });
-                },
-                activeColor: const Color(0xFFE91E63),
-                checkColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const Text(
-                'Remember me',
-                style: TextStyle(
-                  color: Color(0xFF7E57C2),
-                  fontSize: 14,
-                ),
-              ),
-              const Spacer(),
               TextButton(
                 onPressed: _isLoading ? null : _onForgotPassword,
                 child: const Text(

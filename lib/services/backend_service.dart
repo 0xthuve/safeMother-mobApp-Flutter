@@ -7,6 +7,7 @@ import '../models/appointment.dart';
 import '../models/doctor.dart';
 import '../models/patient_doctor_link.dart';
 import '../models/symptom_log.dart';
+import '../models/doctor_alert.dart';
 import 'session_manager.dart';
 import 'tips_service.dart';
 import 'firebase_service.dart';
@@ -795,6 +796,33 @@ class BackendService {
     }
   }
 
+  // Get all accepted doctors for a patient from Firebase
+  Future<List<PatientDoctorLink>> getAcceptedDoctorsForPatient(String patientId) async {
+    try {
+      final doctorsData = await FirebaseService.getAcceptedDoctorsForPatient(patientId);
+      
+      List<PatientDoctorLink> doctors = [];
+      
+      for (final data in doctorsData) {
+        doctors.add(PatientDoctorLink(
+          id: data['id'],
+          patientId: data['patientId'],
+          doctorId: data['doctorId'],
+          status: data['status'],
+          isActive: data['isActive'],
+          linkedDate: data['linkedDate'],
+          createdAt: data['createdAt'],
+          updatedAt: data['updatedAt'],
+        ));
+      }
+      
+      return doctors;
+    } catch (e) {
+      print('BackendService: Error getting accepted doctors for patient: $e');
+      return [];
+    }
+  }
+
   // Get all linked patients for a doctor (all statuses)
   Future<List<PatientDoctorLink>> getLinkedPatientsForDoctor(String doctorId) async {
     try {
@@ -974,17 +1002,17 @@ class BackendService {
     }
   }
 
-  Future<bool> saveSymptomLog(SymptomLog log) async {
+  Future<String?> saveSymptomLog(SymptomLog log) async {
     try {
       // Save to Firestore
       final logId = await FirebaseService.saveSymptomLog(log.toMap());
       
       if (logId != null) {
-
-        return true;
+        print('BackendService: Saved symptom log with ID: $logId');
+        return logId;
       } else {
-
-        return false;
+        print('BackendService: Failed to save symptom log');
+        return null;
       }
     } catch (e) {
 
@@ -1005,10 +1033,10 @@ class BackendService {
         final prefs = await SharedPreferences.getInstance();
         final logsData = jsonEncode(logs.map((l) => l.toMap()).toList());
         await prefs.setString('${symptomLogsKey}_${log.patientId}', logsData);
-        return true;
+        return newLog.id; // Return the generated ID
       } catch (fallbackError) {
-
-        return false;
+        print('BackendService: Fallback error saving symptom log: $fallbackError');
+        return null;
       }
     }
   }
@@ -1128,6 +1156,104 @@ class BackendService {
     } catch (e) {
       print('BackendService: Error saving recommendations: $e');
       return false;
+    }
+  }
+
+  // ========== RISK ASSESSMENT OPERATIONS ==========
+
+  /// Update symptom log with risk assessment results
+  Future<bool> updateSymptomLogWithRiskAssessment(String logId, Map<String, dynamic> riskAssessment) async {
+    try {
+      // Update in Firestore
+      final success = await FirebaseService.updateSymptomLogRiskAssessment(logId, riskAssessment);
+      
+      if (success) {
+        print('BackendService: Updated symptom log $logId with risk assessment');
+        return true;
+      } else {
+        print('BackendService: Failed to update symptom log with risk assessment');
+        return false;
+      }
+    } catch (e) {
+      print('BackendService: Error updating symptom log with risk assessment: $e');
+      return false;
+    }
+  }
+
+  // ========== DOCTOR ALERT OPERATIONS ==========
+
+  /// Save doctor alert for high-risk cases
+  Future<bool> saveDoctorAlert(DoctorAlert alert) async {
+    try {
+      // Save to Firestore
+      final alertId = await FirebaseService.saveDoctorAlert(alert.toMap());
+      
+      if (alertId != null) {
+        print('BackendService: Saved doctor alert: $alertId');
+        return true;
+      } else {
+        print('BackendService: Failed to save doctor alert');
+        return false;
+      }
+    } catch (e) {
+      print('BackendService: Error saving doctor alert: $e');
+      return false;
+    }
+  }
+
+  /// Get alerts for a specific doctor
+  Future<List<DoctorAlert>> getDoctorAlerts(String doctorId) async {
+    try {
+      print('BackendService: Getting alerts for doctor ID: $doctorId');
+      final alertsData = await FirebaseService.getDoctorAlerts(doctorId);
+      print('BackendService: Found ${alertsData.length} raw alert records');
+      final alerts = alertsData.map((data) => DoctorAlert.fromMap(data)).toList();
+      print('BackendService: Converted to ${alerts.length} DoctorAlert objects');
+      for (final alert in alerts) {
+        print('BackendService: Alert - Patient: ${alert.patientName}, Risk: ${alert.riskLevel}, Doctor: ${alert.doctorId}');
+      }
+      return alerts;
+    } catch (e) {
+      print('BackendService: Error getting doctor alerts: $e');
+      return [];
+    }
+  }
+
+  /// Mark alert as read
+  Future<bool> markAlertAsRead(String alertId) async {
+    try {
+      return await FirebaseService.markAlertAsRead(alertId);
+    } catch (e) {
+      print('BackendService: Error marking alert as read: $e');
+      return false;
+    }
+  }
+
+  /// Get linked doctors for a patient with their contact information
+  Future<List<Map<String, dynamic>>> getLinkedDoctorsWithContact(String patientId) async {
+    try {
+      // Get accepted doctor links
+      final doctorLinks = await getAcceptedDoctorsForPatient(patientId);
+      List<Map<String, dynamic>> doctorsWithContact = [];
+      
+      for (final link in doctorLinks) {
+        final doctorInfo = await getDoctorById(link.doctorId);
+        if (doctorInfo != null) {
+          doctorsWithContact.add({
+            'id': doctorInfo.id,
+            'firebaseUid': doctorInfo.firebaseUid,
+            'name': doctorInfo.name,
+            'phoneNumber': doctorInfo.phone,
+            'specialization': doctorInfo.specialization,
+            'hospital': doctorInfo.hospital,
+          });
+        }
+      }
+      
+      return doctorsWithContact;
+    } catch (e) {
+      print('BackendService: Error getting linked doctors with contact: $e');
+      return [];
     }
   }
 }

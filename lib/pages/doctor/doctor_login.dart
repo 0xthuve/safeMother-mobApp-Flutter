@@ -16,7 +16,6 @@ class _DoctorLoginState extends State<DoctorLogin> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
   bool _isLoading = false;
 
   @override
@@ -335,30 +334,10 @@ class _DoctorLoginState extends State<DoctorLogin> {
                               ),
                               const SizedBox(height: 16),
                               
-                              // Remember me checkbox
+                              // Forgot password
                               Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Checkbox(
-                                    value: _rememberMe,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _rememberMe = value ?? false;
-                                      });
-                                    },
-                                    activeColor: const Color(0xFF1976D2),
-                                    checkColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  const Text(
-                                    'Remember me',
-                                    style: TextStyle(
-                                      color: Color(0xFF64B5F6),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const Spacer(),
                                   TextButton(
                                     onPressed: () {
                                       ScaffoldMessenger.of(context).showSnackBar(

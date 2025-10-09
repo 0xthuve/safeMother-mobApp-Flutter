@@ -430,15 +430,6 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                   onTap: () => _showQuickChatOptions(),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.video_call,
-                  title: 'Video\nCall',
-                  color: const Color(0xFF81C784),
-                  onTap: () => _showVideoCallOptions(),
-                ),
-              ),
             ],
           ),
         ],
@@ -824,45 +815,6 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
         onAppointmentBooked: () {
           _loadUpcomingAppointments();
         },
-      ),
-    );
-  }
-
-  void _showVideoCallOptions() {
-    if (_linkedDoctors.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please link with a doctor first to start video calls'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Start Video Call'),
-        content: const Text('Choose a doctor to start video consultation'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement video call functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Video call feature coming soon!'),
-                  backgroundColor: Colors.blue,
-                ),
-              );
-            },
-            child: const Text('Start Call'),
-          ),
-        ],
       ),
     );
   }
@@ -1367,7 +1319,6 @@ class _ChatDialogState extends State<_ChatDialog> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<Map<String, dynamic>> _messages = [];
-  bool _isOnline = true;
   bool _isSending = false;
   bool _hasNewMessage = false;
   StreamSubscription? _messagesSubscription;
@@ -1609,23 +1560,7 @@ class _ChatDialogState extends State<_ChatDialog> {
                                 fontSize: 12,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: _isOnline ? Colors.green : Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _isOnline ? 'Online' : 'Offline',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 10,
-                              ),
-                            ),
+
                             if (_hasNewMessage) ...[
                               const SizedBox(width: 8),
                               Container(
@@ -1649,20 +1584,7 @@ class _ChatDialogState extends State<_ChatDialog> {
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      // Real-time chat doesn't need manual refresh
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Chat updates in real-time!'),
-                          duration: Duration(seconds: 2),
-                          backgroundColor: Color(0xFF4A90E2),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.info_outline, color: Colors.white),
-                    tooltip: 'Real-time Chat Info',
-                  ),
+
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close, color: Colors.white),

@@ -9,6 +9,7 @@ import '../../services/user_management_service.dart';
 import '../../services/session_manager.dart';
 import '../../services/backend_service.dart';
 import '../../services/firebase_service.dart';
+import '../../models/doctor_alert.dart';
 import '../patient_requests_page.dart';
 
 
@@ -28,6 +29,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   List<PatientDoctorLink> _acceptedPatients = [];
   int _totalPatientsCount = 0;
   List<Map<String, dynamic>> _recentPrescriptions = [];
+  List<DoctorAlert> _recentAlerts = [];
   bool _isLoading = true;
 
   @override
@@ -61,6 +63,11 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           
           // Load recent prescriptions made by this doctor
           _recentPrescriptions = await _loadRecentPrescriptions(userId);
+          
+          // Load recent high-risk alerts
+          print('🔍 Doctor Dashboard: Loading alerts for doctor ID: $userId');
+          _recentAlerts = await _backendService.getDoctorAlerts(userId);
+          print('🔍 Doctor Dashboard: Loaded ${_recentAlerts.length} alerts');
         } catch (e) {
           // ...existing code...
         }
@@ -518,6 +525,53 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   ),
                   const SizedBox(height: 24),
 
+                  // High-Risk Alerts Section
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.red.shade600.withOpacity(0.15),
+                              Colors.red.shade600.withOpacity(0.08),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.shade600.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.red.shade600,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'High-Risk Patient Alerts',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1976D2),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Alerts Cards
+                  _buildAlertsSection(),
+
+                  const SizedBox(height: 24),
+
                   // Today's Appointments
                   Row(
                     children: [
@@ -748,36 +802,6 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                     ..._recentPrescriptions.map((prescription) => _buildPrescriptionCard(prescription)),
 
                   const SizedBox(height: 24),
-
-                  // Alerts Section
-                  const Text(
-                    'Alerts',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Show real alerts only - no hardcoded data
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.withOpacity(0.2)),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        'No alerts at this time',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
                           ],
                         ),
                       ),
@@ -1277,6 +1301,405 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         return Colors.orange;
       default:
         return Colors.grey;
+    }
+  }
+
+  Widget _buildAlertsSection() {
+    if (_recentAlerts.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.check_circle_outline,
+              size: 48,
+              color: Colors.green.shade600,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No High-Risk Alerts',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'All your patients are currently in stable condition.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.green.shade600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: _recentAlerts.take(3).map((alert) => _buildAlertCard(alert)).toList(),
+    );
+  }
+
+  Widget _buildAlertCard(DoctorAlert alert) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: _getAlertBorderColor(alert.riskLevel),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _getAlertBorderColor(alert.riskLevel).withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with patient name and risk level
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _getAlertBorderColor(alert.riskLevel),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  alert.riskLevel,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  alert.patientName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1976D2),
+                  ),
+                ),
+              ),
+              Text(
+                _formatAlertTime(alert.alertDate),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Risk message
+          Text(
+            alert.riskMessage,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
+          ),
+          
+          if (alert.bloodPressure.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  Icons.monitor_heart,
+                  size: 16,
+                  color: Colors.red.shade600,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'BP: ${alert.bloodPressure}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red.shade600,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          
+          const SizedBox(height: 12),
+          
+          // Action buttons
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showAlertDetails(alert),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View Details'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1976D2),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: () => _markAlertAsRead(alert),
+                icon: const Icon(Icons.check, size: 16),
+                label: const Text('Mark Read'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey.shade100,
+                  foregroundColor: Colors.grey.shade700,
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getAlertBorderColor(String riskLevel) {
+    switch (riskLevel.toLowerCase()) {
+      case 'high risk':
+        return Colors.red.shade600;
+      case 'moderate risk':
+        return Colors.orange.shade600;
+      case 'low risk':
+        return Colors.green.shade600;
+      default:
+        return Colors.grey.shade600;
+    }
+  }
+
+  String _formatAlertTime(DateTime alertDate) {
+    final now = DateTime.now();
+    final difference = now.difference(alertDate);
+    
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${difference.inDays}d ago';
+    }
+  }
+
+  void _showAlertDetails(DoctorAlert alert) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _getAlertBorderColor(alert.riskLevel).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  color: _getAlertBorderColor(alert.riskLevel),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Patient Alert Details',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: _getAlertBorderColor(alert.riskLevel),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildDetailRow('Patient', alert.patientName),
+                _buildDetailRow('Risk Level', alert.riskLevel),
+                _buildDetailRow('Date', _formatFullDate(alert.alertDate)),
+                if (alert.bloodPressure.isNotEmpty)
+                  _buildDetailRow('Blood Pressure', alert.bloodPressure),
+                const SizedBox(height: 16),
+                const Text(
+                  'Assessment:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  alert.riskMessage,
+                  style: const TextStyle(fontSize: 14),
+                ),
+                if (alert.symptoms.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Symptoms:',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...alert.symptoms.map((symptom) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• ', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Text(
+                            symptom,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                ],
+                if (alert.riskFactors.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Risk Factors:',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...alert.riskFactors.map((factor) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('• ', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Text(
+                            factor,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _markAlertAsRead(alert);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1976D2),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Mark as Read'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatFullDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year} at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _markAlertAsRead(DoctorAlert alert) async {
+    try {
+      if (alert.id != null) {
+        final success = await _backendService.markAlertAsRead(alert.id!);
+        if (success) {
+          setState(() {
+            _recentAlerts.removeWhere((a) => a.id == alert.id);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Alert marked as read'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating alert: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }

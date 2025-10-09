@@ -22,6 +22,12 @@ class SymptomLog {
   final DateTime logDate;
   final DateTime createdAt;
   final DateTime updatedAt;
+  // Risk Assessment fields
+  final String? riskLevel;
+  final String? riskMessage;
+  final List<String>? riskRecommendations;
+  final double? riskConfidence;
+  final DateTime? riskAnalysisDate;
 
   SymptomLog({
     this.id,
@@ -47,6 +53,11 @@ class SymptomLog {
     required this.logDate,
     required this.createdAt,
     required this.updatedAt,
+    this.riskLevel,
+    this.riskMessage,
+    this.riskRecommendations,
+    this.riskConfidence,
+    this.riskAnalysisDate,
   });
 
   SymptomLog copyWith({
@@ -73,6 +84,11 @@ class SymptomLog {
     DateTime? logDate,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? riskLevel,
+    String? riskMessage,
+    List<String>? riskRecommendations,
+    double? riskConfidence,
+    DateTime? riskAnalysisDate,
   }) {
     return SymptomLog(
       id: id ?? this.id,
@@ -98,6 +114,11 @@ class SymptomLog {
       logDate: logDate ?? this.logDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      riskLevel: riskLevel ?? this.riskLevel,
+      riskMessage: riskMessage ?? this.riskMessage,
+      riskRecommendations: riskRecommendations ?? this.riskRecommendations,
+      riskConfidence: riskConfidence ?? this.riskConfidence,
+      riskAnalysisDate: riskAnalysisDate ?? this.riskAnalysisDate,
     );
   }
 
@@ -126,6 +147,11 @@ class SymptomLog {
       'logDate': logDate.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'riskLevel': riskLevel,
+      'riskMessage': riskMessage,
+      'riskRecommendations': riskRecommendations,
+      'riskConfidence': riskConfidence,
+      'riskAnalysisDate': riskAnalysisDate?.toIso8601String(),
     };
   }
 
@@ -154,6 +180,15 @@ class SymptomLog {
       logDate: DateTime.parse(map['logDate']),
       createdAt: DateTime.parse(map['createdAt']),
       updatedAt: DateTime.parse(map['updatedAt']),
+      riskLevel: map['riskLevel'],
+      riskMessage: map['riskMessage'],
+      riskRecommendations: map['riskRecommendations'] != null 
+          ? List<String>.from(map['riskRecommendations']) 
+          : null,
+      riskConfidence: map['riskConfidence']?.toDouble(),
+      riskAnalysisDate: map['riskAnalysisDate'] != null 
+          ? DateTime.parse(map['riskAnalysisDate']) 
+          : null,
     );
   }
 

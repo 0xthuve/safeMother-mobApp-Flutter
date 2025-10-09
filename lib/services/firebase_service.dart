@@ -883,6 +883,57 @@ class FirebaseService {
     }
   }
 
+  // Get accepted doctors for a patient
+  static Future<List<Map<String, dynamic>>> getAcceptedDoctorsForPatient(String patientId) async {
+    if (_useMockService) {
+      return [];
+    }
+
+    try {
+      // Query for accepted doctor links
+      final querySnapshot = await _firestore
+          .collection('patient_doctor_links')
+          .where('patientId', isEqualTo: patientId)
+          .where('status', isEqualTo: 'accepted')
+          .get();
+
+      List<Map<String, dynamic>> doctors = [];
+      
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        
+        // Filter for active doctors in code to avoid composite index
+        if (data['isActive'] == true) {
+          doctors.add({
+            'id': doc.id,
+            'patientId': data['patientId'],
+            'doctorId': data['doctorId'],
+            'status': data['status'],
+            'isActive': data['isActive'],
+            'linkedDate': data['linkedDate'] != null 
+                ? (data['linkedDate'] as Timestamp).toDate()
+                : DateTime.now(),
+            'createdAt': data['createdAt'] != null 
+                ? (data['createdAt'] as Timestamp).toDate()
+                : DateTime.now(),
+            'updatedAt': data['updatedAt'] != null 
+                ? (data['updatedAt'] as Timestamp).toDate()
+                : DateTime.now(),
+          });
+        }
+      }
+      
+      // Sort by linked date in code
+      doctors.sort((a, b) => (b['linkedDate'] as DateTime).compareTo(a['linkedDate'] as DateTime));
+
+      print('Found ${doctors.length} accepted doctors for patient $patientId');
+      return doctors;
+    } catch (e) {
+      print('Error getting accepted doctors for patient: $e');
+      return [];
+    }
+  }
+
   // Accept a patient request in Firebase
   static Future<bool> acceptPatientRequest(String linkId) async {
     if (_useMockService) {
@@ -1447,6 +1498,121 @@ class FirebaseService {
     } catch (e) {
       print('Error getting prescriptions by doctor ID: $e');
       return [];
+    }
+  }
+
+  // ========== RISK ASSESSMENT OPERATIONS ==========
+
+  /// Update symptom log with risk assessment
+  static Future<bool> updateSymptomLogRiskAssessment(String logId, Map<String, dynamic> riskAssessment) async {
+    if (_useMockService) {
+      return true; // Mock success
+    }
+
+    try {
+      await _firestore
+          .collection('symptom_logs')
+          .doc(logId)
+          .update(riskAssessment);
+      print('Updated symptom log $logId with risk assessment');
+      return true;
+    } catch (e) {
+      print('Error updating symptom log with risk assessment: $e');
+      return false;
+    }
+  }
+
+  // ========== DOCTOR ALERT OPERATIONS ==========
+
+  /// Save doctor alert
+  static Future<String?> saveDoctorAlert(Map<String, dynamic> alertData) async {
+    if (_useMockService) {
+      return DateTime.now().millisecondsSinceEpoch.toString(); // Mock ID
+    }
+
+    try {
+      final docRef = await _firestore.collection('doctor_alerts').add(alertData);
+      print('Saved doctor alert: ${docRef.id}');
+      return docRef.id;
+    } catch (e) {
+      print('Error saving doctor alert: $e');
+      return null;
+    }
+  }
+
+  /// Get alerts for a doctor
+  static Future<List<Map<String, dynamic>>> getDoctorAlerts(String doctorId) async {
+    if (_useMockService) {
+      return []; // Mock empty list
+    }
+
+    try {
+      print('FirebaseService: Querying doctor_alerts collection for doctorId: $doctorId');
+      final querySnapshot = await _firestore
+          .collection('doctor_alerts')
+          .where('doctorId', isEqualTo: doctorId)
+          .get();
+      
+      print('FirebaseService: Query returned ${querySnapshot.docs.length} documents');
+      
+      List<Map<String, dynamic>> alerts = [];
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        alerts.add(data);
+        print('FirebaseService: Alert doc ${doc.id} - doctorId: ${data['doctorId']}, patientName: ${data['patientName']}');
+      }
+      
+      // If no results found, debug by showing all alerts in database
+      if (alerts.isEmpty) {
+        print('FirebaseService: No alerts found for doctorId: $doctorId, checking all alerts...');
+        final allAlertsSnapshot = await _firestore
+            .collection('doctor_alerts')
+            .get();
+        
+        print('FirebaseService: Total alerts in database: ${allAlertsSnapshot.docs.length}');
+        for (var doc in allAlertsSnapshot.docs) {
+          final data = doc.data();
+          print('FirebaseService: Available alert - doctorId: ${data['doctorId']}, patientName: ${data['patientName']}, riskLevel: ${data['riskLevel']}');
+        }
+      }
+      
+      // Sort by alertDate in descending order (newest first)
+      alerts.sort((a, b) {
+        try {
+          final dateA = DateTime.parse(a['alertDate']);
+          final dateB = DateTime.parse(b['alertDate']);
+          return dateB.compareTo(dateA); // Descending order
+        } catch (e) {
+          print('FirebaseService: Error sorting alerts by date: $e');
+          return 0;
+        }
+      });
+      
+      print('FirebaseService: Found ${alerts.length} alerts for doctor $doctorId (sorted by date)');
+      return alerts;
+    } catch (e) {
+      print('FirebaseService: Error getting doctor alerts: $e');
+      return [];
+    }
+  }
+
+  /// Mark alert as read
+  static Future<bool> markAlertAsRead(String alertId) async {
+    if (_useMockService) {
+      return true; // Mock success
+    }
+
+    try {
+      await _firestore
+          .collection('doctor_alerts')
+          .doc(alertId)
+          .update({'isRead': true});
+      print('Marked alert $alertId as read');
+      return true;
+    } catch (e) {
+      print('Error marking alert as read: $e');
+      return false;
     }
   }
 }
