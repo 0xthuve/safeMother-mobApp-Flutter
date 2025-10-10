@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/family_member_service.dart';
 
 class FamilyLoginScreen extends StatefulWidget {
   const FamilyLoginScreen({super.key});
@@ -18,10 +23,24 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
+  // Firebase instances
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
   @override
   void initState() {
     super.initState();
+    _initializeFirebase();
     _loadSavedCredentials();
+  }
+
+  Future<void> _initializeFirebase() async {
+    try {
+      await Firebase.initializeApp();
+    } catch (e) {
+      print('Firebase initialization error: $e');
+    }
   }
 
   Future<void> _loadSavedCredentials() async {
@@ -46,38 +65,57 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
   }
 
   Future<void> _saveCredentials() async {
-    if (_rememberMe) {
+    try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('saved_email', _emailController.text);
-      await prefs.setString('saved_password', _passwordController.text);
-      await prefs.setBool('remember_me', true);
-    } else {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('saved_email');
-      await prefs.remove('saved_password');
-      await prefs.setBool('remember_me', false);
+      if (_rememberMe) {
+        await prefs.setString('saved_email', _emailController.text);
+        await prefs.setString('saved_password', _passwordController.text);
+        await prefs.setBool('remember_me', true);
+      } else {
+        await prefs.remove('saved_email');
+        await prefs.remove('saved_password');
+        await prefs.setBool('remember_me', false);
+      }
+    } catch (e) {
+      print('Error saving credentials: $e');
     }
   }
 
   Future<void> _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
 
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
       // Save credentials if remember me is checked
       await _saveCredentials();
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      // Firebase email/password authentication
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // Check if user exists in family_members collection
+      final familyMember = await FamilyMemberService.getFamilyMember(userCredential.user!.uid);
+
+      if (familyMember == null) {
+        await _auth.signOut();
+        if (mounted) {
+          _showErrorDialog('Family member account not found. Please register first.');
+        }
+        return;
+      }
 
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
 
-        // Navigate to home screen on success
-        Navigator.pushReplacementNamed(context, '/family-home');
+        // Navigate directly to home screen on success
+        Navigator.pushReplacementNamed(context, '/familyHome');
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -90,7 +128,124 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
           ),
         );
       }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        String errorMessage = 'Login failed. Please try again.';
+        if (e is FirebaseAuthException) {
+          switch (e.code) {
+            case 'user-not-found':
+              errorMessage = 'No account found with this email.';
+              break;
+            case 'wrong-password':
+              errorMessage = 'Incorrect password. Please try again.';
+              break;
+            case 'invalid-email':
+              errorMessage = 'Invalid email address.';
+              break;
+            case 'user-disabled':
+              errorMessage = 'This account has been disabled.';
+              break;
+            case 'too-many-requests':
+              errorMessage = 'Too many attempts. Please try again later.';
+              break;
+            case 'network-request-failed':
+              errorMessage = 'Network error. Please check your connection.';
+              break;
+          }
+        }
+        
+        _showErrorDialog(errorMessage);
+      }
     }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+
+      // Check if user exists in family_members collection
+      final familyMember = await FamilyMemberService.getFamilyMember(userCredential.user!.uid);
+
+      if (familyMember == null) {
+        // If user doesn't exist in family_members, show message and sign out
+        await _auth.signOut();
+        if (mounted) {
+          _showErrorDialog('Please register as a family member first.');
+        }
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        Navigator.pushReplacementNamed(context, '/familyHome');
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Google Sign-In successful!'),
+            backgroundColor: const Color(0xFF4CAF50),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        _showErrorDialog('Google Sign-In failed: ${e.toString()}');
+      }
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _navigateToSignUp() {
+    Navigator.pushNamed(context, '/signup'); // Changed from '/familySignup' to '/signup'
   }
 
   void _showForgotPasswordDialog() {
@@ -197,19 +352,25 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
                     _buildDialogActionButton(
                       'Send Link',
                       const Color(0xFFE91E63),
-                      () {
+                      () async {
                         if (emailController.text.isNotEmpty) {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Password reset link sent to your email!'),
-                              backgroundColor: const Color(0xFF4CAF50),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          try {
+                            await _auth.sendPasswordResetEmail(email: emailController.text.trim());
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('Password reset link sent to your email!'),
+                                backgroundColor: const Color(0xFF4CAF50),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          } catch (e) {
+                            Navigator.of(context).pop();
+                            _showErrorDialog('Error sending reset link: ${e.toString()}');
+                          }
                         }
                       },
                     ),
@@ -246,83 +407,6 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  void _showSignUpDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF3E5F5),
-                  Color(0xFFFCE4EC),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50).withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.person_add,
-                        color: Color(0xFF4CAF50),
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Create Account',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF2C2C2C),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Contact your healthcare provider to create a family member account. '
-                  'You\'ll need to be linked to a patient profile by the medical team.',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: const Color(0xFF757575),
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: _buildDialogActionButton(
-                    'Close',
-                    const Color(0xFFE91E63),
-                    () => Navigator.of(context).pop(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -369,24 +453,32 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
                   ),
                   child: Column(
                     children: [
-                      // App Logo/Icon
+                      // App Logo
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.family_restroom,
-                          color: Colors.white,
-                          size: 40,
+                        child: Image.asset(
+                          'assets/logo.png',
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.family_restroom,
+                              color: Colors.white,
+                              size: 40,
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'Family Connect',
+                        'Safe Mother',
                         style: GoogleFonts.playfairDisplay(
-                          fontSize: 32,
+                          fontSize: 36,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                           letterSpacing: 1.5,
@@ -394,7 +486,7 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Stay connected with your loved one\'s health journey',
+                        'Family Connect - Supporting Maternal Health',
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           color: Colors.white.withOpacity(0.9),
@@ -614,6 +706,63 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
                                   ),
                           ),
                         ),
+                        const SizedBox(height: 20),
+
+                        // Google Sign-In Button
+                        Container(
+                          width: double.infinity,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: const Color(0xFF757575).withOpacity(0.3),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _signInWithGoogle,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.asset(
+                                  'assets/google_icon.png',
+                                  width: 24,
+                                  height: 24,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(
+                                      Icons.g_mobiledata,
+                                      color: Color(0xFF757575),
+                                      size: 28,
+                                    );
+                                  },
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Sign in with Google',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: const Color(0xFF2C2C2C),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 24),
 
                         // Divider
@@ -627,7 +776,7 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
-                                'New to Family Connect?',
+                                'New to Safe Mother?',
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
                                   color: const Color(0xFF757575),
@@ -655,7 +804,7 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
                             ),
                           ),
                           child: ElevatedButton(
-                            onPressed: _showSignUpDialog,
+                            onPressed: _navigateToSignUp,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,

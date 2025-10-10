@@ -8,6 +8,7 @@ import 'pages/family_contact_page.dart';
 import 'pages/family_learn_page.dart';
 import 'pages/family_profile_page.dart';
 import 'pages/family_logIn_page.dart';
+import 'pages/family_signup_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,15 +32,17 @@ class MyApp extends StatelessWidget {
           secondary: const Color(0xFF9C27B0),
         ),
       ),
-      initialRoute: '/familyHome',
+      initialRoute: '/',
       routes: {
-        '/familyHome': (context) => const FamilyHomeScreen(),
-        '/familyViewLog': (context) => const FamilyViewLogScreen(),
-        '/familyAppointments': (context) => const FamilyAppointmentsScreen(),
-        '/familyContacts': (context) => const FamilyContactsScreen(),
-        '/familyLearn': (context) => const FamilyLearnScreen(),
-        '/familyProfile': (context) => const FamilyProfileScreen(),
-      },
+  '/': (context) => const FamilyLoginScreen(),
+  '/familyHome': (context) => const FamilyHomeScreen(),
+  '/familyViewLog': (context) => const FamilyViewLogScreen(),
+  '/familyAppointments': (context) => const FamilyAppointmentsScreen(),
+  '/familyContacts': (context) => const FamilyContactsScreen(),
+  '/familyLearn': (context) => const FamilyLearnScreen(),
+  '/familyProfile': (context) => const FamilyProfileScreen(),
+  '/signup': (context) => const FamilySignUpScreen(),
+},
     );
   }
 }

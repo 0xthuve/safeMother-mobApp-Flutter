@@ -2,17 +2,44 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Family Members Collection - FIXED FOR REGISTRATION
+match /family_members/{familyMemberId} {
+  // CRITICAL: Allow email existence check during registration (before auth)
+  allow read: if true;  // Allow public read for email verification
+  
+  // Family members can create their own document during registration
+  allow create: if request.auth != null && 
+                     request.auth.uid == familyMemberId;
+  
+  // Family members can update their own data
+  allow update: if request.auth != null && 
+                        request.auth.uid == familyMemberId;
+  
+  // Patients can read family members linked to them
+  allow read: if request.auth != null && 
+                   resource.data.patientUserId == request.auth.uid;
+  
+  // Doctors can read family members for their patients
+  allow read: if request.auth != null && 
+                   exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+}
+    
     // Users collection - handles user registration and basic info
     match /users/{userId} {
       // Allow users to create and manage their own user document
       allow create: if request.auth != null && request.auth.uid == userId;
       allow read, update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if false; // Don't allow user deletion via rules
+      allow delete: if false;
       
       // Allow all authenticated users to read healthcare professionals (doctors)
       allow read: if request.auth != null && 
                   resource.data.get('accountType', '') == 'healthcare' && 
                   resource.data.get('role', '') == 'doctor';
+      
+      // Allow all authenticated users to list/query healthcare professionals (doctors)
+      allow list: if request.auth != null;
       
       // Allow doctors to read basic patient information for medical purposes
       allow read: if request.auth != null && 
@@ -21,50 +48,32 @@ service cloud.firestore {
                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor' &&
                   resource.data.get('role', '') == 'patient';
       
-      // Allow authenticated doctors to count total patients (for dashboard statistics)
+      // Allow doctors to read any user data they need for appointments
       allow read: if request.auth != null && 
-                  resource.data.get('role', '') == 'patient' &&
                   exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
     }
     
-    // Patient-Doctor Links collection - handles patient-doctor relationships permanently
-    match /patient_doctor_links/{linkId} {
-      // Patients can create requests
-      allow create: if request.auth != null && 
-                       request.auth.uid == request.resource.data.patientId &&
-                       request.resource.data.status == 'requested' &&
-                       request.resource.data.isActive == true;
-      
-      // Patients can read their own links
-      allow read: if request.auth != null && request.auth.uid == resource.data.patientId;
-      
-      // Doctors can read links where they are the doctor
-      allow read: if request.auth != null && request.auth.uid == resource.data.doctorId;
-      
-      // Doctors can update link status (accept/decline requests, remove patients)
-      allow update: if request.auth != null && 
-                       request.auth.uid == resource.data.doctorId &&
-                       // Valid status transitions
-                       (resource.data.status == 'requested' && 
-                        request.resource.data.status in ['accepted', 'declined']) ||
-                       (resource.data.status == 'accepted' && 
-                        (request.resource.data.status == 'removed' || request.resource.data.isActive == false));
-    }
-    
-    // Patients collection - additional patient-specific data
-    match /patients/{patientId} {
-      allow create: if request.auth != null && request.auth.uid == patientId;
-      allow read, update: if request.auth != null && request.auth.uid == patientId;
-      allow delete: if false;
-      
-      // Allow doctors to read and update patient data for medical purposes
-      allow read, update: if request.auth != null && 
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
-    }
+    // Patients collection - additional patient-specific data (UPDATED)
+match /patients/{patientId} {
+  // CRITICAL FIX: Allow public read access for patient ID verification
+  allow read: if true;  // Allow anyone to read patient documents for ID verification
+  
+  // Allow patients to create and manage their own data
+  allow create: if request.auth != null && request.auth.uid == patientId;
+  allow update: if request.auth != null && request.auth.uid == patientId;
+  allow delete: if false;
+  
+  // Allow queries for patient ID validation during family registration
+  allow list: if true;  // Allow anyone to query patients collection
+  
+  // Allow doctors to read and update patient data for medical purposes
+  allow read, update: if request.auth != null && 
+    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+}
     
     // Doctors collection - doctor-specific data
     match /doctors/{doctorId} {
@@ -89,11 +98,29 @@ service cloud.firestore {
     
     // Appointments - both patients and doctors can manage
     match /appointments/{appointmentId} {
-      allow read, write: if request.auth != null && 
-                            (request.auth.uid == resource.data.patientId || 
-                             request.auth.uid == resource.data.doctorId);
+      // Allow patients to create appointments
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.patientId;
+
+      // Allow doctors to create appointments (for booking on behalf of patients)
+      allow create: if request.auth != null && 
+                   exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+
+      // Allow read & update for both patient and doctor
+      allow read, update: if request.auth != null && 
+                         (request.auth.uid == resource.data.patientId || 
+                          request.auth.uid == resource.data.doctorId);
+
+      allow delete: if request.auth != null &&
+                 (request.auth.uid == resource.data.patientId ||
+                  request.auth.uid == resource.data.doctorId);
+
+      // Allow both patient & doctor to list their own appointments
+      allow list: if request.auth != null;
     }
-    
+
     // Symptom Logs - comprehensive health tracking for pregnancy
     match /symptom_logs/{logId} {
       // Patients can create and read their own symptom logs
@@ -170,7 +197,6 @@ service cloud.firestore {
                      request.auth.uid == resource.data.doctorId;
       
       // Doctors can read ANY recommendations to see their prescription history
-      // This allows the dashboard to load all prescriptions made by the doctor
       allow read: if request.auth != null && 
                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
@@ -186,8 +212,135 @@ service cloud.firestore {
       allow list: if request.auth != null;
     }
 
+    // Consultation Messages - for doctor-patient chat functionality
+    match /consultation_messages/{messageId} {
+      // Patients can read and create messages in their conversations
+      allow read, create: if request.auth != null && 
+                             (request.auth.uid == resource.data.patientId || 
+                              request.auth.uid == resource.data.doctorId);
+      
+      // Doctors can read and create messages in their conversations
+      allow read, create: if request.auth != null && 
+                             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+      
+      // Allow listing messages for a conversation
+      allow list: if request.auth != null && 
+                     (request.auth.uid == resource.data.patientId || 
+                      request.auth.uid == resource.data.doctorId);
+    }
+
+    // Video Call Sessions - for video consultation functionality
+    match /video_calls/{callId} {
+      // Patients can create, read and update their video calls
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.patientId;
+      
+      allow read, update: if request.auth != null && 
+                             request.auth.uid == resource.data.patientId;
+      
+      // Doctors can create, read and update video calls for their patients
+      allow create: if request.auth != null && 
+                       exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('accountType', '') == 'healthcare' &&
+                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'doctor';
+      
+      allow read, update: if request.auth != null && 
+                             request.auth.uid == resource.data.doctorId;
+      
+      // Allow both patients and doctors to join/leave calls
+      allow update: if request.auth != null && 
+                       (request.auth.uid == resource.data.patientId || 
+                        request.auth.uid == resource.data.doctorId) &&
+                       // Only allow status updates and join/leave actions
+                       (request.resource.data.keys().hasOnly(['status', 'startedAt', 'endedAt', 'participantStatus']) ||
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'startedAt', 'endedAt', 'participantStatus']));
+      
+      // Allow listing video calls for patients and doctors
+      allow list: if request.auth != null;
+    }
+
+    // Video Call Rooms - for managing active video call sessions
+    match /video_call_rooms/{roomId} {
+      // Allow participants to read and update room status
+      allow read, write: if request.auth != null && 
+                            (request.auth.uid in resource.data.get('participants', []));
+      
+      // Allow creation of rooms for scheduled calls
+      allow create: if request.auth != null;
+    }
+
+    // Video Call Messages - for in-call chat functionality
+    match /video_call_messages/{messageId} {
+      // Allow participants to send and receive messages during calls
+      allow read, create: if request.auth != null && 
+                             exists(/databases/$(database)/documents/video_call_rooms/$(resource.data.roomId)) &&
+                             request.auth.uid in get(/databases/$(database)/documents/video_call_rooms/$(resource.data.roomId)).data.get('participants', []);
+    }
+
+    // Consultation History - comprehensive consultation tracking
+    match /consultation_history/{consultationId} {
+      // Patients can read their own consultation history
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.patientId;
+      
+      // Doctors can create and update consultation records
+      allow create, update: if request.auth != null && 
+                               exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
+                               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+      
+      // Doctors can read consultation history for their patients
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.doctorId;
+    }
+    
+    // Doctor Alerts - high-risk patient notifications for doctors
+    match /doctor_alerts/{alertId} {
+      // Doctors can read their own alerts
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.doctorId;
+      
+      // System can create alerts (for AI risk assessment service)
+      allow create: if request.auth != null;
+      
+      // Doctors can update alerts (mark as read)
+      allow update: if request.auth != null && 
+                       request.auth.uid == resource.data.doctorId;
+      
+      // Allow doctors to query their alerts
+      allow list: if request.auth != null && 
+                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.accountType == 'healthcare' &&
+                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'doctor';
+    }
+
+    // Patient-Doctor Links collection - handles patient-doctor relationships permanently
+    match /patient_doctor_links/{linkId} {
+      // Patients can create requests
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.patientId &&
+                       request.resource.data.status == 'requested' &&
+                       request.resource.data.isActive == true;
+      
+      // Patients can read their own links
+      allow read: if request.auth != null && request.auth.uid == resource.data.patientId;
+      
+      // Doctors can read links where they are the doctor
+      allow read: if request.auth != null && request.auth.uid == resource.data.doctorId;
+      
+      // Doctors can update link status (accept/decline requests, remove patients)
+      allow update: if request.auth != null && 
+                       request.auth.uid == resource.data.doctorId &&
+                       // Valid status transitions
+                       (resource.data.status == 'requested' && 
+                        request.resource.data.status in ['accepted', 'declined']) ||
+                       (resource.data.status == 'accepted' && 
+                        (request.resource.data.status == 'removed' || request.resource.data.isActive == false));
+    }
+
     // Allow public read access to some collections for demonstration purposes
-    // Remove this in production and implement proper access control
     match /public_data/{document} {
       allow read: if true;
       allow write: if false;
