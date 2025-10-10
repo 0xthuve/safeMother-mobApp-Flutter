@@ -4,26 +4,27 @@ import 'firebase_options.dart';
 import 'signin.dart';
 import 'services/session_manager.dart';
 import 'services/firebase_service.dart';
+import 'services/notification_service.dart';
 import 'patient_dashboard.dart';
 import 'pages/doctor/doctor_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-
   } catch (e) {
-
     // For development, continue without Firebase if there's an error
-
   }
-  
+
   // Initialize Firebase service (will use mock if Firebase not configured)
   await FirebaseService.initialize();
-  
+
+  // Initialize NotificationService for local notifications
+  await NotificationService().initialize();
+
   runApp(const SafeMotherApp());
 }
 

@@ -153,7 +153,7 @@ class _EmergencyCallBottomSheetState extends State<EmergencyCallBottomSheet>
 
   Future<void> _makeEmergencyCall() async {
     try {
-      final Uri phoneUri = Uri(scheme: 'tel', path: '110');
+      final Uri phoneUri = Uri(scheme: 'tel', path: '1990');
       if (await canLaunchUrl(phoneUri)) {
         await launchUrl(phoneUri);
       } else {
@@ -183,7 +183,7 @@ class _EmergencyCallBottomSheetState extends State<EmergencyCallBottomSheet>
           ],
         ),
         content: const Text(
-          'Unable to make the emergency call. Please dial 110 manually or contact emergency services.',
+          'Unable to make the emergency call. Please dial 1990 manually or contact emergency services.',
         ),
         actions: [
           TextButton(
@@ -259,7 +259,7 @@ class _EmergencyCallBottomSheetState extends State<EmergencyCallBottomSheet>
             const SizedBox(height: 8),
             
             const Text(
-              'Slide to call ambulance service\nEmergency Number: 110',
+              'Slide to call ambulance service\nEmergency Number: 1990',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,

@@ -233,8 +233,19 @@ class _LearnScreenState extends State<LearnScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         // Open article in browser using url_launcher
-                        if (article['url'] != null) {
-                          _launchURL(article['url']);
+                        final url = article['url'];
+                        if (url != null && url.toString().isNotEmpty && url.toString() != 'null') {
+                          _launchURL(url.toString());
+                        } else {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Article URL is not available'),
+                                backgroundColor: Colors.orange,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -282,14 +293,42 @@ class _LearnScreenState extends State<LearnScreen> {
 
   // Function to launch URL
   Future<void> _launchURL(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(
+    print('Attempting to launch URL: $url');
+    try {
+      // Validate URL format
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        throw 'Invalid URL format: URL must start with http:// or https://';
+      }
+
+      final Uri uri = Uri.parse(url);
+      print('Parsed URI: $uri');
+
+      // Check if URI is valid
+      if (!uri.hasScheme || !uri.hasAuthority) {
+        throw 'Invalid URI: Missing scheme or authority';
+      }
+
+      // Try to launch directly without canLaunchUrl check
+      final result = await launchUrl(
         uri,
         mode: LaunchMode.externalApplication, // This opens in Chrome/browser
       );
-    } else {
-      throw 'Could not launch $url';
+      print('Launch result: $result');
+      if (!result) {
+        throw 'launchUrl returned false';
+      }
+    } catch (e) {
+      // If direct launch fails, show error message
+      print('Error launching URL: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not open article. Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 

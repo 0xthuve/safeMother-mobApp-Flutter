@@ -10,7 +10,10 @@ import '../../services/session_manager.dart';
 import '../../services/backend_service.dart';
 import '../../services/firebase_service.dart';
 import '../../models/doctor_alert.dart';
-import '../patient_requests_page.dart';
+import '../../services/notification_service.dart';
+import '../../services/ai_risk_assessment_service.dart';
+import 'dart:async';
+import 'package:flutter/widgets.dart';
 
 
 class DoctorDashboard extends StatefulWidget {
@@ -21,6 +24,9 @@ class DoctorDashboard extends StatefulWidget {
 }
 
 class _DoctorDashboardState extends State<DoctorDashboard> {
+  Timer? _alertPollingTimer;
+  Set<String> _notifiedAlertIds = {};
+  bool _isPolling = false;
   final int _currentIndex = 0;
   final BackendService _backendService = BackendService();
   Doctor? _currentDoctor;
@@ -36,6 +42,57 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   void initState() {
     super.initState();
     _loadDashboardData();
+    _startAlertPolling();
+  }
+
+  @override
+  void dispose() {
+    _alertPollingTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startAlertPolling() {
+    _alertPollingTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      if (_isPolling) return;
+      _isPolling = true;
+      try {
+        await _checkForNewAlerts();
+      } finally {
+        _isPolling = false;
+      }
+    });
+  }
+
+  Future<void> _checkForNewAlerts() async {
+    final userId = await SessionManager.getUserId();
+    if (userId == null) return;
+    final alerts = await _backendService.getDoctorAlerts(userId);
+    for (final alert in alerts) {
+      final alertId = alert.id ?? '';
+      if (!_notifiedAlertIds.contains(alertId)) {
+        // Show notification for new alert only if not already notified and not marked as read
+        if (!alert.isRead) {
+          await NotificationService().sendHighRiskAlert(
+            patientId: alert.patientId,
+            riskLevel: _parseRiskLevel(alert.riskLevel),
+            message: 'Patient ${alert.patientName} is at ${alert.riskLevel} risk: ${alert.riskMessage}',
+          );
+        }
+        _notifiedAlertIds.add(alertId);
+      }
+    }
+  }
+
+  RiskLevel _parseRiskLevel(String riskLevel) {
+    final normalized = riskLevel.toLowerCase().replaceAll(' risk', '');
+    switch (normalized) {
+      case 'high':
+        return RiskLevel.high;
+      case 'moderate':
+        return RiskLevel.moderate;
+      default:
+        return RiskLevel.low;
+    }
   }
 
   Future<void> _loadDashboardData() async {
@@ -715,17 +772,8 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       ),
                       if (_pendingRequests.isNotEmpty)
                         TextButton(
-                          onPressed: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const PatientRequestsPage(),
-                              ),
-                            );
-                            // Refresh dashboard data when returning
-                            if (result == true || result == null) {
-                              _loadDashboardData();
-                            }
+                          onPressed: () {
+                            DoctorNavigationHandler.navigateToPatientManagement(context, initialTab: 1);
                           },
                           child: const Text('View All'),
                         ),

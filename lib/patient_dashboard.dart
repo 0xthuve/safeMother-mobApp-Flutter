@@ -12,6 +12,7 @@ import 'widgets/ambulance_button.dart';
 import 'pages/learn_page.dart';
 import 'models/meal.dart';
 import 'models/exercise.dart';
+import 'dart:async';
 
 void main() {
   runApp(const PregnancyApp());
@@ -57,11 +58,43 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   List<Meal> _todaysMeals = [];
   List<Exercise> _todaysExercises = [];
+  Timer? _syncTimer;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _startPeriodicSync();
+  }
+
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPeriodicSync() {
+    // Sync data every 5 minutes when app is in foreground
+    _syncTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+      _syncPatientData();
+    });
+  }
+
+  Future<void> _syncPatientData() async {
+    try {
+      final userId = await SessionManager.getUserId();
+      if (userId != null) {
+        // Sync patient data in background
+        await _backendService.getPregnancyTracking(userId);
+        await _backendService.getMedicalRecords(userId);
+        await _backendService.getUpcomingAppointments(userId);
+        await _backendService.getDueReminders(userId);
+        // Refresh UI data if needed
+        _loadUserData();
+      }
+    } catch (e) {
+      print('Error syncing patient data: $e');
+    }
   }
 
   Future<void> _loadUserData() async {

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'patient_dashboard.dart';
 import 'services/session_manager.dart';
 import 'services/user_management_service.dart';
 import 'services/backend_service.dart';
 import 'models/doctor.dart';
 import 'pages/edit_profile.dart';
+import 'package:flutter/services.dart';
 
 import 'signin.dart';
 
@@ -50,6 +50,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userAge = '';
   String _userContact = '';
   String _userRole = 'Mother';
+  String _userId = '';
   bool _isLoading = true;
   List<Map<String, dynamic>> _assignedDoctors = [];
   
@@ -58,29 +59,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  
-  // Helper method to show loading dialog
-  void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => PopScope(
-        canPop: false,
-        child: const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
-          ),
-        ),
-      ),
-    );
-  }
-  
-  // Helper method to dismiss loading dialog safely
-  void _dismissLoadingDialog() {
-    if (mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
-  }
   
   // Helper method to navigate to dashboard with success message
   void _navigateToDashboard(String message) {
@@ -127,6 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Get user data from session and Firebase with timeout
       final userName = await SessionManager.getUserName();
       final userEmail = await SessionManager.getUserEmail();
+      final userId = await SessionManager.getUserId();
       
       // Add timeout to prevent hanging
       final userData = await UserManagementService.getCurrentUserData()
@@ -138,6 +117,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         setState(() {
           _userName = userName ?? 'User';
           _userEmail = userEmail ?? '';
+          _userId = userId ?? '';
           
           // Extract additional profile data from Firebase
           if (userData != null) {
@@ -363,33 +343,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'No family members linked yet.',
+                  'Share your Patient ID with family members so they can register and link their accounts to receive updates about your pregnancy journey.',
                   style: TextStyle(
                     color: Color(0xFF638763),
+                    height: 1.4,
                   ),
                 ),
                 const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Add functionality to link family members
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE91E63),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Add Family Member',
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                    ),
+                const Text(
+                  'Your Patient ID:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF111611),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFE91E63).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _userId.isEmpty ? 'Loading...' : _userId,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF111611),
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          if (_userId.isNotEmpty) {
+                            Clipboard.setData(ClipboardData(text: _userId));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Patient ID copied to clipboard'),
+                                duration: Duration(seconds: 2),
+                                backgroundColor: Color(0xFFE91E63),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.copy,
+                          color: Color(0xFFE91E63),
+                          size: 20,
+                        ),
+                        tooltip: 'Copy Patient ID',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.green.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.green,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Family members can use this ID during registration to create linked accounts and receive pregnancy updates.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(
@@ -400,6 +449,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       'Close',
                       style: TextStyle(
                         color: Color(0xFF638763),
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -883,6 +933,10 @@ void _showPrivacySettingsPopup() {
                                       const Divider(height: 32, color: Color(0xFFE0E0E0)),
                                       
                                       _buildReadOnlyInfoRow('Contact', _userContact.isEmpty ? 'Not set' : _userContact, Icons.phone),
+                                      
+                                      const Divider(height: 32, color: Color(0xFFE0E0E0)),
+                                      
+                                      _buildUidInfoRow('Patient ID', _userId.isEmpty ? 'Not available' : _userId, Icons.tag),
                                     ],
                                   ),
                                 ),
@@ -1060,6 +1114,77 @@ void _showPrivacySettingsPopup() {
                     fontSize: 14,
                     color: Color(0xFF666666),
                   ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUidInfoRow(String title, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE91E63).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: const Color(0xFFE91E63), size: 18),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2D3748),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF666666),
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        if (value.isNotEmpty && value != 'Not available') {
+                          Clipboard.setData(ClipboardData(text: value));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Patient ID copied to clipboard'),
+                              duration: Duration(seconds: 2),
+                              backgroundColor: Color(0xFFE91E63),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.copy,
+                        color: Color(0xFFE91E63),
+                        size: 18,
+                      ),
+                      tooltip: 'Copy Patient ID',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -1,17 +1,42 @@
 import 'ai_risk_assessment_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  // Store notifications in memory for now
   final List<NotificationRecord> _notifications = [];
 
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+
   /// Initialize notification service
-  Future<void> initialize() async {
+  Future<void> initialize({BuildContext? context}) async {
     try {
-      print('Notification service initialized successfully (basic implementation)');
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+
+      final InitializationSettings initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
+      );
+
+      await _notificationsPlugin.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          // Handle notification tap if needed
+        },
+      );
+
+      // Request notification permission for Android 13+
+      if (Platform.isAndroid) {
+        final status = await Permission.notification.request();
+        print('Android notification permission status: $status');
+      }
+
+      print('Notification service initialized with flutter_local_notifications');
     } catch (e) {
       print('Error initializing notification service: $e');
     }
@@ -24,12 +49,10 @@ class NotificationService {
     required String message,
   }) async {
     try {
-      // Log the high risk alert
       print('🚨 HIGH RISK ALERT for patient $patientId');
       print('Risk Level: ${riskLevel.displayName}');
       print('Message: $message');
-      
-      // Store notification record
+
       final record = NotificationRecord(
         patientId: patientId,
         type: 'health_alert',
@@ -38,38 +61,37 @@ class NotificationService {
         timestamp: DateTime.now(),
         read: false,
       );
-      
       _notifications.add(record);
-      
-      // Show immediate notification dialog
-      _showImmediateAlert(riskLevel, message);
-      
+
+      // Show local notification on Android
+      await _showLocalNotification('High Risk Alert', message);
+
       print('✅ High risk alert processed for patient: $patientId');
     } catch (e) {
       print('Error sending high risk alert: $e');
     }
   }
 
-  /// Show immediate alert to user (simulated notification)
-  void _showImmediateAlert(RiskLevel riskLevel, String message) {
-    // This simulates a push notification by printing a prominent alert
-    final border = '=' * 60;
-    print('\n$border');
-    print('🚨 URGENT HEALTH ALERT 🚨');
-    print('Risk Level: ${riskLevel.displayName.toUpperCase()}');
-    print('Time: ${DateTime.now().toString().substring(0, 19)}');
-    print('');
-    print('MESSAGE: $message');
-    print('');
-    print('⚠️  PUSH NOTIFICATION SENT TO PATIENT DEVICE');
-    print('📱 In-app notification displayed');
-    print('🔔 Background notification scheduled');
-    print('$border\n');
-    
-    // Store additional notification details for later retrieval
-    print('✅ Notification stored in user\'s notification history');
-    print('📧 Emergency contact alerts prepared (if configured)');
-    print('🏥 Healthcare provider dashboard updated');
+  /// Show local notification using flutter_local_notifications
+  Future<void> _showLocalNotification(String title, String body) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'high_risk_channel',
+      'High Risk Alerts',
+      channelDescription: 'Notifications for high risk events',
+      importance: Importance.max,
+      priority: Priority.high,
+      ticker: 'ticker',
+    );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+    await _notificationsPlugin.show(
+      0,
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: 'high_risk',
+    );
   }
 
   /// Send symptom reminder notification

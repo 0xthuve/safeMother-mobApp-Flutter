@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'services/user_management_service.dart';
 
 void main() {
   runApp(const FamilyLinkApp());
@@ -27,8 +28,125 @@ class FamilyLinkApp extends StatelessWidget {
   }
 }
 
-class FamilyLinkScreen extends StatelessWidget {
+class FamilyLinkScreen extends StatefulWidget {
   const FamilyLinkScreen({super.key});
+
+  @override
+  State<FamilyLinkScreen> createState() => _FamilyLinkScreenState();
+}
+
+class _FamilyLinkScreenState extends State<FamilyLinkScreen> {
+  final TextEditingController _patientIdController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _fullNameController = TextEditingController();
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _patientIdController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _fullNameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _registerFamilyMember() async {
+    final patientId = _patientIdController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+    final fullName = _fullNameController.text.trim();
+    
+    // Validation
+    if (patientId.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter a Patient ID';
+      });
+      return;
+    }
+    
+    if (email.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter your email';
+      });
+      return;
+    }
+    
+    if (fullName.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter your full name';
+      });
+      return;
+    }
+    
+    if (password.isEmpty) {
+      setState(() {
+        _errorMessage = 'Please enter a password';
+      });
+      return;
+    }
+    
+    if (password != confirmPassword) {
+      setState(() {
+        _errorMessage = 'Passwords do not match';
+      });
+      return;
+    }
+    
+    if (password.length < 6) {
+      setState(() {
+        _errorMessage = 'Password must be at least 6 characters';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final success = await UserManagementService.registerFamilyMember(
+        email: email,
+        password: password,
+        fullName: fullName,
+        patientId: patientId,
+        context: context,
+      );
+      
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Family member account created successfully!'),
+            backgroundColor: Color(0xFFE91E63),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        // Navigate to appropriate screen - for now, just pop back
+        Navigator.of(context).pop();
+      } else {
+        setState(() {
+          _errorMessage = 'Failed to create family member account';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +220,7 @@ class FamilyLinkScreen extends StatelessWidget {
                               icon: const Icon(Icons.arrow_back, color: Color(0xFF5A5A5A)),
                             ),
                             const Text(
-                              'Link to Family Member',
+                              'Register Family Member',
                               style: TextStyle(
                                 color: Color(0xFF7B1FA2),
                                 fontSize: 20,
@@ -118,7 +236,7 @@ class FamilyLinkScreen extends StatelessWidget {
                       
                       // Title
                       const Text(
-                        'Connect with your loved ones',
+                        'Join as Family Member',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
@@ -131,7 +249,7 @@ class FamilyLinkScreen extends StatelessWidget {
                       
                       // Description
                       const Text(
-                        'Share your journey with family members by linking their accounts. They\'ll be able to view updates and support you along the way.',
+                        'Create your family member account and link it to a patient using their Patient ID. You\'ll receive updates about their pregnancy journey and can provide support.',
                         style: TextStyle(
                           color: Color(0xFF9575CD),
                           fontSize: 16,
@@ -162,11 +280,12 @@ class FamilyLinkScreen extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            // Code input field
+                            // Full Name field
                             TextFormField(
+                              controller: _fullNameController,
                               style: const TextStyle(color: Color(0xFF5A5A5A)),
                               decoration: InputDecoration(
-                                labelText: 'Enter Code',
+                                labelText: 'Full Name',
                                 labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                 filled: true,
                                 fillColor: const Color(0xFFF5F5F5),
@@ -178,16 +297,106 @@ class FamilyLinkScreen extends StatelessWidget {
                               ),
                             ),
                             
+                            const SizedBox(height: 16),
+                            
+                            // Email field
+                            TextFormField(
+                              controller: _emailController,
+                              style: const TextStyle(color: Color(0xFF5A5A5A)),
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: InputDecoration(
+                                labelText: 'Email Address',
+                                labelStyle: const TextStyle(color: Color(0xFF9575CD)),
+                                filled: true,
+                                fillColor: const Color(0xFFF5F5F5),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Password field
+                            TextFormField(
+                              controller: _passwordController,
+                              style: const TextStyle(color: Color(0xFF5A5A5A)),
+                              obscureText: true,
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                labelStyle: const TextStyle(color: Color(0xFF9575CD)),
+                                filled: true,
+                                fillColor: const Color(0xFFF5F5F5),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Confirm Password field
+                            TextFormField(
+                              controller: _confirmPasswordController,
+                              style: const TextStyle(color: Color(0xFF5A5A5A)),
+                              obscureText: true,
+                              decoration: InputDecoration(
+                                labelText: 'Confirm Password',
+                                labelStyle: const TextStyle(color: Color(0xFF9575CD)),
+                                filled: true,
+                                fillColor: const Color(0xFFF5F5F5),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Patient ID field
+                            TextFormField(
+                              controller: _patientIdController,
+                              style: const TextStyle(color: Color(0xFF5A5A5A)),
+                              decoration: InputDecoration(
+                                labelText: 'Patient ID',
+                                labelStyle: const TextStyle(color: Color(0xFF9575CD)),
+                                filled: true,
+                                fillColor: const Color(0xFFF5F5F5),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                                errorText: _errorMessage,
+                              ),
+                            ),
+                            
+                            const SizedBox(height: 8),
+                            
+                            // Helper text
+                            const Text(
+                              'Enter the Patient ID shared by your family member to link your account.',
+                              style: TextStyle(
+                                color: Color(0xFF9575CD),
+                                fontSize: 12,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            
                             const SizedBox(height: 20),
                             
-                            // Link with Code button
+                            // Create Account button
                             SizedBox(
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                onPressed: () {
-                                  // Handle linking with code
-                                },
+                                onPressed: _isLoading ? null : _registerFamilyMember,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFE91E63),
                                   shape: RoundedRectangleBorder(
@@ -195,14 +404,23 @@ class FamilyLinkScreen extends StatelessWidget {
                                   ),
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                 ),
-                                child: const Text(
-                                  'Link with Code',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
-                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Create Family Account',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
                               ),
                             ),
                             
