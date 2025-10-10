@@ -4,7 +4,13 @@ import '../models/pregnancy_tracking.dart';
 import '../models/medical_record.dart';
 import '../models/reminder.dart';
 import '../models/appointment.dart';
+import '../models/doctor.dart';
+import '../models/patient_doctor_link.dart';
+import '../models/symptom_log.dart';
+import '../models/doctor_alert.dart';
 import 'session_manager.dart';
+import 'tips_service.dart';
+import 'firebase_service.dart';
 
 class BackendService {
   static const String pregnancyTrackingKey = 'pregnancy_tracking';
@@ -13,6 +19,7 @@ class BackendService {
   static const String appointmentsKey = 'appointments';
   static const String doctorsKey = 'doctors';
   static const String patientsKey = 'patients';
+  static const String symptomLogsKey = 'symptom_logs';
 
   // Singleton pattern
   static final BackendService _instance = BackendService._internal();
@@ -38,7 +45,7 @@ class BackendService {
       await prefs.setString('${pregnancyTrackingKey}_${tracking.userId}', trackingData);
       return true;
     } catch (e) {
-      print('Error saving pregnancy tracking: $e');
+
       return false;
     }
   }
@@ -56,7 +63,7 @@ class BackendService {
 
       return await savePregnancyTracking(updatedTracking);
     } catch (e) {
-      print('Error updating pregnancy tracking: $e');
+
       return false;
     }
   }
@@ -70,24 +77,60 @@ class BackendService {
         'percentage': 0.0,
         'trimester': 'First',
         'weeksRemaining': 40,
+        'daysRemaining': 280,
+        'totalDays': 0,
+        'babyName': 'Your Baby',
+        'expectedDeliveryDate': null,
+        'confirmationDate': null,
+        'isOverdue': false,
+        'trimesterProgress': 0.0,
       };
     }
 
     int currentWeek = tracking.currentWeek ?? 0;
     int currentDay = tracking.currentDay ?? 0;
+    DateTime? calculationBaseDate;
 
     // Auto-calculate if we have LMP or confirmed date
     if (tracking.lastMenstrualPeriod != null || tracking.pregnancyConfirmedDate != null) {
-      final referenceDate = tracking.lastMenstrualPeriod ?? tracking.pregnancyConfirmedDate!;
-      final calculated = PregnancyTracking.calculatePregnancyWeek(referenceDate);
-      currentWeek = calculated['weeks']!;
-      currentDay = calculated['days']!;
+      DateTime? expectedDeliveryDate = tracking.expectedDeliveryDate;
+      
+      if (tracking.lastMenstrualPeriod != null) {
+        // Use LMP for most accurate calculation
+        calculationBaseDate = tracking.lastMenstrualPeriod!;
+        final calculated = PregnancyTracking.calculatePregnancyWeek(calculationBaseDate);
+        currentWeek = calculated['weeks']!;
+        currentDay = calculated['days']!;
+        
+        // Auto-calculate expected delivery date if not set (280 days from LMP)
+        if (expectedDeliveryDate == null) {
+          expectedDeliveryDate = PregnancyTracking.calculateExpectedDeliveryDate(tracking.lastMenstrualPeriod);
+        }
+      } else if (tracking.pregnancyConfirmedDate != null) {
+        // Use confirmation date as the start of pregnancy journey (day 0)
+        calculationBaseDate = tracking.pregnancyConfirmedDate!;
+        final daysSinceConfirmation = DateTime.now().difference(calculationBaseDate).inDays;
+        currentWeek = (daysSinceConfirmation / 7).floor().clamp(0, 45);
+        currentDay = (daysSinceConfirmation % 7).clamp(0, 6);
+        
+        // Ensure no negative values
+        if (daysSinceConfirmation < 0) {
+          currentWeek = 0;
+          currentDay = 0;
+        }
+        
+        // Auto-calculate expected delivery date if not set (280 days from confirmation)
+        if (expectedDeliveryDate == null) {
+          expectedDeliveryDate = calculationBaseDate.add(const Duration(days: 280));
+        }
+      }
 
       // Update tracking with calculated values
       await updatePregnancyTracking(userId, {
         'currentWeek': currentWeek,
         'currentDay': currentDay,
         'trimester': PregnancyTracking.getTrimester(currentWeek),
+        'expectedDeliveryDate': expectedDeliveryDate?.toIso8601String(),
       });
     }
 
@@ -96,16 +139,46 @@ class BackendService {
     final currentTotalDays = (currentWeek * 7) + currentDay;
     final remainingDays = (totalPregnancyDays - currentTotalDays).clamp(0, totalPregnancyDays);
     
+    // Calculate trimester progress
+    final trimester = PregnancyTracking.getTrimester(currentWeek);
+    double trimesterProgress = 0.0;
+    if (trimester == 'First') {
+      trimesterProgress = (currentWeek / 12.0 * 100).clamp(0.0, 100.0);
+    } else if (trimester == 'Second') {
+      trimesterProgress = ((currentWeek - 12) / 16.0 * 100).clamp(0.0, 100.0);
+    } else if (trimester == 'Third') {
+      trimesterProgress = ((currentWeek - 28) / 12.0 * 100).clamp(0.0, 100.0);
+    }
+
+    // Check if overdue (past 40 weeks)
+    final isOverdue = currentWeek > 40;
+
+    // Get expected delivery date
+    final expectedDeliveryDate = tracking.expectedDeliveryDate;
+
     return {
       'weeks': currentWeek,
       'days': currentDay,
       'percentage': (currentWeek / 40.0 * 100).clamp(0.0, 100.0),
-      'trimester': PregnancyTracking.getTrimester(currentWeek),
+      'trimester': trimester,
+      'trimesterProgress': trimesterProgress,
       'weeksRemaining': (40 - currentWeek).clamp(0, 40),
       'daysRemaining': remainingDays,
       'totalDays': currentTotalDays,
       'babyName': tracking.babyName ?? 'Your Baby',
-      'expectedDeliveryDate': tracking.expectedDeliveryDate?.toIso8601String(),
+      'babyGender': tracking.babyGender,
+      'expectedDeliveryDate': expectedDeliveryDate?.toIso8601String(),
+      'confirmationDate': tracking.pregnancyConfirmedDate?.toIso8601String(),
+      'lastMenstrualPeriod': tracking.lastMenstrualPeriod?.toIso8601String(),
+      'isOverdue': isOverdue,
+      'weight': tracking.weight,
+      'height': tracking.height,
+      'isFirstChild': tracking.isFirstChild,
+      'medicalHistory': tracking.medicalHistory,
+      'symptoms': tracking.symptoms,
+      'medications': tracking.medications,
+      'vitals': tracking.vitals,
+      'calculationBaseDate': calculationBaseDate?.toIso8601String(),
     };
   }
 
@@ -145,7 +218,7 @@ class BackendService {
       await prefs.setString('${medicalRecordsKey}_${record.userId}', recordsData);
       return true;
     } catch (e) {
-      print('Error saving medical record: $e');
+
       return false;
     }
   }
@@ -164,7 +237,7 @@ class BackendService {
       await prefs.setString('${medicalRecordsKey}_${record.userId}', recordsData);
       return true;
     } catch (e) {
-      print('Error updating medical record: $e');
+
       return false;
     }
   }
@@ -179,7 +252,7 @@ class BackendService {
       await prefs.setString('${medicalRecordsKey}_$userId', recordsData);
       return true;
     } catch (e) {
-      print('Error deleting medical record: $e');
+
       return false;
     }
   }
@@ -232,7 +305,7 @@ class BackendService {
       await prefs.setString('${remindersKey}_${reminder.userId}', remindersData);
       return true;
     } catch (e) {
-      print('Error saving reminder: $e');
+
       return false;
     }
   }
@@ -251,7 +324,7 @@ class BackendService {
       await prefs.setString('${remindersKey}_${reminder.userId}', remindersData);
       return true;
     } catch (e) {
-      print('Error updating reminder: $e');
+
       return false;
     }
   }
@@ -289,7 +362,7 @@ class BackendService {
       await prefs.setString('${remindersKey}_$userId', remindersData);
       return true;
     } catch (e) {
-      print('Error completing reminder: $e');
+
       return false;
     }
   }
@@ -328,7 +401,7 @@ class BackendService {
       await _saveAppointmentForDoctor(appointment);
       return true;
     } catch (e) {
-      print('Error saving appointment: $e');
+
       return false;
     }
   }
@@ -338,7 +411,7 @@ class BackendService {
     
     final newAppointment = appointment.id == null 
         ? appointment.copyWith(
-            id: appointments.isEmpty ? 1 : appointments.map((a) => a.id!).reduce((a, b) => a > b ? a : b) + 1,
+            id: 'appt_${DateTime.now().millisecondsSinceEpoch}',
           )
         : appointment;
     
@@ -354,7 +427,7 @@ class BackendService {
     
     final newAppointment = appointment.id == null 
         ? appointment.copyWith(
-            id: appointments.isEmpty ? 1 : appointments.map((a) => a.id!).reduce((a, b) => a > b ? a : b) + 1,
+            id: 'appt_${DateTime.now().millisecondsSinceEpoch}',
           )
         : appointment;
     
@@ -392,7 +465,7 @@ class BackendService {
       }
       return true;
     } catch (e) {
-      print('Error updating appointment status: $e');
+
       return false;
     }
   }
@@ -403,22 +476,31 @@ class BackendService {
     final userId = await SessionManager.getUserId();
     if (userId == null) return;
 
+    // Initialize tips service (will create default tips if none exist)
+    final tipsService = TipsService();
+    await tipsService.getTodaysTip(); // This will trigger initialization if needed
+
     // Initialize pregnancy tracking if not exists
     final existingTracking = await getPregnancyTracking(userId);
     if (existingTracking == null) {
+      // Use confirmation date approach (more realistic for new users)
+      final confirmationDate = DateTime.now().subtract(const Duration(days: 60)); // 60 days ago
+      final expectedDueDate = confirmationDate.add(const Duration(days: 280)); // 280 days from confirmation
+      
       final demoTracking = PregnancyTracking(
         userId: userId,
-        lastMenstrualPeriod: DateTime.now().subtract(const Duration(days: 140)), // ~20 weeks
-        pregnancyConfirmedDate: DateTime.now().subtract(const Duration(days: 120)),
-        currentWeek: 20,
-        currentDay: 0,
+        pregnancyConfirmedDate: confirmationDate,
+        expectedDeliveryDate: expectedDueDate,
+        currentWeek: 8, // 60 days / 7 = 8 weeks, 4 days
+        currentDay: 4,
         trimester: 'Second',
         weight: 65.0,
         height: 165.0,
         babyName: 'Baby',
         isFirstChild: true,
         hasPregnancyLoss: false,
-        symptoms: ['Morning sickness', 'Fatigue'],
+        medicalHistory: 'No significant medical history. Taking prenatal vitamins.',
+        symptoms: ['Morning sickness (reduced)', 'Increased appetite', 'Mild fatigue'],
         medications: ['Prenatal vitamins', 'Folic acid'],
         vitals: {
           'bloodPressure': '120/80',
@@ -522,6 +604,330 @@ class BackendService {
     }
   }
 
+  // ========== DOCTOR MANAGEMENT OPERATIONS ==========
+
+  Future<List<Doctor>> getAllDoctors() async {
+    try {
+      print('BackendService: getAllDoctors - Starting to fetch doctors from Firebase');
+      // Get doctors from Firebase instead of SharedPreferences
+      final doctorsData = await FirebaseService.getAllDoctors();
+      print('BackendService: getAllDoctors - Received ${doctorsData.length} doctors from Firebase');
+      
+      final doctors = doctorsData.map((data) {
+        print('BackendService: getAllDoctors - Converting doctor data: ${data['name']} (${data['specialization']})');
+        return Doctor.fromMap(data);
+      }).toList();
+      
+      print('BackendService: getAllDoctors - Successfully converted ${doctors.length} doctors');
+      return doctors;
+    } catch (e) {
+      print('BackendService: getAllDoctors - ERROR: $e');
+      print('BackendService: getAllDoctors - Stack trace: ${StackTrace.current}');
+      throw e; // Re-throw the exception instead of returning empty list
+    }
+  }
+
+  Future<Doctor?> getDoctorById(String doctorId) async {
+    try {
+      // Get doctor from Firebase instead of SharedPreferences
+      final doctorData = await FirebaseService.getDoctorById(doctorId);
+      
+      if (doctorData != null) {
+        return Doctor.fromMap(doctorData);
+      }
+      return null;
+    } catch (e) {
+
+      return null;
+    }
+  }
+
+  Future<List<Doctor>> getDoctorsBySpecialization(String specialization) async {
+    try {
+      // Get doctors by specialization from Firebase
+      final doctorsData = await FirebaseService.getDoctorsBySpecialization(specialization);
+      
+      return doctorsData.map((data) => Doctor.fromMap(data)).toList();
+    } catch (e) {
+
+      return [];
+    }
+  }
+
+  Future<List<String>> getAvailableSpecializations() async {
+    try {
+      // Get available specializations from Firebase
+      return await FirebaseService.getAvailableSpecializations();
+    } catch (e) {
+
+      return [];
+    }
+  }
+
+  Future<List<PatientDoctorLink>> getLinkedDoctors(String patientId) async {
+    // This method is now deprecated - use Firebase methods instead
+    return [];
+  }
+
+  Future<bool> linkPatientWithDoctor(String patientId, String doctorId) async {
+    try {
+
+      
+      // Check if there's already a request/link for this patient-doctor pair
+      final existingLink = await FirebaseService.getPatientDoctorLink(patientId, doctorId);
+      
+      if (existingLink != null) {
+
+        return false; // Request already exists
+      }
+      
+
+      
+      // Create patient-doctor link in Firebase
+      final linkId = await FirebaseService.createPatientDoctorLink(
+        patientId: patientId,
+        doctorId: doctorId,
+        status: 'requested',
+      );
+      
+      if (linkId != null) {
+
+        return true;
+      } else {
+
+        return false;
+      }
+    } catch (e) {
+
+      return false;
+    }
+  }
+
+  Future<bool> unlinkPatientFromDoctor(String patientId, String doctorId) async {
+    try {
+      final existingLinks = await getLinkedDoctors(patientId);
+      
+      // Find and deactivate the link
+      final linkIndex = existingLinks.indexWhere((link) => 
+        link.doctorId == doctorId && link.isActive
+      );
+      
+      if (linkIndex == -1) {
+        return false; // Link not found
+      }
+
+      // Deactivate the link instead of removing it (for audit trail)
+      existingLinks[linkIndex] = existingLinks[linkIndex].copyWith(
+        isActive: false,
+        status: 'unlinked',
+        updatedAt: DateTime.now(),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final linksData = jsonEncode(existingLinks.map((l) => l.toMap()).toList());
+      await prefs.setString('patient_doctor_links_$patientId', linksData);
+
+      return true;
+    } catch (e) {
+
+      return false;
+    }
+  }
+
+  // ========== DOCTOR-SIDE PATIENT MANAGEMENT ==========
+
+  // Get all patient requests for a doctor from Firebase
+  Future<List<PatientDoctorLink>> getPatientRequestsForDoctor(String doctorId) async {
+    try {
+
+      
+      final requestsData = await FirebaseService.getPatientRequestsForDoctor(doctorId);
+      
+      List<PatientDoctorLink> requests = [];
+      
+      for (final data in requestsData) {
+        requests.add(PatientDoctorLink(
+          id: data['id'],
+          patientId: data['patientId'],
+          doctorId: data['doctorId'],
+          status: data['status'],
+          isActive: data['isActive'],
+          linkedDate: data['linkedDate'],
+          createdAt: data['createdAt'],
+          updatedAt: data['updatedAt'],
+        ));
+      }
+      
+
+      return requests;
+    } catch (e) {
+
+      return [];
+    }
+  }
+
+  // Get all accepted patients for a doctor from Firebase
+  Future<List<PatientDoctorLink>> getAcceptedPatientsForDoctor(String doctorId) async {
+    try {
+
+      
+      final patientsData = await FirebaseService.getAcceptedPatientsForDoctor(doctorId);
+      
+      List<PatientDoctorLink> patients = [];
+      
+      for (final data in patientsData) {
+        patients.add(PatientDoctorLink(
+          id: data['id'],
+          patientId: data['patientId'],
+          doctorId: data['doctorId'],
+          status: data['status'],
+          isActive: data['isActive'],
+          linkedDate: data['linkedDate'],
+          createdAt: data['createdAt'],
+          updatedAt: data['updatedAt'],
+        ));
+      }
+      
+
+      return patients;
+    } catch (e) {
+
+      return [];
+    }
+  }
+
+  // Get all accepted doctors for a patient from Firebase
+  Future<List<PatientDoctorLink>> getAcceptedDoctorsForPatient(String patientId) async {
+    try {
+      final doctorsData = await FirebaseService.getAcceptedDoctorsForPatient(patientId);
+      
+      List<PatientDoctorLink> doctors = [];
+      
+      for (final data in doctorsData) {
+        doctors.add(PatientDoctorLink(
+          id: data['id'],
+          patientId: data['patientId'],
+          doctorId: data['doctorId'],
+          status: data['status'],
+          isActive: data['isActive'],
+          linkedDate: data['linkedDate'],
+          createdAt: data['createdAt'],
+          updatedAt: data['updatedAt'],
+        ));
+      }
+      
+      return doctors;
+    } catch (e) {
+      print('BackendService: Error getting accepted doctors for patient: $e');
+      return [];
+    }
+  }
+
+  // Get all linked patients for a doctor (all statuses)
+  Future<List<PatientDoctorLink>> getLinkedPatientsForDoctor(String doctorId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys().where((key) => key.startsWith('patient_doctor_links_'));
+      
+      List<PatientDoctorLink> allPatients = [];
+      
+      for (final key in keys) {
+        final linksData = prefs.getString(key);
+        if (linksData != null) {
+          final List<dynamic> json = jsonDecode(linksData);
+          final links = json.map((l) => PatientDoctorLink.fromMap(l)).toList();
+          
+          // Filter for this doctor's patients (all statuses)
+          final doctorPatients = links.where((link) => 
+            link.doctorId == doctorId && 
+            link.isActive
+          ).toList();
+          
+          allPatients.addAll(doctorPatients);
+        }
+      }
+      
+      // Sort by most recent first
+      allPatients.sort((a, b) => b.linkedDate.compareTo(a.linkedDate));
+      return allPatients;
+    } catch (e) {
+
+      return [];
+    }
+  }
+
+  // Accept a patient request in Firebase
+  Future<bool> acceptPatientRequest(String doctorId, String patientId, String linkId) async {
+    try {
+
+      
+      final success = await FirebaseService.acceptPatientRequest(linkId);
+      
+      if (success) {
+
+        return true;
+      } else {
+
+        return false;
+      }
+    } catch (e) {
+
+      return false;
+    }
+  }
+
+  // Decline a patient request in Firebase
+  Future<bool> declinePatientRequest(String doctorId, String patientId, String linkId) async {
+    try {
+
+      
+      final success = await FirebaseService.declinePatientRequest(linkId);
+      
+      if (success) {
+
+        return true;
+      } else {
+
+        return false;
+      }
+    } catch (e) {
+
+      return false;
+    }
+  }
+
+  // Remove an accepted patient (unlink) permanently in Firebase
+  Future<bool> removePatient(String doctorId, String patientId, String linkId) async {
+    try {
+
+      
+      final success = await FirebaseService.removePatientFromDoctor(linkId);
+      
+      if (success) {
+
+        return true;
+      } else {
+
+        return false;
+      }
+    } catch (e) {
+
+      return false;
+    }
+  }
+
+  // ========== PATIENT COUNT OPERATIONS ==========
+
+  // Get total patient count from Firebase
+  Future<int> getTotalPatientCount() async {
+    try {
+      return await FirebaseService.getTotalPatientCount();
+    } catch (e) {
+
+      return 0;
+    }
+  }
+
   // ========== UTILITY METHODS ==========
 
   Future<Map<String, dynamic>> getDashboardSummary(String userId) async {
@@ -554,11 +960,300 @@ class BackendService {
     };
   }
 
+  // ========== PATIENT'S LINKED DOCTORS OPERATIONS ==========
+
+  // Get all linked doctors for a patient (both pending and accepted)
+  Future<List<Map<String, dynamic>>> getLinkedDoctorsForPatient(String patientId) async {
+    try {
+
+      
+      final linkedDoctors = await FirebaseService.getLinkedDoctorsForPatient(patientId);
+      
+
+      return linkedDoctors;
+    } catch (e) {
+
+      return [];
+    }
+  }
+
+  // ========== SYMPTOM LOGS OPERATIONS (FIRESTORE) ==========
+
+  Future<List<SymptomLog>> getSymptomLogs(String patientId) async {
+    try {
+      // Get symptom logs from Firestore
+      final logsData = await FirebaseService.getSymptomLogsForPatient(patientId);
+      
+      return logsData.map((data) => SymptomLog.fromMap(data)).toList()
+        ..sort((a, b) => b.logDate.compareTo(a.logDate));
+    } catch (e) {
+
+      
+      // Fallback to SharedPreferences (for migration period)
+      final prefs = await SharedPreferences.getInstance();
+      final logsData = prefs.getString('${symptomLogsKey}_$patientId');
+      
+      if (logsData == null) return [];
+      
+      final List<dynamic> json = jsonDecode(logsData);
+      final logs = json.map((l) => SymptomLog.fromMap(l)).toList();
+      
+      return logs..sort((a, b) => b.logDate.compareTo(a.logDate));
+    }
+  }
+
+  Future<String?> saveSymptomLog(SymptomLog log) async {
+    try {
+      // Save to Firestore
+      final logId = await FirebaseService.saveSymptomLog(log.toMap());
+      
+      if (logId != null) {
+        print('BackendService: Saved symptom log with ID: $logId');
+        return logId;
+      } else {
+        print('BackendService: Failed to save symptom log');
+        return null;
+      }
+    } catch (e) {
+
+      
+      // Fallback to SharedPreferences
+      try {
+        final logs = await getSymptomLogs(log.patientId);
+        
+        // Generate new ID if not provided
+        final newLog = log.id == null 
+            ? log.copyWith(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+              )
+            : log;
+        
+        logs.add(newLog);
+        
+        final prefs = await SharedPreferences.getInstance();
+        final logsData = jsonEncode(logs.map((l) => l.toMap()).toList());
+        await prefs.setString('${symptomLogsKey}_${log.patientId}', logsData);
+        return newLog.id; // Return the generated ID
+      } catch (fallbackError) {
+        print('BackendService: Fallback error saving symptom log: $fallbackError');
+        return null;
+      }
+    }
+  }
+
+  Future<List<SymptomLog>> getRecentSymptomLogs(String patientId, {int days = 7}) async {
+    final logs = await getSymptomLogs(patientId);
+    final cutoffDate = DateTime.now().subtract(Duration(days: days));
+    
+    return logs.where((log) => log.logDate.isAfter(cutoffDate)).toList();
+  }
+
+  // Method for doctors to get all symptom logs for their patients
+  Future<Map<String, List<SymptomLog>>> getSymptomLogsForDoctorPatients(String doctorId) async {
+    try {
+      final acceptedPatients = await getAcceptedPatientsForDoctor(doctorId);
+      final Map<String, List<SymptomLog>> patientLogs = {};
+      
+      for (final patientLink in acceptedPatients) {
+        final logs = await getSymptomLogs(patientLink.patientId);
+        if (logs.isNotEmpty) {
+          patientLogs[patientLink.patientId] = logs;
+        }
+      }
+      
+      return patientLogs;
+    } catch (e) {
+
+      return {};
+    }
+  }
+
+  // Get symptom logs by date range (useful for specific period analysis)
+  Future<List<SymptomLog>> getSymptomLogsByDateRange(
+    String patientId, 
+    DateTime startDate, 
+    DateTime endDate
+  ) async {
+    try {
+      final logsData = await FirebaseService.getSymptomLogsByDateRange(
+        patientId, 
+        startDate, 
+        endDate
+      );
+      
+      return logsData.map((data) => SymptomLog.fromMap(data)).toList()
+        ..sort((a, b) => b.logDate.compareTo(a.logDate));
+    } catch (e) {
+
+      
+      // Fallback: filter existing logs
+      final allLogs = await getSymptomLogs(patientId);
+      return allLogs.where((log) => 
+        log.logDate.isAfter(startDate.subtract(const Duration(days: 1))) &&
+        log.logDate.isBefore(endDate.add(const Duration(days: 1)))
+      ).toList();
+    }
+  }
+
   Future<void> clearAllData(String userId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('${pregnancyTrackingKey}_$userId');
     await prefs.remove('${medicalRecordsKey}_$userId');
     await prefs.remove('${remindersKey}_$userId');
     await prefs.remove('${appointmentsKey}_user_$userId');
+    await prefs.remove('${symptomLogsKey}_$userId');
+  }
+
+  // Get doctor recommendations for meals and exercises
+  Future<Map<String, dynamic>?> getDoctorRecommendations(String userId) async {
+    try {
+      print('BackendService: Getting doctor recommendations for user: $userId');
+      
+      // Try to get from Firebase first
+      final recommendations = await FirebaseService.getDoctorRecommendations(userId);
+      print('BackendService: Firebase recommendations: $recommendations');
+      
+      if (recommendations != null) {
+        print('BackendService: Returning Firebase recommendations');
+        return recommendations;
+      }
+
+      // Fallback to local storage
+      final prefs = await SharedPreferences.getInstance();
+      final recommendationsJson = prefs.getString('doctor_recommendations_$userId');
+      print('BackendService: Local storage data: $recommendationsJson');
+      
+      if (recommendationsJson != null) {
+        final localData = json.decode(recommendationsJson);
+        print('BackendService: Returning local recommendations: $localData');
+        return localData;
+      }
+
+      print('BackendService: No recommendations found');
+      return null;
+    } catch (e) {
+      print('BackendService: Error getting recommendations: $e');
+      return null;
+    }
+  }
+
+  // Save doctor recommendations (for doctors to set recommendations for patients)
+  Future<bool> saveDoctorRecommendations(String patientId, Map<String, dynamic> recommendations) async {
+    try {
+      print('BackendService: Saving doctor recommendations for patient: $patientId');
+      print('BackendService: Recommendations data: $recommendations');
+      
+      // Save to Firebase
+      final firebaseSuccess = await FirebaseService.saveDoctorRecommendations(patientId, recommendations);
+      print('BackendService: Firebase save result: $firebaseSuccess');
+
+      // Also save locally as backup
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('doctor_recommendations_$patientId', json.encode(recommendations));
+      print('BackendService: Saved to local storage as backup');
+
+      return firebaseSuccess;
+    } catch (e) {
+      print('BackendService: Error saving recommendations: $e');
+      return false;
+    }
+  }
+
+  // ========== RISK ASSESSMENT OPERATIONS ==========
+
+  /// Update symptom log with risk assessment results
+  Future<bool> updateSymptomLogWithRiskAssessment(String logId, Map<String, dynamic> riskAssessment) async {
+    try {
+      // Update in Firestore
+      final success = await FirebaseService.updateSymptomLogRiskAssessment(logId, riskAssessment);
+      
+      if (success) {
+        print('BackendService: Updated symptom log $logId with risk assessment');
+        return true;
+      } else {
+        print('BackendService: Failed to update symptom log with risk assessment');
+        return false;
+      }
+    } catch (e) {
+      print('BackendService: Error updating symptom log with risk assessment: $e');
+      return false;
+    }
+  }
+
+  // ========== DOCTOR ALERT OPERATIONS ==========
+
+  /// Save doctor alert for high-risk cases
+  Future<bool> saveDoctorAlert(DoctorAlert alert) async {
+    try {
+      // Save to Firestore
+      final alertId = await FirebaseService.saveDoctorAlert(alert.toMap());
+      
+      if (alertId != null) {
+        print('BackendService: Saved doctor alert: $alertId');
+        return true;
+      } else {
+        print('BackendService: Failed to save doctor alert');
+        return false;
+      }
+    } catch (e) {
+      print('BackendService: Error saving doctor alert: $e');
+      return false;
+    }
+  }
+
+  /// Get alerts for a specific doctor
+  Future<List<DoctorAlert>> getDoctorAlerts(String doctorId) async {
+    try {
+      print('BackendService: Getting alerts for doctor ID: $doctorId');
+      final alertsData = await FirebaseService.getDoctorAlerts(doctorId);
+      print('BackendService: Found ${alertsData.length} raw alert records');
+      final alerts = alertsData.map((data) => DoctorAlert.fromMap(data)).toList();
+      print('BackendService: Converted to ${alerts.length} DoctorAlert objects');
+      for (final alert in alerts) {
+        print('BackendService: Alert - Patient: ${alert.patientName}, Risk: ${alert.riskLevel}, Doctor: ${alert.doctorId}');
+      }
+      return alerts;
+    } catch (e) {
+      print('BackendService: Error getting doctor alerts: $e');
+      return [];
+    }
+  }
+
+  /// Mark alert as read
+  Future<bool> markAlertAsRead(String alertId) async {
+    try {
+      return await FirebaseService.markAlertAsRead(alertId);
+    } catch (e) {
+      print('BackendService: Error marking alert as read: $e');
+      return false;
+    }
+  }
+
+  /// Get linked doctors for a patient with their contact information
+  Future<List<Map<String, dynamic>>> getLinkedDoctorsWithContact(String patientId) async {
+    try {
+      // Get accepted doctor links
+      final doctorLinks = await getAcceptedDoctorsForPatient(patientId);
+      List<Map<String, dynamic>> doctorsWithContact = [];
+      
+      for (final link in doctorLinks) {
+        final doctorInfo = await getDoctorById(link.doctorId);
+        if (doctorInfo != null) {
+          doctorsWithContact.add({
+            'id': doctorInfo.id,
+            'firebaseUid': doctorInfo.firebaseUid,
+            'name': doctorInfo.name,
+            'phoneNumber': doctorInfo.phone,
+            'specialization': doctorInfo.specialization,
+            'hospital': doctorInfo.hospital,
+          });
+        }
+      }
+      
+      return doctorsWithContact;
+    } catch (e) {
+      print('BackendService: Error getting linked doctors with contact: $e');
+      return [];
+    }
   }
 }

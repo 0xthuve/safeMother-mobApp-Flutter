@@ -1,5 +1,5 @@
 class Patient {
-  final int? id;
+  final String? id;
   final String name;
   final String email;
   final String phone;
@@ -11,7 +11,7 @@ class Patient {
   final String allergies;
   final String currentMedications;
   final DateTime lastVisit;
-  final int? assignedDoctorId;
+  final String? assignedDoctorId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -74,7 +74,7 @@ class Patient {
   }
 
   Patient copyWith({
-    int? id,
+    String? id,
     String? name,
     String? email,
     String? phone,
@@ -86,7 +86,7 @@ class Patient {
     String? allergies,
     String? currentMedications,
     DateTime? lastVisit,
-    int? assignedDoctorId,
+    String? assignedDoctorId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {

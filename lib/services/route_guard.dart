@@ -14,7 +14,7 @@ class RouteGuard {
       // Only patients and mothers can access patient dashboard
       return userRole == 'patient' || userRole == 'mother' || userRole == null;
     } catch (e) {
-      print('Error checking patient dashboard access: $e');
+
       return false;
     }
   }
@@ -29,7 +29,7 @@ class RouteGuard {
       // Only doctors and healthcare professionals can access doctor dashboard
       return userRole == 'doctor' || userRole == 'healthcare';
     } catch (e) {
-      print('Error checking doctor dashboard access: $e');
+
       return false;
     }
   }

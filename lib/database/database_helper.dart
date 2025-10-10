@@ -104,9 +104,9 @@ class DatabaseHelper {
     return decoded.map((json) => Appointment.fromMap(json)).toList();
   }
 
-  Future<int> insertAppointment(Appointment appointment) async {
+  Future<String> insertAppointment(Appointment appointment) async {
     final appointments = await getAppointments();
-    final newId = appointments.isEmpty ? 1 : appointments.map((a) => a.id ?? 0).reduce((a, b) => a > b ? a : b) + 1;
+    final newId = 'appt_${DateTime.now().millisecondsSinceEpoch}';
     final newAppointment = appointment.copyWith(id: newId);
     appointments.add(newAppointment);
     await _saveAppointments(appointments);
@@ -122,7 +122,7 @@ class DatabaseHelper {
     }
   }
 
-  Future<void> deleteAppointment(int id) async {
+  Future<void> deleteAppointment(String id) async {
     final appointments = await getAppointments();
     appointments.removeWhere((a) => a.id == id);
     await _saveAppointments(appointments);

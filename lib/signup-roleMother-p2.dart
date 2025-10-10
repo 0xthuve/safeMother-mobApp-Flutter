@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'patientDashboard.dart';
+import 'signin.dart';
+import 'services/backend_service.dart';
+import 'services/session_manager.dart';
+import 'models/pregnancy_tracking.dart';
 
 class RoleMotherP2 extends StatelessWidget {
   const RoleMotherP2({super.key});
@@ -20,8 +23,8 @@ class DeliveryDetailsApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother - Delivery Details',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
@@ -47,31 +50,39 @@ class DeliveryDetailsForm extends StatefulWidget {
 
 class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
   final _formKey = GlobalKey<FormState>();
-  final _deliveryDateController = TextEditingController();
+  final _estimatedDueDateController = TextEditingController();
   final _pregnancyConfirmedController = TextEditingController();
   final _medicalHistoryController = TextEditingController();
   final _weightController = TextEditingController();
+  final BackendService _backendService = BackendService();
   
-  DateTime? _selectedDeliveryDate;
+  DateTime? _selectedEstimatedDueDate;
   DateTime? _selectedPregnancyDate;
   String? _firstChildValue;
   String? _pregnancyLossValue;
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _deliveryDateController.dispose();
+    _estimatedDueDateController.dispose();
     _pregnancyConfirmedController.dispose();
     _medicalHistoryController.dispose();
     _weightController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context, bool isDeliveryDate) async {
+  Future<void> _selectDate(BuildContext context, bool isEstimatedDueDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      initialDate: isEstimatedDueDate 
+          ? DateTime.now().add(const Duration(days: 180)) // Default to ~6 months from now for due date
+          : DateTime.now().subtract(const Duration(days: 30)), // Default to ~1 month ago for confirmation date
+      firstDate: isEstimatedDueDate 
+          ? DateTime.now().add(const Duration(days: 90)) // Minimum 3 months from now for due date
+          : DateTime.now().subtract(const Duration(days: 280)), // Up to 40 weeks ago for confirmation
+      lastDate: isEstimatedDueDate 
+          ? DateTime.now().add(const Duration(days: 365)) // Maximum 1 year from now for due date
+          : DateTime.now(), // Today is the latest for confirmation date
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
@@ -89,14 +100,137 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
     
     if (picked != null) {
       setState(() {
-        if (isDeliveryDate) {
-          _selectedDeliveryDate = picked;
-          _deliveryDateController.text = "${picked.day}/${picked.month}/${picked.year}";
+        if (isEstimatedDueDate) {
+          _selectedEstimatedDueDate = picked;
+          _estimatedDueDateController.text = "${picked.day}/${picked.month}/${picked.year}";
         } else {
           _selectedPregnancyDate = picked;
           _pregnancyConfirmedController.text = "${picked.day}/${picked.month}/${picked.year}";
+          
+          // Show a snackbar with calculated due date if due date is not set
+          if (_estimatedDueDateController.text.isEmpty) {
+            final calculatedDueDate = picked.add(const Duration(days: 245));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Based on confirmation date, estimated due date will be: ${calculatedDueDate.day}/${calculatedDueDate.month}/${calculatedDueDate.year}',
+                ),
+                backgroundColor: const Color(0xFF4CAF50),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
         }
       });
+    }
+  }
+
+  Future<void> _handleSignUp() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Get current user ID from session
+      final userId = await SessionManager.getUserId();
+      if (userId == null) {
+        throw Exception('User not found. Please login again.');
+      }
+
+      // Calculate due date if not provided
+      DateTime? expectedDeliveryDate = _selectedEstimatedDueDate;
+      if (expectedDeliveryDate == null && _selectedPregnancyDate != null) {
+        // Auto-calculate: Add 40 weeks (280 days) from confirmation date
+        // Treat confirmation date as the start of pregnancy journey
+        expectedDeliveryDate = _selectedPregnancyDate!.add(const Duration(days: 280));
+      }
+
+      // Calculate current pregnancy week and day based on confirmation date
+      final now = DateTime.now();
+      int currentWeek = 0;
+      int currentDay = 0;
+      
+      if (_selectedPregnancyDate != null) {
+        // Calculate days since confirmation date (treat confirmation as day 0)
+        final daysSinceConfirmation = now.difference(_selectedPregnancyDate!).inDays;
+        currentWeek = (daysSinceConfirmation / 7).floor();
+        currentDay = daysSinceConfirmation % 7;
+        
+        // Ensure we don't have negative values
+        if (daysSinceConfirmation < 0) {
+          currentWeek = 0;
+          currentDay = 0;
+        }
+      }
+
+      // Create pregnancy tracking record
+      final pregnancyTracking = PregnancyTracking(
+        userId: userId,
+        pregnancyConfirmedDate: _selectedPregnancyDate,
+        expectedDeliveryDate: expectedDeliveryDate,
+        currentWeek: currentWeek,
+        currentDay: currentDay,
+        trimester: PregnancyTracking.getTrimester(currentWeek),
+        weight: double.tryParse(_weightController.text),
+        isFirstChild: _firstChildValue == 'Yes',
+        hasPregnancyLoss: _pregnancyLossValue == 'Yes',
+        medicalHistory: _medicalHistoryController.text.trim(),
+        symptoms: [], // Can be added later
+        medications: [], // Can be added later
+        vitals: {}, // Can be added later
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+
+      // Save pregnancy tracking data
+      final success = await _backendService.savePregnancyTracking(pregnancyTracking);
+      
+      if (success) {
+        // Clear session to ensure user needs to log in again
+        await SessionManager.clearSession();
+        
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration completed successfully! Please sign in to continue.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+
+        // Navigate to sign in page
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SignInApp(),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Failed to save pregnancy details');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -226,13 +360,13 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                           key: _formKey,
                           child: Column(
                             children: [
-                              // Delivery Date (Optional)
+                              // Estimated Due Date (Optional)
                               TextFormField(
-                                controller: _deliveryDateController,
+                                controller: _estimatedDueDateController,
                                 readOnly: true,
                                 style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 decoration: InputDecoration(
-                                  labelText: 'Delivery Date (Optional)',
+                                  labelText: 'Estimated Due Date (Optional)',
                                   labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                   filled: true,
                                   fillColor: const Color(0xFFF5F5F5),
@@ -240,10 +374,28 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                     borderRadius: BorderRadius.circular(14),
                                     borderSide: BorderSide.none,
                                   ),
-                                  prefixIcon: const Icon(Icons.calendar_today_outlined, color: Color(0xFFE91E63)),
+                                  prefixIcon: const Icon(Icons.calendar_month_outlined, color: Color(0xFFE91E63)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                                  helperText: _estimatedDueDateController.text.isEmpty 
+                                      ? 'Leave blank to auto-calculate (40 weeks from confirmation)' 
+                                      : 'Your custom due date will be used',
+                                  helperStyle: const TextStyle(color: Color(0xFF9575CD), fontSize: 12),
                                 ),
                                 onTap: () => _selectDate(context, true),
+                                validator: (value) {
+                                  // Only validate if user entered a date
+                                  if (value != null && value.isNotEmpty && _selectedEstimatedDueDate != null) {
+                                    final now = DateTime.now();
+                                    final daysDifference = _selectedEstimatedDueDate!.difference(now).inDays;
+                                    if (daysDifference < 90) {
+                                      return 'Due date should be at least 3 months from now';
+                                    }
+                                    if (daysDifference > 365) {
+                                      return 'Due date should be within a year from now';
+                                    }
+                                  }
+                                  return null;
+                                },
                               ),
                               const SizedBox(height: 16),
                               
@@ -253,7 +405,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                 readOnly: true,
                                 style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 decoration: InputDecoration(
-                                  labelText: 'Pregnancy Confirmed Date',
+                                  labelText: 'Pregnancy Confirmed Date *',
                                   labelStyle: const TextStyle(color: Color(0xFF9575CD)),
                                   filled: true,
                                   fillColor: const Color(0xFFF5F5F5),
@@ -263,11 +415,25 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                   ),
                                   prefixIcon: const Icon(Icons.event_available_outlined, color: Color(0xFFE91E63)),
                                   contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                                  helperText: 'When did a doctor confirm your pregnancy?',
+                                  helperStyle: const TextStyle(color: Color(0xFF9575CD), fontSize: 12),
                                 ),
                                 onTap: () => _selectDate(context, false),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
                                     return 'Please select pregnancy confirmation date';
+                                  }
+                                  // Validate that confirmation date is in the past
+                                  if (_selectedPregnancyDate != null) {
+                                    final now = DateTime.now();
+                                    if (_selectedPregnancyDate!.isAfter(now)) {
+                                      return 'Confirmation date cannot be in the future';
+                                    }
+                                    // Check if confirmation date is reasonable (not too far in the past)
+                                    final daysDifference = now.difference(_selectedPregnancyDate!).inDays;
+                                    if (daysDifference > 280) {
+                                      return 'Confirmation date seems too far in the past';
+                                    }
                                   }
                                   return null;
                                 },
@@ -380,16 +546,7 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                 width: double.infinity,
                                 height: 50,
                                 child: ElevatedButton(
-                                  onPressed: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const HomeScreen(),
-                                        ),
-                                      );
-                                    }
-                                  },
+                                  onPressed: _isLoading ? null : _handleSignUp,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFE91E63),
                                     shape: RoundedRectangleBorder(
@@ -397,14 +554,23 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
                                     ),
                                     padding: const EdgeInsets.symmetric(vertical: 16),
                                   ),
-                                  child: const Text(
-                                    'Complete Sign Up',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Complete Sign Up',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],
@@ -475,7 +641,6 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
   }
 }
 
-// Dummy Next Page
 class NextPage extends StatelessWidget {
   const NextPage({super.key});
 

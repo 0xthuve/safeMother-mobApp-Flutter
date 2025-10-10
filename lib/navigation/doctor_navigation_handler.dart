@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../pages/doctor/doctor_dashboard.dart';
-import '../pages/doctor/doctor_patients.dart';
+import '../pages/doctor/doctor_patient_management.dart';
 import '../pages/doctor/doctor_appointments.dart';
 import '../pages/doctor/doctor_profile.dart';
 
@@ -17,11 +17,11 @@ class DoctorNavigationHandler {
         );
         break;
       case 1:
-        // Navigate to Patients
+        // Navigate to Patient Management
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const DoctorPatients(),
+            builder: (context) => const DoctorPatientManagement(),
           ),
         );
         break;
@@ -44,6 +44,15 @@ class DoctorNavigationHandler {
         );
         break;
     }
+  }
+
+  static void navigateToPatientManagement(BuildContext context, {int initialTab = 0}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DoctorPatientManagement(initialTabIndex: initialTab),
+      ),
+    );
   }
 }
 

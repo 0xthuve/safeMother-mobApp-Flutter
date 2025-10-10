@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'signup-roleSelection.dart';
 import 'signup-roleMother-p2.dart';
-import 'patientDashboard.dart';
-import 'patientDashboardLog.dart';
-import 'reminderPatientDashboard.dart';
-import 'patientDashboardTip.dart';
-import 'chatPatient.dart';
+import 'patient_dashboard.dart';
+import 'patient_dashboard_log.dart';
+import 'consultation_patient_dashboard.dart';
+import 'patient_dashboard_tip.dart';
+import 'chat_patient.dart';
 import 'pages/doctor/doctor_login.dart';
 import 'services/user_management_service.dart';
 
@@ -19,8 +19,8 @@ class SignInApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother - Login',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
@@ -35,8 +35,8 @@ class SignInApp extends StatelessWidget {
       home: const SignInScreen(),
       routes: {
         '/home': (context) => const HomeScreen(),
-        '/log': (context) => const LogScreen(),
-        '/reminders': (context) => const RemindersScreen(),
+        '/log': (context) => PatientDashboardLog(),
+        '/consultation': (context) => const ConsultationScreen(),
         '/learn': (context) => const LearnScreen(),
         '/chat': (context) => const ChatScreen(),
       },
@@ -483,7 +483,6 @@ class _SignInFormState extends State<SignInForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
   bool _isLoading = false;
 
   @override
@@ -811,7 +810,7 @@ class _SignInFormState extends State<SignInForm> {
             controller: _emailController,
             style: const TextStyle(color: Color(0xFF5A5A5A)),
             decoration: InputDecoration(
-              labelText: 'Email or Phone',
+              labelText: 'Email',
               labelStyle: const TextStyle(color: Color(0xFF9575CD)),
               filled: true,
               fillColor: const Color(0xFFF5F5F5),
@@ -871,30 +870,10 @@ class _SignInFormState extends State<SignInForm> {
           ),
           const SizedBox(height: 16),
           
-          // Remember me checkbox
+          // Forgot password
           Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Checkbox(
-                value: _rememberMe,
-                onChanged: (value) {
-                  setState(() {
-                    _rememberMe = value ?? false;
-                  });
-                },
-                activeColor: const Color(0xFFE91E63),
-                checkColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const Text(
-                'Remember me',
-                style: TextStyle(
-                  color: Color(0xFF7E57C2),
-                  fontSize: 14,
-                ),
-              ),
-              const Spacer(),
               TextButton(
                 onPressed: _isLoading ? null : _onForgotPassword,
                 child: const Text(

@@ -4,26 +4,27 @@ import 'firebase_options.dart';
 import 'signin.dart';
 import 'services/session_manager.dart';
 import 'services/firebase_service.dart';
-import 'patientDashboard.dart';
+import 'services/notification_service.dart';
+import 'patient_dashboard.dart';
 import 'pages/doctor/doctor_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('Firebase initialized successfully');
   } catch (e) {
-    print('Firebase initialization error: $e');
     // For development, continue without Firebase if there's an error
-    print('Continuing without Firebase...');
   }
-  
+
   // Initialize Firebase service (will use mock if Firebase not configured)
   await FirebaseService.initialize();
-  
+
+  // Initialize NotificationService for local notifications
+  await NotificationService().initialize();
+
   runApp(const SafeMotherApp());
 }
 
@@ -33,8 +34,8 @@ class SafeMotherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother',
+      debugShowCheckedModeBanner: false, // This removes the debug banner
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8),
@@ -148,7 +149,7 @@ class _SplashScreenState extends State<SplashScreen> {
         );
       }
     } catch (e) {
-      print('Error checking login status: $e');
+
       // Error checking session, go to login
       Navigator.pushReplacement(
         context,
@@ -193,7 +194,7 @@ class _SplashScreenState extends State<SplashScreen> {
               
               // Tagline
               Text(
-                'Your trusted companion',
+                'Empowering Every Step of Motherhood',
                 style: TextStyle(
                   fontSize: 16,
                   color: Color(0xFF9575CD),

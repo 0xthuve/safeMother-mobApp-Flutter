@@ -44,6 +44,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1057692047745',
     projectId: 'safe-mother-app',
     authDomain: 'safe-mother-app.firebaseapp.com',
+    databaseURL: 'https://safe-mother-app-default-rtdb.firebaseio.com',
     storageBucket: 'safe-mother-app.firebasestorage.app',
     measurementId: 'G-3ETTKJNNDH',
     // Add the web client ID for Google Sign-In
@@ -57,6 +58,7 @@ class DefaultFirebaseOptions {
     appId: '1:1057692047745:android:bea4c4d4137973e1927080',
     messagingSenderId: '1057692047745',
     projectId: 'safe-mother-app',
+    databaseURL: 'https://safe-mother-app-default-rtdb.firebaseio.com',
     storageBucket: 'safe-mother-app.firebasestorage.app',
   );
 
@@ -65,6 +67,7 @@ class DefaultFirebaseOptions {
     appId: '1:1057692047745:ios:07e0661b6964a381927080',
     messagingSenderId: '1057692047745',
     projectId: 'safe-mother-app',
+    databaseURL: 'https://safe-mother-app-default-rtdb.firebaseio.com',
     storageBucket: 'safe-mother-app.firebasestorage.app',
     iosClientId: '1057692047745-h4qlf16rec2sfvragapcd00u6afgmrmg.apps.googleusercontent.com',
     iosBundleId: 'com.example.safemothermobapp',
@@ -75,6 +78,7 @@ class DefaultFirebaseOptions {
     appId: '1:1057692047745:ios:07e0661b6964a381927080',
     messagingSenderId: '1057692047745',
     projectId: 'safe-mother-app',
+    databaseURL: 'https://safe-mother-app-default-rtdb.firebaseio.com',
     storageBucket: 'safe-mother-app.firebasestorage.app',
     iosClientId: '1057692047745-h4qlf16rec2sfvragapcd00u6afgmrmg.apps.googleusercontent.com',
     iosBundleId: 'com.example.safemothermobapp',
@@ -86,6 +90,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1057692047745',
     projectId: 'safe-mother-app',
     authDomain: 'safe-mother-app.firebaseapp.com',
+    databaseURL: 'https://safe-mother-app-default-rtdb.firebaseio.com',
     storageBucket: 'safe-mother-app.firebasestorage.app',
     measurementId: 'G-DR1M6LPQER',
   );

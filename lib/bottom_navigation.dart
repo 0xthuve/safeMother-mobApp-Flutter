@@ -29,7 +29,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
         children: [
           _buildNavItem(Icons.home_outlined, 'Home', 0),
           _buildNavItem(Icons.assignment_outlined, 'Log', 1),
-          _buildNavItem(Icons.notifications_outlined, 'Reminders', 2),
+          _buildNavItem(Icons.calendar_today, 'Consultation', 2),
           _buildNavItem(Icons.school_outlined, 'Learn', 3),
           _buildNavItem(Icons.chat_outlined, 'Chat', 4),
         ],
