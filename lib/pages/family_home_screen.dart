@@ -3,10 +3,89 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../navigation/family_navigation_handler.dart';
+import '../models/family_member_model.dart';
+import '../services/family_member_service.dart';
 
-class FamilyHomeScreen extends StatelessWidget {
+class FamilyHomeScreen extends StatefulWidget {
   const FamilyHomeScreen({super.key});
+
+  @override
+  State<FamilyHomeScreen> createState() => _FamilyHomeScreenState();
+}
+
+class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
+  FamilyMember? _currentUser;
+  bool _isLoading = true;
+  Map<String, dynamic>? _patientData;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Get current user's family member data
+      final familyMember = await FamilyMemberService.getCurrentUserFamilyMember();
+      
+      if (familyMember != null) {
+        setState(() {
+          _currentUser = familyMember;
+        });
+
+        // Load patient data if patientUserId exists
+        if (familyMember.patientUserId.isNotEmpty && 
+            familyMember.patientUserId != 'temp_${familyMember.patientId}') {
+          await _loadPatientData(familyMember.patientUserId);
+        }
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadPatientData(String patientUserId) async {
+    try {
+      final patientDoc = await FirebaseFirestore.instance
+          .collection('patients')
+          .doc(patientUserId)
+          .get();
+      
+      if (patientDoc.exists) {
+        setState(() {
+          _patientData = patientDoc.data();
+        });
+      }
+    } catch (e) {
+      print('Error loading patient data: $e');
+    }
+  }
+
+  String _getPatientName() {
+    if (_patientData != null) {
+      return _patientData!['fullName'] ?? 'Sarah';
+    }
+    return 'Sarah'; // Default fallback
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good morning';
+    } else if (hour < 17) {
+      return 'Good afternoon';
+    } else {
+      return 'Good evening';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,36 +109,38 @@ class FamilyHomeScreen extends StatelessWidget {
             // Custom App Bar
             _buildCustomAppBar(context),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Welcome Section
-                    _buildWelcomeSection(),
-                    const SizedBox(height: 28),
-                    
-                    // Role Badge
-                    _buildRoleBadge(),
-                    const SizedBox(height: 28),
-                    
-                    // Pregnancy Progress Section
-                    _buildPregnancyProgressSection(context),
-                    const SizedBox(height: 28),
-                    
-                    // Health Overview Cards
-                    _buildHealthOverviewSection(),
-                    const SizedBox(height: 28),
-                    
-                    // Support Actions
-                    _buildSupportActionsSection(),
-                    const SizedBox(height: 28),
-                    
-                    // Recent Updates
-                    _buildRecentUpdatesSection(),
-                  ],
-                ),
-              ),
+              child: _isLoading 
+                  ? _buildLoadingIndicator()
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Welcome Section
+                          _buildWelcomeSection(),
+                          const SizedBox(height: 28),
+                          
+                          // Role Badge
+                          _buildRoleBadge(),
+                          const SizedBox(height: 28),
+                          
+                          // Pregnancy Progress Section
+                          _buildPregnancyProgressSection(context),
+                          const SizedBox(height: 28),
+                          
+                          // Health Overview Cards
+                          _buildHealthOverviewSection(),
+                          const SizedBox(height: 28),
+                          
+                          // Support Actions
+                          _buildSupportActionsSection(),
+                          const SizedBox(height: 28),
+                          
+                          // Recent Updates
+                          _buildRecentUpdatesSection(),
+                        ],
+                      ),
+                    ),
             ),
           ],
         ),
@@ -68,15 +149,22 @@ class FamilyHomeScreen extends StatelessWidget {
     );
   }
 
-// In the _buildCustomAppBar method, update the profile icon:
-Widget _buildCustomAppBar(BuildContext context) {
-  return Container(
-    padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 15),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [
-          const Color(0xFFE91E63).withOpacity(0.9),
-          const Color(0xFF2196F3).withOpacity(0.9),
+  Widget _buildLoadingIndicator() {
+    return const Center(
+      child: CircularProgressIndicator(
+        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
+      ),
+    );
+  }
+
+  Widget _buildCustomAppBar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 15),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFE91E63).withOpacity(0.9),
+            const Color(0xFF2196F3).withOpacity(0.9),
         ],
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
@@ -120,55 +208,73 @@ Widget _buildCustomAppBar(BuildContext context) {
       ],
     ),
   );
-}
-
-  Widget _buildWelcomeSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Welcome back,',
-          style: GoogleFonts.inter(
-            fontSize: 18,
-            color: const Color(0xFF5D5D5D),
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        const SizedBox(height: 6),
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: 'Jim ',
-                style: GoogleFonts.inter(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF2C2C2C),
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const TextSpan(
-                text: '👋',
-                style: TextStyle(fontSize: 28),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Supporting your loved one through this beautiful journey',
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: const Color(0xFF757575),
-            fontWeight: FontWeight.w400,
-            height: 1.4,
-          ),
-        ),
-      ],
-    );
   }
 
+Widget _buildWelcomeSection() {
+  // Clean the username by removing any extra text and taking only the first part
+  String rawName = _currentUser?.fullName ?? 'Family Member';
+
+  // Split by spaces and take only the first word (first name)
+  String userName = rawName.split(' ').first.trim();
+
+  // Additional cleanup to remove any special characters or unwanted text
+  userName = userName.replaceAll(RegExp(r'[^a-zA-Z\s]'), '').trim();
+
+  // Fallback if name is empty
+  if (userName.isEmpty) {
+    userName = 'Family Member';
+  }
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        '${_getGreeting()},', // ✅ Corrected here
+        style: GoogleFonts.inter(
+          fontSize: 18,
+          color: const Color(0xFF5D5D5D),
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+      const SizedBox(height: 6),
+      RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$userName ',
+              style: GoogleFonts.inter(
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF2C2C2C),
+                letterSpacing: 0.5,
+              ),
+            ),
+            const TextSpan(
+              text: '👋',
+              style: TextStyle(fontSize: 28),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        'Supporting your loved one through this beautiful journey',
+        style: GoogleFonts.inter(
+          fontSize: 14,
+          color: const Color(0xFF757575),
+          fontWeight: FontWeight.w400,
+          height: 1.4,
+        ),
+      ),
+    ],
+  );
+}
+
+
   Widget _buildRoleBadge() {
+    final relationship = _currentUser?.relationship ?? 'Family Member';
+    final patientName = _getPatientName();
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
@@ -191,12 +297,16 @@ Widget _buildCustomAppBar(BuildContext context) {
         children: [
           const Icon(Icons.family_restroom, color: Colors.white, size: 20),
           const SizedBox(width: 8),
-          Text(
-            'Family Role: Husband',
-            style: GoogleFonts.inter(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: Text(
+              '$relationship of $patientName',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 12),
@@ -221,6 +331,8 @@ Widget _buildCustomAppBar(BuildContext context) {
   }
 
   Widget _buildPregnancyProgressSection(BuildContext context) {
+    final patientName = _getPatientName();
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -248,7 +360,7 @@ Widget _buildCustomAppBar(BuildContext context) {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Sarah\'s Pregnancy Journey',
+                  "$patientName's Pregnancy Journey",
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -693,7 +805,7 @@ Widget _buildCustomAppBar(BuildContext context) {
               children: [
                 _buildUpdateItem(
                   'Health Check Completed',
-                  'Sarah completed her daily health log with stable vitals',
+                  '${_getPatientName()} completed daily health log with stable vitals',
                   Icons.health_and_safety_outlined,
                   Colors.green,
                   '2 hours ago',
@@ -785,73 +897,72 @@ Widget _buildCustomAppBar(BuildContext context) {
     );
   }
 
-  // In the _buildBottomNavigationBar method, update the onTap logic:
-Widget _buildBottomNavigationBar(BuildContext context) {
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFCE4EC),
-      borderRadius: BorderRadius.circular(25),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.withOpacity(0.2),
-          blurRadius: 15,
-          offset: const Offset(0, -5),
-        ),
-      ],
-    ),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(context, Icons.home_filled, 'Home', 0),
-          _buildNavItem(context, Icons.assignment_outlined, 'View Log', 1),
-          _buildNavItem(context, Icons.calendar_today_outlined, 'Appointments', 2),
-          _buildNavItem(context, Icons.contact_phone_outlined, 'Contacts', 3),
-          _buildNavItem(context, Icons.menu_book_outlined, 'Learn', 4),
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCE4EC),
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, -5),
+          ),
         ],
       ),
-    ),
-  );
-}
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(context, Icons.home_filled, 'Home', 0),
+            _buildNavItem(context, Icons.assignment_outlined, 'View Log', 1),
+            _buildNavItem(context, Icons.calendar_today_outlined, 'Appointments', 2),
+            _buildNavItem(context, Icons.contact_phone_outlined, 'Contacts', 3),
+            _buildNavItem(context, Icons.menu_book_outlined, 'Learn', 4),
+          ],
+        ),
+      ),
+    );
+  }
 
-Widget _buildNavItem(BuildContext context, IconData icon, String label, int index) {
-  final isActive = index == 0; // Home is always active on home screen
-  return GestureDetector(
-    onTap: () => FamilyNavigationHandler.navigateToScreen(context, index),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            gradient: isActive
-                ? const LinearGradient(
-                    colors: [Color(0xFFE91E63), Color(0xFFF8BBD0)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  )
-                : null,
-            shape: BoxShape.circle,
+  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index) {
+    final isActive = index == 0; // Home is always active on home screen
+    return GestureDetector(
+      onTap: () => FamilyNavigationHandler.navigateToScreen(context, index),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: isActive
+                  ? const LinearGradient(
+                      colors: [Color(0xFFE91E63), Color(0xFFF8BBD0)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    )
+                  : null,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: isActive ? Colors.white : const Color(0xFFE91E63).withOpacity(0.6),
+              size: 22,
+            ),
           ),
-          child: Icon(
-            icon,
-            color: isActive ? Colors.white : const Color(0xFFE91E63).withOpacity(0.6),
-            size: 22,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: isActive ? const Color(0xFFE91E63) : const Color(0xFFE91E63).withOpacity(0.6),
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            color: isActive ? const Color(0xFFE91E63) : const Color(0xFFE91E63).withOpacity(0.6),
-            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-          ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 }
