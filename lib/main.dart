@@ -9,10 +9,15 @@ import 'pages/family_learn_page.dart';
 import 'pages/family_profile_page.dart';
 import 'pages/family_logIn_page.dart';
 import 'pages/family_signup_page.dart';
+import 'services/family_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  // Initialize notification channels (without context)
+  await FamilyNotificationService().createNotificationChannels();
+  
   runApp(const MyApp());
 }
 
@@ -34,15 +39,15 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-  '/': (context) => const FamilyLoginScreen(),
-  '/familyHome': (context) => const FamilyHomeScreen(),
-  '/familyViewLog': (context) => const FamilyViewLogScreen(),
-  '/familyAppointments': (context) => const FamilyAppointmentsScreen(),
-  '/familyContacts': (context) => const FamilyContactsScreen(),
-  '/familyLearn': (context) => const FamilyLearnScreen(),
-  '/familyProfile': (context) => const FamilyProfileScreen(),
-  '/signup': (context) => const FamilySignUpScreen(),
-},
+        '/': (context) => const FamilyLoginScreen(),
+        '/familyHome': (context) => const FamilyHomeScreen(),
+        '/familyViewLog': (context) => const FamilyViewLogScreen(),
+        '/familyAppointments': (context) => const FamilyAppointmentsScreen(),
+        '/familyContacts': (context) => const FamilyContactsScreen(),
+        '/familyLearn': (context) => const FamilyLearnScreen(),
+        '/familyProfile': (context) => const FamilyProfileScreen(),
+        '/signup': (context) => const FamilySignUpScreen(),
+      },
     );
   }
 }

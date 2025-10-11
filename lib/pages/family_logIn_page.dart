@@ -618,29 +618,7 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                Checkbox(
-                                  value: _rememberMe,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _rememberMe = value!;
-                                    });
-                                  },
-                                  activeColor: const Color(0xFFE91E63),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                                Text(
-                                  'Remember me',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    color: const Color(0xFF757575),
-                                  ),
-                                ),
-                              ],
-                            ),
+                            
                             GestureDetector(
                               onTap: _showForgotPasswordDialog,
                               child: Text(

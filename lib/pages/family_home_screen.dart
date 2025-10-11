@@ -3,11 +3,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../navigation/family_navigation_handler.dart';
 import '../models/family_member_model.dart';
 import '../models/patient.dart';
 import '../services/family_member_service.dart';
 import '../services/familyMember_patient_service.dart';
+import '../services/family_notification_service.dart';
+import '../widgets/notification_permission_dialog.dart';
 
 class FamilyHomeScreen extends StatefulWidget {
   const FamilyHomeScreen({super.key});
@@ -23,11 +26,45 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
   Map<String, dynamic> _pregnancyProgress = {};
   Map<String, dynamic> _healthMetrics = {};
   Map<String, dynamic> _latestLog = {};
+  bool _notificationAsked = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _checkAndRequestNotificationPermission();
+    _startNotificationMonitoring();
+  }
+
+  Future<void> _checkAndRequestNotificationPermission() async {
+    final prefs = await SharedPreferences.getInstance();
+    final asked = prefs.getBool('notification_permission_asked') ?? false;
+    
+    if (!asked) {
+      // Wait for build to complete
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final granted = await NotificationPermissionDialog.show(context);
+        await prefs.setBool('notification_permission_asked', true);
+        
+        if (granted) {
+          // Initialize notification service with context
+          await FamilyNotificationService().initialize(context);
+          await FamilyNotificationService().startMonitoring();
+        }
+      });
+    } else {
+      // Already asked, just initialize notifications
+      await FamilyNotificationService().initialize(context);
+      await FamilyNotificationService().startMonitoring();
+    }
+  }
+
+  Future<void> _startNotificationMonitoring() async {
+    try {
+      await FamilyNotificationService().startMonitoring();
+    } catch (e) {
+      print('Error starting notification monitoring: $e');
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -59,7 +96,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
       _patient = await FamilyMemberPatientService.getLinkedPatient();
 
       if (_patient != null) {
-        // Get patient user ID from family member
+        // Get patient ID from family member
         final currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser != null) {
           final familyMemberDoc = await FirebaseFirestore.instance
@@ -69,23 +106,20 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
 
           if (familyMemberDoc.exists) {
             final familyMemberData = familyMemberDoc.data()!;
-            final patientUserId = familyMemberData['patientUserId'] ?? '';
+            final patientId = familyMemberData['patientId'] ?? '';
 
-            if (patientUserId.isNotEmpty) {
-              // Load pregnancy data
-              _pregnancyProgress =
-                  await FamilyMemberPatientService.getPregnancyProgress(
-                    patientUserId,
-                  );
+            if (patientId.isNotEmpty) {
+              // Load pregnancy data directly from patients collection
+              await _loadPregnancyData(patientId);
 
               // Load health metrics
               _healthMetrics =
                   await FamilyMemberPatientService.getLatestHealthMetrics(
-                    patientUserId,
-                  );
+                patientId,
+              );
 
               // Load latest symptom log for additional data
-              await _loadLatestSymptomLog(patientUserId);
+              await _loadLatestSymptomLog(patientId);
             }
           }
         }
@@ -97,11 +131,107 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
     }
   }
 
-  Future<void> _loadLatestSymptomLog(String patientUserId) async {
+  Future<void> _loadPregnancyData(String patientId) async {
+    try {
+      final patientDoc = await FirebaseFirestore.instance
+          .collection('patients')
+          .doc(patientId)
+          .get();
+
+      if (patientDoc.exists) {
+        final patientData = patientDoc.data()!;
+        
+        // Extract pregnancy data from patient document
+        final expectedDeliveryDate = patientData['expectedDeliveryDate'];
+        final pregnancyConfirmedDate = patientData['pregnancyConfirmedDate'];
+        final pregnancyWeek = patientData['pregnancyWeek'] ?? 0;
+        final hasPregnancyLoss = patientData['hasPregnancyLoss'] ?? false;
+        final isFirstChild = patientData['isFirstChild'] ?? false;
+
+        // Calculate pregnancy progress
+        if (expectedDeliveryDate != null && pregnancyConfirmedDate != null) {
+          final dueDate = DateTime.parse(expectedDeliveryDate);
+          final confirmedDate = DateTime.parse(pregnancyConfirmedDate);
+          final now = DateTime.now();
+          
+          // Calculate weeks pregnant
+          final weeksPregnant = _calculateWeeksPregnant(confirmedDate, now);
+          
+          // Calculate days to go
+          final daysToGo = dueDate.difference(now).inDays;
+          
+          // Calculate progress percentage (typical pregnancy is 40 weeks)
+          final totalDays = 280; // 40 weeks * 7 days
+          final daysPassed = totalDays - daysToGo;
+          final progressPercentage = ((daysPassed / totalDays) * 100).clamp(0, 100).toInt();
+          
+          // Determine trimester
+          final trimester = _getTrimester(weeksPregnant);
+
+          setState(() {
+            _pregnancyProgress = {
+              'weeks': weeksPregnant,
+              'daysToGo': daysToGo > 0 ? daysToGo : 0,
+              'progressPercentage': progressPercentage,
+              'trimester': trimester,
+              'dueDate': DateFormat('MMM dd, yyyy').format(dueDate),
+              'confirmedDate': DateFormat('MMM dd, yyyy').format(confirmedDate),
+              'hasPregnancyLoss': hasPregnancyLoss,
+              'isFirstChild': isFirstChild,
+            };
+          });
+        } else {
+          // No pregnancy data available
+          setState(() {
+            _pregnancyProgress = {
+              'weeks': 0,
+              'daysToGo': 280,
+              'progressPercentage': 0,
+              'trimester': 'Not started',
+              'dueDate': 'Not set',
+              'confirmedDate': 'Not set',
+              'hasPregnancyLoss': false,
+              'isFirstChild': false,
+            };
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading pregnancy data: $e');
+      // Set default values on error
+      setState(() {
+        _pregnancyProgress = {
+          'weeks': 0,
+          'daysToGo': 280,
+          'progressPercentage': 0,
+          'trimester': 'Not started',
+          'dueDate': 'Not set',
+          'confirmedDate': 'Not set',
+          'hasPregnancyLoss': false,
+          'isFirstChild': false,
+        };
+      });
+    }
+  }
+
+  int _calculateWeeksPregnant(DateTime confirmedDate, DateTime currentDate) {
+    final difference = currentDate.difference(confirmedDate).inDays;
+    final weeks = (difference / 7).floor();
+    return weeks.clamp(0, 40); // Typical pregnancy is 40 weeks
+  }
+
+  String _getTrimester(int weeks) {
+    if (weeks <= 0) return 'Not started';
+    if (weeks <= 13) return '1st Trimester';
+    if (weeks <= 26) return '2nd Trimester';
+    return '3rd Trimester';
+  }
+
+  Future<void> _loadLatestSymptomLog(String patientId) async {
     try {
       final logsQuery = await FirebaseFirestore.instance
           .collection('symptom_logs')
-          .where('patientId', isEqualTo: patientUserId)
+          .where('patientId', isEqualTo: patientId)
           .orderBy('logDate', descending: true)
           .limit(1)
           .get();
@@ -873,32 +1003,17 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           const SizedBox(height: 12),
           
           // Value with emoji for mood
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              if (title == 'Mood' && value != '--' && value != 'Not recorded')
+          if (title == 'Mood' && value != '--' && value != 'Not recorded')
+            Row(
+              children: [
                 Text(
                   getMoodEmoji(value),
                   style: const TextStyle(fontSize: 24),
-                )
-              else
-                Text(
-                  value,
-                  style: GoogleFonts.inter(
-                    fontSize: isBloodPressure && fullBPValue != '--/--' ? 18 : 24,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 0.9,
-                  ),
                 ),
-              
-              if (title == 'Mood' && value != '--' && value != 'Not recorded')
                 const SizedBox(width: 8),
-              
-              if (isBloodPressure && fullBPValue != '--/--')
                 Expanded(
                   child: Text(
-                    '/${fullBPValue.split('/').last}',
+                    value,
                     style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
@@ -907,11 +1022,36 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                     ),
                   ),
                 ),
-            ],
-          ),
+              ],
+            )
+          else if (isBloodPressure && fullBPValue != '--/--')
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fullBPValue,
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 0.9,
+                  ),
+                ),
+              ],
+            )
+          else
+            Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 0.9,
+              ),
+            ),
           
           // Title and unit
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
