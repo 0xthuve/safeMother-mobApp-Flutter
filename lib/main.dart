@@ -4,13 +4,22 @@ import 'l10n/app_localizations.dart'; // 👈 Add this for localization support
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'signin.dart';
+import 'pages/family_home_screen.dart';
+import 'pages/family_log_page.dart';
+import 'pages/family_appointment_page.dart';
+import 'pages/family_contact_page.dart';
+import 'pages/family_learn_page.dart';
+import 'pages/family_profile_page.dart';
+import 'pages/family_logIn_page.dart';
+import 'pages/family_signup_page.dart';
+import 'services/family_notification_service.dart';
 import 'services/session_manager.dart';
 import 'services/firebase_service.dart';
 import 'services/notification_service.dart';
 import 'services/backend_service.dart';
 import 'patient_dashboard.dart';
 import 'pages/doctor/doctor_dashboard.dart';
+import 'signin.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +30,7 @@ void main() async {
     );
   } catch (e) {
     // For development, continue without Firebase if there's an error
+    print('Firebase initialization error: $e');
   }
 
   // Initialize Firebase service (will use mock if Firebase not configured)
@@ -29,6 +39,9 @@ void main() async {
   // Initialize NotificationService for local notifications
   await NotificationService().initialize();
 
+  // Initialize notification channels (without context)
+  await FamilyNotificationService().createNotificationChannels();
+  
   runApp(const SafeMotherApp());
 }
 
@@ -85,7 +98,12 @@ class _SafeMotherAppState extends State<SafeMotherApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       locale: _locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       supportedLocales: AppLocalizations.supportedLocales,
       title: 'Safe Mother',
       debugShowCheckedModeBanner: false,
@@ -101,6 +119,19 @@ class _SafeMotherAppState extends State<SafeMotherApp> {
         ),
       ),
       home: const SplashScreen(),
+      routes: {
+        '/': (context) => const FamilyLoginScreen(),
+        '/familyHome': (context) => const FamilyHomeScreen(),
+        '/familyViewLog': (context) => const FamilyViewLogScreen(),
+        '/familyAppointments': (context) => const FamilyAppointmentsScreen(),
+        '/familyContacts': (context) => const FamilyContactsScreen(),
+        '/familyLearn': (context) => const FamilyLearnScreen(),
+        '/familyProfile': (context) => const FamilyProfileScreen(),
+        '/signup': (context) => const FamilySignUpScreen(),
+        '/signin': (context) => const SignInScreen(),
+        '/patientDashboard': (context) => const HomeScreen(),
+        '/doctorDashboard': (context) => const DoctorDashboard(),
+      },
     );
   }
 }
@@ -156,6 +187,12 @@ class _SplashScreenState extends State<SplashScreen> {
                   context,
                   MaterialPageRoute(builder: (context) => const DoctorDashboard()),
                 );
+              } else if (userRole == 'family') {
+                // Navigate to family home screen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FamilyHomeScreen()),
+                );
               } else {
                 Navigator.pushReplacement(
                   context,
@@ -188,6 +225,12 @@ class _SplashScreenState extends State<SplashScreen> {
             context,
             MaterialPageRoute(builder: (context) => const DoctorDashboard()),
           );
+        } else if (userType == 'family') {
+          // Family member route
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const FamilyHomeScreen()),
+          );
         } else {
           // Invalid user type, go to login
           Navigator.pushReplacement(
@@ -205,6 +248,7 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     } catch (e) {
       // Error checking session, go to login
+      print('Error checking login status: $e');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const SignInScreen()),
@@ -214,7 +258,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final appTitle = AppLocalizations.of(context)?.appTitle ?? 'Safe Mother'; // 👈 localized title
+    final appTitle = AppLocalizations.of(context)?.appTitle ?? 'Safe Mother';
 
     return Scaffold(
       body: Container(
