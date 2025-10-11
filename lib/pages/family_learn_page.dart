@@ -22,7 +22,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
   String _searchQuery = '';
   String _linkedPatientName = "Sarah";
   int _currentIndex = 4; // Learn tab is active
-  
+
   final List<String> _categories = [
     'All',
     'Pregnancy',
@@ -31,7 +31,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
     'Baby Care',
     'Parenting',
     'Emergency',
-    'Wellness'
+    'Wellness',
   ];
 
   @override
@@ -50,12 +50,14 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       final response = await http.get(
-        Uri.parse('https://newsapi.org/v2/everything?q=pregnancy%20OR%20parenting%20OR%20baby%20OR%20motherhood%20OR%20maternal%20health&apiKey=5ab8635d12744f488a9cc7f24f7e4d70'),
+        Uri.parse(
+          'https://newsapi.org/v2/everything?q=pregnancy%20OR%20parenting%20OR%20baby%20OR%20motherhood%20OR%20maternal%20health&apiKey=5ab8635d12744f488a9cc7f24f7e4d70',
+        ),
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         if (data['status'] == 'ok') {
@@ -90,20 +92,27 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
     setState(() {
       _filteredArticles = _articles.where((article) {
         final title = article['title']?.toString().toLowerCase() ?? '';
-        final description = article['description']?.toString().toLowerCase() ?? '';
+        final description =
+            article['description']?.toString().toLowerCase() ?? '';
         final content = article['content']?.toString().toLowerCase() ?? '';
 
         // Category filter
         final matchesCategory = _selectedCategory == 0
             ? true
             : (title.contains(_categories[_selectedCategory].toLowerCase()) ||
-                description.contains(_categories[_selectedCategory].toLowerCase()) ||
-                content.contains(_categories[_selectedCategory].toLowerCase()));
+                  description.contains(
+                    _categories[_selectedCategory].toLowerCase(),
+                  ) ||
+                  content.contains(
+                    _categories[_selectedCategory].toLowerCase(),
+                  ));
 
         // Search query filter
         final matchesQuery = query.isEmpty
             ? true
-            : (title.contains(query) || description.contains(query) || content.contains(query));
+            : (title.contains(query) ||
+                  description.contains(query) ||
+                  content.contains(query));
 
         return matchesCategory && matchesQuery;
       }).toList();
@@ -151,7 +160,10 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.5),
+                  width: 1.5,
+                ),
               ),
               child: const Icon(
                 Icons.person_outlined,
@@ -185,10 +197,21 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildNavItem(Icons.home_filled, 'Home', _currentIndex == 0),
-            _buildNavItem(Icons.assignment_outlined, 'View Log', _currentIndex == 1),
-            _buildNavItem(Icons.calendar_today_outlined, 'Appointments', _currentIndex == 2),
-            _buildNavItem(Icons.contact_phone_outlined, 'Contacts', _currentIndex == 3),
-            _buildNavItem(Icons.menu_book_outlined, 'Learn', _currentIndex == 4),
+            _buildNavItem(
+              Icons.assignment_outlined,
+              'View Log',
+              _currentIndex == 1,
+            ),
+            _buildNavItem(
+              Icons.calendar_today_outlined,
+              'Appointments',
+              _currentIndex == 2,
+            ),
+            _buildNavItem(
+              Icons.menu_book_outlined,
+              'Learn',
+              _currentIndex == 4,
+            ),
           ],
         ),
       ),
@@ -216,7 +239,9 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
             ),
             child: Icon(
               icon,
-              color: isActive ? Colors.white : const Color(0xFFE91E63).withOpacity(0.6),
+              color: isActive
+                  ? Colors.white
+                  : const Color(0xFFE91E63).withOpacity(0.6),
               size: 22,
             ),
           ),
@@ -225,7 +250,9 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
             label,
             style: GoogleFonts.inter(
               fontSize: 11,
-              color: isActive ? const Color(0xFFE91E63) : const Color(0xFFE91E63).withOpacity(0.6),
+              color: isActive
+                  ? const Color(0xFFE91E63)
+                  : const Color(0xFFE91E63).withOpacity(0.6),
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -269,7 +296,9 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
           color: isSelected ? null : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Colors.transparent : const Color(0xFFE91E63).withOpacity(0.3),
+            color: isSelected
+                ? Colors.transparent
+                : const Color(0xFFE91E63).withOpacity(0.3),
           ),
           boxShadow: [
             BoxShadow(
@@ -343,7 +372,10 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE91E63).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
@@ -406,13 +438,17 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFFE91E63).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE91E63).withOpacity(0.3)),
+                  border: Border.all(
+                    color: const Color(0xFFE91E63).withOpacity(0.3),
+                  ),
                 ),
                 child: TextButton(
                   onPressed: () => _showArticleDetails(article),
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -452,10 +488,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF3E5F5),
-                  Color(0xFFFCE4EC),
-                ],
+                colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
               ),
               borderRadius: BorderRadius.circular(20),
             ),
@@ -478,7 +511,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                         ),
                       ),
                     ),
-                  
+
                   // Article Title
                   Text(
                     article['title'] ?? 'No title',
@@ -488,9 +521,9 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                       color: const Color(0xFF2C2C2C),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Article Description
                   Text(
                     article['description'] ?? 'No description',
@@ -500,21 +533,24 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Article Content
                   if (article['content'] != null)
                     Text(
-                      article['content'].toString().replaceAll('[+\\d chars]', ''),
+                      article['content'].toString().replaceAll(
+                        '[+\\d chars]',
+                        '',
+                      ),
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: const Color(0xFF5A5A5A),
                       ),
                     ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Published Date and Source
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -537,9 +573,9 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                         ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Action Buttons
                   Row(
                     children: [
@@ -571,7 +607,12 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
     );
   }
 
-  Widget _buildDetailActionButton(String text, IconData icon, Color color, VoidCallback onPressed) {
+  Widget _buildDetailActionButton(
+    String text,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
     return Container(
       height: 40,
       decoration: BoxDecoration(
@@ -583,7 +624,9 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
         onPressed: onPressed,
         style: TextButton.styleFrom(
           padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -607,10 +650,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
   Future<void> _launchURL(String url) async {
     final Uri uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
-      await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -725,7 +765,10 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                     // Search Bar
                     Container(
                       margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(15),
@@ -808,10 +851,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFF3E5F5),
-                              Color(0xFFFCE4EC),
-                            ],
+                            colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
                           ),
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -846,12 +886,18 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFFE91E63).withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: const Color(0xFFE91E63).withOpacity(0.3)),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFFE91E63,
+                                  ).withOpacity(0.3),
+                                ),
                               ),
                               child: TextButton(
                                 onPressed: _fetchArticles,
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
                                 ),
                                 child: Text(
                                   'Try Again',
@@ -873,10 +919,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFF3E5F5),
-                              Color(0xFFFCE4EC),
-                            ],
+                            colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
                           ),
                           borderRadius: BorderRadius.circular(20),
                         ),

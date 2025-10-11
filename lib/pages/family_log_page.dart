@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../navigation/family_navigation_handler.dart';
 
 class FamilyViewLogScreen extends StatefulWidget {
@@ -13,107 +15,101 @@ class FamilyViewLogScreen extends StatefulWidget {
 class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
   List<Map<String, dynamic>> _linkedPatientLogs = [];
   bool _isLoading = true;
-  String _linkedPatientName = "Sarah";
-  int _currentIndex = 1; // Log tab is active
+  String _linkedPatientName = "Patient";
+  String? _linkedPatientId;
+  int _currentIndex = 1;
 
   @override
   void initState() {
     super.initState();
-    _loadMockData();
+    _loadPatientLogs();
   }
 
-  Future<void> _loadMockData() async {
-    // Simulate API call delay
-    await Future.delayed(const Duration(seconds: 1));
-    
-    setState(() {
-      _linkedPatientLogs = _getMockLogs();
-      _isLoading = false;
-    });
-  }
+  Future<void> _loadPatientLogs() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
 
-  void _onItemTapped(int index) {
-    if (index == _currentIndex) return; // Don't navigate if already on the same tab
-    
-    setState(() {
-      _currentIndex = index;
-    });
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
 
-    // Handle navigation based on the selected tab
-    switch (index) {
-      case 0: // Home
-        Navigator.pushReplacementNamed(context, '/familyHome');
-        break;
-      case 1: // View Log (current page)
-        // Already on this page
-        break;
-      case 2: // Appointments
-        Navigator.pushReplacementNamed(context, '/familyAppointments');
-        break;
-      case 3: // Contacts
-        Navigator.pushReplacementNamed(context, '/familyContacts');
-        break;
-      case 4: // Learn
-        Navigator.pushReplacementNamed(context, '/familyLearn');
-        break;
+      // Get family member document to find linked patientId
+      final familyMemberDoc = await FirebaseFirestore.instance
+          .collection('family_members')
+          .doc(currentUser.uid)
+          .get();
+
+      if (familyMemberDoc.exists) {
+        final familyMemberData = familyMemberDoc.data();
+        _linkedPatientId = familyMemberData?['patientUserId'];
+        
+        if (_linkedPatientId != null && _linkedPatientId!.isNotEmpty) {
+          // Get patient name from users collection
+          final patientDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(_linkedPatientId!)
+              .get();
+          
+          if (patientDoc.exists) {
+            final patientData = patientDoc.data();
+            _linkedPatientName = patientData?['fullName'] ?? 
+                                patientData?['name'] ?? 
+                                'Patient';
+          }
+          
+          // Get symptom logs for the linked patient
+          final logsQuery = await FirebaseFirestore.instance
+              .collection('symptom_logs')
+              .where('patientId', isEqualTo: _linkedPatientId)
+              .orderBy('logDate', descending: true)
+              .get();
+
+          _linkedPatientLogs = logsQuery.docs.map((doc) {
+            final data = doc.data();
+            final logDate = (data['logDate'] as Timestamp).toDate();
+            
+            return {
+              'logDate': logDate,
+              'bloodPressure': data['bloodPressure'] ?? '--/--',
+              'weight': data['weight']?.toString() ?? '--',
+              'babyKicks': data['babyKicks']?.toString() ?? '--',
+              'sleepHours': data['sleepHours']?.toString() ?? '--',
+              'mood': data['mood'] ?? 'Not specified',
+              'energyLevel': data['energyLevel'] ?? 'Not specified',
+              'symptoms': data['symptoms'] ?? '',
+              'additionalNotes': data['additionalNotes'] ?? '',
+              'hadContractions': data['hadContractions'] ?? false,
+              'hadHeadaches': data['hadHeadaches'] ?? false,
+              'hadSwelling': data['hadSwelling'] ?? false,
+              'tookVitamins': data['tookVitamins'] ?? false,
+              'waterIntake': data['waterIntake']?.toString() ?? '--',
+              'exerciseMinutes': data['exerciseMinutes']?.toString() ?? '--',
+              'appetiteLevel': data['appetiteLevel'] ?? 'Not specified',
+              'painLevel': data['painLevel'] ?? 'Not specified',
+              'medications': data['medications'] ?? '',
+              'nauseaDetails': data['nauseaDetails'] ?? '',
+              'riskLevel': data['riskLevel'] ?? '',
+              'riskMessage': data['riskMessage'] ?? '',
+            };
+          }).toList();
+        }
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading patient logs: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
-  }
-
-  List<Map<String, dynamic>> _getMockLogs() {
-    final now = DateTime.now();
-    return [
-      {
-        'logDate': now.subtract(const Duration(hours: 2)),
-        'bloodPressure': '120/80',
-        'weight': '65.2',
-        'babyKicks': '12',
-        'sleepHours': '8',
-        'mood': 'Good',
-        'energyLevel': 'Normal',
-        'symptoms': 'Mild back pain, increased appetite',
-        'additionalNotes': 'Feeling good today, baby is active',
-        'hadContractions': false,
-        'hadHeadaches': false,
-        'hadSwelling': true,
-        'tookVitamins': true,
-        'waterIntake': '8',
-        'exerciseMinutes': '30',
-      },
-      {
-        'logDate': now.subtract(const Duration(days: 1)),
-        'bloodPressure': '118/78',
-        'weight': '65.0',
-        'babyKicks': '15',
-        'sleepHours': '7',
-        'mood': 'Excellent',
-        'energyLevel': 'High',
-        'symptoms': 'None',
-        'additionalNotes': 'Great energy levels today',
-        'hadContractions': false,
-        'hadHeadaches': false,
-        'hadSwelling': false,
-        'tookVitamins': true,
-        'waterIntake': '10',
-        'exerciseMinutes': '45',
-      },
-      {
-        'logDate': now.subtract(const Duration(days: 2)),
-        'bloodPressure': '122/82',
-        'weight': '64.8',
-        'babyKicks': '8',
-        'sleepHours': '6',
-        'mood': 'Okay',
-        'energyLevel': 'Low',
-        'symptoms': 'Morning sickness, fatigue',
-        'additionalNotes': 'Resting more today',
-        'hadContractions': false,
-        'hadHeadaches': true,
-        'hadSwelling': false,
-        'tookVitamins': true,
-        'waterIntake': '6',
-        'exerciseMinutes': '15',
-      },
-    ];
   }
 
   Widget _buildLogCard(Map<String, dynamic> log) {
@@ -124,8 +120,8 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFF3E5F5), // Light purple
-            Color(0xFFFCE4EC), // Light pink
+            Color(0xFFF3E5F5),
+            Color(0xFFFCE4EC),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
@@ -182,6 +178,12 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Risk Alert Section
+            if (log['riskLevel'] != null && (log['riskLevel'] as String).isNotEmpty) ...[
+              _buildRiskAlert(log),
+              const SizedBox(height: 16),
+            ],
+
             // Vital Stats Row
             Row(
               children: [
@@ -233,7 +235,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
             // Third Row of Stats
             Row(
               children: [
-                if (log['waterIntake'] != null) ...[
+                if (log['waterIntake'] != null && log['waterIntake'] != '--') ...[
                   Expanded(
                     child: _buildStatItem(
                       'Water Intake',
@@ -244,7 +246,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                   ),
                   const SizedBox(width: 12),
                 ],
-                if (log['exerciseMinutes'] != null) ...[
+                if (log['exerciseMinutes'] != null && log['exerciseMinutes'] != '--') ...[
                   Expanded(
                     child: _buildStatItem(
                       'Exercise',
@@ -258,16 +260,40 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Additional Health Indicators
+            Row(
+              children: [
+                if (log['appetiteLevel'] != null && log['appetiteLevel'] != 'Not specified') ...[
+                  Expanded(
+                    child: _buildStatItem(
+                      'Appetite',
+                      log['appetiteLevel'],
+                      Icons.restaurant,
+                      const Color(0xFFE91E63),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                if (log['painLevel'] != null && log['painLevel'] != 'Not specified') ...[
+                  Expanded(
+                    child: _buildStatItem(
+                      'Pain Level',
+                      log['painLevel'],
+                      Icons.sick,
+                      const Color(0xFFFF5722),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 16),
+
             // Mood and Energy
             Row(
               children: [
-                Expanded(
-                  child: _buildMoodIndicator(log['mood']),
-                ),
+                Expanded(child: _buildMoodIndicator(log['mood'])),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: _buildEnergyIndicator(log['energyLevel']),
-                ),
+                Expanded(child: _buildEnergyIndicator(log['energyLevel'])),
               ],
             ),
             const SizedBox(height: 16),
@@ -293,6 +319,26 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
               const SizedBox(height: 12),
             ],
 
+            if (log['medications'] != null && (log['medications'] as String).isNotEmpty) ...[
+              _buildInfoSection(
+                'Medications',
+                log['medications'],
+                Icons.medication,
+                const Color(0xFF2196F3),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            if (log['nauseaDetails'] != null && (log['nauseaDetails'] as String).isNotEmpty) ...[
+              _buildInfoSection(
+                'Nausea Details',
+                log['nauseaDetails'],
+                Icons.sick,
+                const Color(0xFF9C27B0),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // Health Indicators
             _buildHealthIndicators(log),
           ],
@@ -301,7 +347,83 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
     );
   }
 
-  Widget _buildStatItem(String title, String value, IconData icon, Color color) {
+  Widget _buildRiskAlert(Map<String, dynamic> log) {
+    Color getRiskColor(String riskLevel) {
+      switch (riskLevel.toLowerCase()) {
+        case 'high risk':
+          return Colors.red;
+        case 'moderate risk':
+          return Colors.orange;
+        case 'low risk':
+          return Colors.green;
+        default:
+          return Colors.grey;
+      }
+    }
+
+    IconData getRiskIcon(String riskLevel) {
+      switch (riskLevel.toLowerCase()) {
+        case 'high risk':
+          return Icons.warning;
+        case 'moderate risk':
+          return Icons.warning_amber;
+        case 'low risk':
+          return Icons.check_circle;
+        default:
+          return Icons.info;
+      }
+    }
+
+    final riskLevel = log['riskLevel'] ?? '';
+    final riskMessage = log['riskMessage'] ?? '';
+    final riskColor = getRiskColor(riskLevel);
+    final riskIcon = getRiskIcon(riskLevel);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: riskColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: riskColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(riskIcon, color: riskColor, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  riskLevel,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: riskColor,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  riskMessage,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: const Color(0xFF2C2C2C),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -345,11 +467,17 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
 
   Widget _buildMoodIndicator(String mood) {
     final moodData = {
-      'Excellent': {'icon': Icons.sentiment_very_satisfied, 'color': Colors.green},
+      'Excellent': {
+        'icon': Icons.sentiment_very_satisfied,
+        'color': Colors.green,
+      },
       'Good': {'icon': Icons.sentiment_satisfied, 'color': Colors.lightGreen},
       'Okay': {'icon': Icons.sentiment_neutral, 'color': Colors.orange},
       'Low': {'icon': Icons.sentiment_dissatisfied, 'color': Colors.deepOrange},
-      'Anxious': {'icon': Icons.sentiment_very_dissatisfied, 'color': Colors.red},
+      'Anxious': {
+        'icon': Icons.sentiment_very_dissatisfied,
+        'color': Colors.red,
+      },
     };
 
     final data = moodData[mood] ?? moodData['Good']!;
@@ -369,7 +497,11 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
               color: (data['color']! as Color).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(data['icon'] as IconData, color: data['color'] as Color, size: 18),
+            child: Icon(
+              data['icon'] as IconData,
+              color: data['color'] as Color,
+              size: 18,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -415,7 +547,11 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
               color: const Color(0xFFFF9800).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.energy_savings_leaf, color: Color(0xFFFF9800), size: 18),
+            child: const Icon(
+              Icons.energy_savings_leaf,
+              color: Color(0xFFFF9800),
+              size: 18,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -445,7 +581,12 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
     );
   }
 
-  Widget _buildInfoSection(String title, String content, IconData icon, Color color) {
+  Widget _buildInfoSection(
+    String title,
+    String content,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -495,10 +636,22 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
 
   Widget _buildHealthIndicators(Map<String, dynamic> log) {
     final indicators = [
-      {'label': 'Contractions', 'value': log['hadContractions'], 'icon': Icons.pregnant_woman},
+      {
+        'label': 'Contractions',
+        'value': log['hadContractions'],
+        'icon': Icons.pregnant_woman,
+      },
       {'label': 'Headaches', 'value': log['hadHeadaches'], 'icon': Icons.sick},
-      {'label': 'Swelling', 'value': log['hadSwelling'], 'icon': Icons.water_drop},
-      {'label': 'Vitamins', 'value': log['tookVitamins'], 'icon': Icons.medication},
+      {
+        'label': 'Swelling',
+        'value': log['hadSwelling'],
+        'icon': Icons.water_drop,
+      },
+      {
+        'label': 'Vitamins',
+        'value': log['tookVitamins'],
+        'icon': Icons.medication,
+      },
     ];
 
     return Wrap(
@@ -550,7 +703,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFFCE4EC), // Light pink
+        color: const Color(0xFFFCE4EC),
         borderRadius: BorderRadius.circular(25),
         boxShadow: [
           BoxShadow(
@@ -566,10 +719,21 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildNavItem(Icons.home_filled, 'Home', _currentIndex == 0),
-            _buildNavItem(Icons.assignment_outlined, 'View Log', _currentIndex == 1),
-            _buildNavItem(Icons.calendar_today_outlined, 'Appointments', _currentIndex == 2),
-            _buildNavItem(Icons.contact_phone_outlined, 'Contacts', _currentIndex == 3),
-            _buildNavItem(Icons.menu_book_outlined, 'Learn', _currentIndex == 4),
+            _buildNavItem(
+              Icons.assignment_outlined,
+              'View Log',
+              _currentIndex == 1,
+            ),
+            _buildNavItem(
+              Icons.calendar_today_outlined,
+              'Appointments',
+              _currentIndex == 2,
+            ),
+            _buildNavItem(
+              Icons.menu_book_outlined,
+              'Learn',
+              _currentIndex == 4,
+            ),
           ],
         ),
       ),
@@ -597,7 +761,9 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
             ),
             child: Icon(
               icon,
-              color: isActive ? Colors.white : const Color(0xFFE91E63).withOpacity(0.6),
+              color: isActive
+                  ? Colors.white
+                  : const Color(0xFFE91E63).withOpacity(0.6),
               size: 22,
             ),
           ),
@@ -606,7 +772,9 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
             label,
             style: GoogleFonts.inter(
               fontSize: 11,
-              color: isActive ? const Color(0xFFE91E63) : const Color(0xFFE91E63).withOpacity(0.6),
+              color: isActive
+                  ? const Color(0xFFE91E63)
+                  : const Color(0xFFE91E63).withOpacity(0.6),
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
@@ -642,8 +810,8 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFCE4EC), // Light pink
-              Color(0xFFE3F2FD), // Light blue
+              Color(0xFFFCE4EC),
+              Color(0xFFE3F2FD),
               Colors.white,
             ],
             stops: [0.0, 0.3, 0.7],
@@ -651,9 +819,13 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
         ),
         child: Column(
           children: [
-            // Custom App Bar (Same as Home Page)
             Container(
-              padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 15),
+              padding: const EdgeInsets.only(
+                top: 50,
+                left: 20,
+                right: 20,
+                bottom: 15,
+              ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -670,7 +842,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
               ),
               child: Row(
                 children: [
-                  const SizedBox(width: 48), // For balance (replaces back button)
+                  const SizedBox(width: 48),
                   Expanded(
                     child: Center(
                       child: Text(
@@ -687,7 +859,10 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.5),
+                        width: 1.5,
+                      ),
                     ),
                     child: IconButton(
                       onPressed: () {
@@ -711,7 +886,6 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header Section
                     Container(
                       margin: const EdgeInsets.only(bottom: 24),
                       padding: const EdgeInsets.all(20),
@@ -720,8 +894,8 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Color(0xFFF3E5F5), // Light purple
-                            Color(0xFFFCE4EC), // Light pink
+                            Color(0xFFF3E5F5),
+                            Color(0xFFFCE4EC),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
@@ -789,8 +963,8 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Color(0xFFF3E5F5), // Light purple
-                              Color(0xFFFCE4EC), // Light pink
+                              Color(0xFFF3E5F5),
+                              Color(0xFFFCE4EC),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(20),

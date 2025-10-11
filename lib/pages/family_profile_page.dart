@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../navigation/family_navigation_handler.dart';
-
+import '../services/family_member_service.dart';
+import '../models/family_member_model.dart';
+import './family_logIn_page.dart'; // Add this import
 
 class FamilyProfileScreen extends StatefulWidget {
   const FamilyProfileScreen({super.key});
@@ -12,19 +16,23 @@ class FamilyProfileScreen extends StatefulWidget {
 }
 
 class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
-  String _userName = 'Jim';
-  String _userEmail = 'jim@example.com';
-  String _userAge = '32';
-  String _userContact = '+1 (555) 123-4567';
-  String _userRole = 'Husband';
-  String _linkedPatientName = 'Sarah';
-  String _relationship = 'Husband';
-  bool _isLoading = false;
-  
+  String _userName = '';
+  String _userEmail = '';
+  String _userAge = '';
+  String _userContact = '';
+  String _userRole = '';
+  String _linkedPatientName = '';
+  String _relationship = '';
+  bool _isLoading = true;
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _contactController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+
+  FamilyMember? _currentFamilyMember;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void initState() {
@@ -33,27 +41,110 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
   }
 
   Future<void> _loadUserData() async {
-    // Simulate loading user data
-    setState(() {
-      _isLoading = true;
-    });
-    
-    await Future.delayed(const Duration(seconds: 1));
-    
-    if (mounted) {
+    try {
       setState(() {
-        _nameController.text = _userName;
-        _ageController.text = _userAge;
-        _contactController.text = _userContact;
-        _emailController.text = _userEmail;
-        _isLoading = false;
+        _isLoading = true;
       });
+
+      // Get current user
+      final user = _auth.currentUser;
+      if (user != null) {
+        // Load family member data
+        _currentFamilyMember = await FamilyMemberService.getFamilyMember(user.uid);
+        
+        if (_currentFamilyMember != null) {
+          // Load basic user data
+          _userName = _currentFamilyMember!.fullName;
+          _userEmail = _currentFamilyMember!.email;
+          _userContact = _currentFamilyMember!.phone;
+          _relationship = _currentFamilyMember!.relationship;
+          _userRole = _currentFamilyMember!.relationship;
+
+          // Try to load patient data to get patient name from users collection
+          await _loadPatientData(_currentFamilyMember!.patientUserId);
+        } else {
+          // Fallback to current user data if family member not found
+          _userName = user.displayName ?? 'User';
+          _userEmail = user.email ?? '';
+          _userRole = 'Family Member';
+        }
+
+        // Update controllers
+        _nameController.text = _userName;
+        _emailController.text = _userEmail;
+        _contactController.text = _userContact;
+
+        // Set age if available
+        _userAge = _calculateAge();
+        _ageController.text = _userAge;
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      _setDefaultValues();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  void _showEditPopup(String field, String currentValue, TextEditingController controller) {
+  Future<void> _loadPatientData(String patientUserId) async {
+    try {
+      // First try to get from users collection (where patient data is stored)
+      final userDoc = await _firestore.collection('users').doc(patientUserId).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        _linkedPatientName = userData?['fullName'] ?? 
+                            userData?['name'] ?? 
+                            userData?['patientName'] ?? 
+                            'Patient';
+        print('✅ Patient name found in users collection: $_linkedPatientName');
+        return;
+      }
+
+      // Fallback to patients collection if not found in users
+      final patientDoc = await _firestore.collection('patients').doc(patientUserId).get();
+      if (patientDoc.exists) {
+        final patientData = patientDoc.data();
+        _linkedPatientName = patientData?['fullName'] ?? 
+                            patientData?['name'] ?? 
+                            patientData?['patientName'] ?? 
+                            'Patient';
+        print('✅ Patient name found in patients collection: $_linkedPatientName');
+      } else {
+        _linkedPatientName = 'Patient';
+        print('⚠️ Patient not found in users or patients collection');
+      }
+    } catch (e) {
+      print('Error loading patient data: $e');
+      _linkedPatientName = 'Patient';
+    }
+  }
+
+  String _calculateAge() {
+    // Implement age calculation based on your data structure
+    return '';
+  }
+
+  void _setDefaultValues() {
+    _userName = 'User';
+    _userEmail = 'user@example.com';
+    _userAge = '';
+    _userContact = '';
+    _userRole = 'Family Member';
+    _linkedPatientName = 'Patient';
+    _relationship = '';
+  }
+
+  void _showEditPopup(
+    String field,
+    String currentValue,
+    TextEditingController controller,
+  ) {
     controller.text = currentValue;
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -67,10 +158,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF3E5F5),
-                  Color(0xFFFCE4EC),
-                ],
+                colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
               ),
               borderRadius: BorderRadius.circular(20),
             ),
@@ -136,7 +224,11 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
     );
   }
 
-  Widget _buildDialogActionButton(String text, Color color, VoidCallback onPressed) {
+  Widget _buildDialogActionButton(
+    String text,
+    Color color,
+    VoidCallback onPressed,
+  ) {
     return Container(
       height: 40,
       decoration: BoxDecoration(
@@ -148,7 +240,9 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
         onPressed: onPressed,
         style: TextButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
         child: Text(
           text,
@@ -162,38 +256,75 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
     );
   }
 
-  void _saveUserData(String field, String value) {
-    setState(() {
+  Future<void> _saveUserData(String field, String value) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      setState(() {
+        switch (field) {
+          case 'Name':
+            _userName = value;
+            break;
+          case 'Age':
+            _userAge = value;
+            break;
+          case 'Contact':
+            _userContact = value;
+            break;
+          case 'Email':
+            _userEmail = value;
+            break;
+        }
+      });
+
+      // Update in Firestore
+      final updateData = <String, dynamic>{};
       switch (field) {
         case 'Name':
-          _userName = value;
-          break;
-        case 'Age':
-          _userAge = value;
+          updateData['fullName'] = value;
+          await user.updateDisplayName(value);
           break;
         case 'Contact':
-          _userContact = value;
+          updateData['phone'] = value;
           break;
         case 'Email':
-          _userEmail = value;
+          updateData['email'] = value;
+          await user.updateEmail(value);
           break;
       }
-    });
 
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$field updated successfully!'),
-        backgroundColor: const Color(0xFF4CAF50),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+      if (updateData.isNotEmpty) {
+        updateData['updatedAt'] = FieldValue.serverTimestamp();
+        await _firestore.collection('family_members').doc(user.uid).update(updateData);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$field updated successfully!'),
+          backgroundColor: const Color(0xFF4CAF50),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      print('Error saving user data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update $field: $e'),
+          backgroundColor: const Color(0xFFF44336),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   void _showChangePasswordPopup() {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -207,10 +338,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF3E5F5),
-                  Color(0xFFFCE4EC),
-                ],
+                colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
               ),
               borderRadius: BorderRadius.circular(20),
             ),
@@ -227,11 +355,11 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildPasswordField('Current Password'),
+                _buildPasswordField('Current Password', currentPasswordController),
                 const SizedBox(height: 12),
-                _buildPasswordField('New Password'),
+                _buildPasswordField('New Password', newPasswordController),
                 const SizedBox(height: 12),
-                _buildPasswordField('Confirm New Password'),
+                _buildPasswordField('Confirm New Password', confirmPasswordController),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -245,18 +373,91 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                     _buildDialogActionButton(
                       'Update',
                       const Color(0xFFE91E63),
-                      () {
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Password updated successfully!'),
-                            backgroundColor: const Color(0xFF4CAF50),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                      () async {
+                        if (newPasswordController.text != confirmPasswordController.text) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('New passwords do not match!'),
+                              backgroundColor: const Color(0xFFF44336),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
-                          ),
-                        );
+                          );
+                          return;
+                        }
+
+                        if (newPasswordController.text.length < 6) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Password must be at least 6 characters long!'),
+                              backgroundColor: const Color(0xFFF44336),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+
+                        try {
+                          final user = _auth.currentUser;
+                          if (user != null) {
+                            // For security, re-authenticate user before password change
+                            final credential = EmailAuthProvider.credential(
+                              email: user.email!,
+                              password: currentPasswordController.text,
+                            );
+                            
+                            await user.reauthenticateWithCredential(credential);
+                            await user.updatePassword(newPasswordController.text);
+                            
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('Password updated successfully!'),
+                                backgroundColor: const Color(0xFF4CAF50),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          }
+                        } on FirebaseAuthException catch (e) {
+                          String errorMessage = 'Failed to update password';
+                          if (e.code == 'wrong-password') {
+                            errorMessage = 'Current password is incorrect';
+                          } else if (e.code == 'weak-password') {
+                            errorMessage = 'Password is too weak';
+                          } else if (e.code == 'requires-recent-login') {
+                            errorMessage = 'Please log in again to change your password';
+                          }
+                          
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(errorMessage),
+                              backgroundColor: const Color(0xFFF44336),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to update password: $e'),
+                              backgroundColor: const Color(0xFFF44336),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        }
                       },
                     ),
                   ],
@@ -269,13 +470,14 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
     );
   }
 
-  Widget _buildPasswordField(String hintText) {
+  Widget _buildPasswordField(String hintText, TextEditingController controller) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.8),
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
+        controller: controller,
         obscureText: true,
         decoration: InputDecoration(
           hintText: hintText,
@@ -287,148 +489,6 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
           fillColor: Colors.transparent,
           contentPadding: const EdgeInsets.all(16),
         ),
-      ),
-    );
-  }
-
-  void _showNotificationSettings() {
-    bool emailNotifications = true;
-    bool pushNotifications = true;
-    bool smsNotifications = false;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFF3E5F5),
-                      Color(0xFFFCE4EC),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Notification Settings',
-                      style: GoogleFonts.playfairDisplay(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF2C2C2C),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildNotificationSwitch(
-                      'Health Updates',
-                      'Receive updates about $_linkedPatientName\'s health',
-                      true,
-                      (value) {},
-                    ),
-                    const SizedBox(height: 12),
-                    _buildNotificationSwitch(
-                      'Appointment Reminders',
-                      'Get reminders for upcoming appointments',
-                      true,
-                      (value) {},
-                    ),
-                    const SizedBox(height: 12),
-                    _buildNotificationSwitch(
-                      'Emergency Alerts',
-                      'Immediate alerts for urgent situations',
-                      true,
-                      (value) {},
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        _buildDialogActionButton(
-                          'Cancel',
-                          const Color(0xFF757575),
-                          () => Navigator.of(context).pop(),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildDialogActionButton(
-                          'Save',
-                          const Color(0xFFE91E63),
-                          () {
-                            Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Notification settings saved!'),
-                                backgroundColor: const Color(0xFF4CAF50),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildNotificationSwitch(String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.9)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF2C2C2C),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: const Color(0xFF757575),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: const Color(0xFFE91E63),
-          ),
-        ],
       ),
     );
   }
@@ -447,10 +507,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF3E5F5),
-                  Color(0xFFFCE4EC),
-                ],
+                colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
               ),
               borderRadius: BorderRadius.circular(20),
             ),
@@ -508,10 +565,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFF3E5F5),
-                  Color(0xFFFCE4EC),
-                ],
+                colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
               ),
               borderRadius: BorderRadius.circular(20),
             ),
@@ -565,26 +619,51 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                         decoration: BoxDecoration(
                           color: const Color(0xFFF44336).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFF44336).withOpacity(0.3)),
+                          border: Border.all(
+                            color: const Color(0xFFF44336).withOpacity(0.3),
+                          ),
                         ),
                         child: TextButton(
-                          onPressed: () {
+                          onPressed: () async {
                             Navigator.of(context).pop();
-                            // Add sign out logic here
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Signed out successfully'),
-                                backgroundColor: const Color(0xFF4CAF50),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            try {
+                              await _auth.signOut();
+                              // Navigate to login screen
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => FamilyLoginScreen(),
                                 ),
-                              ),
-                            );
+                                (route) => false,
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Signed out successfully'),
+                                  backgroundColor: const Color(0xFF4CAF50),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error signing out: $e'),
+                                  backgroundColor: const Color(0xFFF44336),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              );
+                            }
                           },
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                           child: Text(
                             'Sign Out',
@@ -617,8 +696,8 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFFCE4EC), // Light pink
-              Color(0xFFE3F2FD), // Light blue
+              Color(0xFFFCE4EC),
+              Color(0xFFE3F2FD),
               Colors.white,
             ],
             stops: [0.0, 0.3, 0.7],
@@ -626,9 +705,14 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
         ),
         child: Column(
           children: [
-            // Custom App Bar (Same as Home Page)
+            // Custom App Bar
             Container(
-              padding: const EdgeInsets.only(top: 50, left: 20, right: 20, bottom: 15),
+              padding: const EdgeInsets.only(
+                top: 50,
+                left: 20,
+                right: 20,
+                bottom: 15,
+              ),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -648,11 +732,15 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                   Container(
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.5),
+                        width: 1.5,
+                      ),
                     ),
                     child: IconButton(
                       onPressed: () {
-                        Navigator.of(context).pop();
+                        // Navigate back to dashboard
+                        FamilyNavigationHandler.navigateToScreen(context, 0);
                       },
                       icon: const Icon(
                         Icons.arrow_back_ios,
@@ -679,7 +767,10 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.5),
+                        width: 1.5,
+                      ),
                     ),
                     child: const Icon(
                       Icons.person_outlined,
@@ -706,8 +797,8 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Color(0xFFF3E5F5), // Light purple
-                            Color(0xFFFCE4EC), // Light pink
+                            Color(0xFFF3E5F5),
+                            Color(0xFFFCE4EC),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(20),
@@ -739,7 +830,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _userName,
+                                  _userName.isNotEmpty ? _userName : 'Loading...',
                                   style: GoogleFonts.playfairDisplay(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
@@ -748,15 +839,19 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Family Member - $_userRole',
+                                  'Family Member - ${_userRole.isNotEmpty ? _userRole : 'Member'}',
                                   style: GoogleFonts.inter(
                                     fontSize: 14,
                                     color: const Color(0xFF757575),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
+                                if (_linkedPatientName.isNotEmpty)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF4CAF50).withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
@@ -764,7 +859,11 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.link, color: Color(0xFF4CAF50), size: 14),
+                                      const Icon(
+                                        Icons.link,
+                                        color: Color(0xFF4CAF50),
+                                        size: 14,
+                                      ),
                                       const SizedBox(width: 6),
                                       Text(
                                         'Linked to $_linkedPatientName',
@@ -791,6 +890,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                         ),
                       ),
                     ] else ...[
+                      // Rest of your UI code remains the same...
                       // Personal Information Section
                       Text(
                         'Personal Information',
@@ -807,10 +907,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFF3E5F5),
-                              Color(0xFFFCE4EC),
-                            ],
+                            colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
@@ -823,21 +920,54 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                         ),
                         child: Column(
                           children: [
-                            _buildEditableInfoRow('Name', _userName, Icons.person, () {
-                              _showEditPopup('Name', _userName, _nameController);
-                            }),
+                            _buildEditableInfoRow(
+                              'Name',
+                              _userName,
+                              Icons.person,
+                              () {
+                                _showEditPopup(
+                                  'Name',
+                                  _userName,
+                                  _nameController,
+                                );
+                              },
+                            ),
                             const SizedBox(height: 16),
-                            _buildEditableInfoRow('Email', _userEmail, Icons.email, () {
-                              _showEditPopup('Email', _userEmail, _emailController);
-                            }),
+                            _buildEditableInfoRow(
+                              'Email',
+                              _userEmail,
+                              Icons.email,
+                              () {
+                                _showEditPopup(
+                                  'Email',
+                                  _userEmail,
+                                  _emailController,
+                                );
+                              },
+                            ),
                             const SizedBox(height: 16),
-                            _buildEditableInfoRow('Age', '$_userAge years', Icons.cake, () {
-                              _showEditPopup('Age', _userAge, _ageController);
-                            }),
-                            const SizedBox(height: 16),
-                            _buildEditableInfoRow('Contact', _userContact, Icons.phone, () {
-                              _showEditPopup('Contact', _userContact, _contactController);
-                            }),
+                            if (_userAge.isNotEmpty)
+                            _buildEditableInfoRow(
+                              'Age',
+                              '$_userAge years',
+                              Icons.cake,
+                              () {
+                                _showEditPopup('Age', _userAge, _ageController);
+                              },
+                            ),
+                            if (_userAge.isNotEmpty) const SizedBox(height: 16),
+                            _buildEditableInfoRow(
+                              'Contact',
+                              _userContact.isNotEmpty ? _userContact : 'Not set',
+                              Icons.phone,
+                              () {
+                                _showEditPopup(
+                                  'Contact',
+                                  _userContact,
+                                  _contactController,
+                                );
+                              },
+                            ),
                           ],
                         ),
                       ),
@@ -859,10 +989,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFF3E5F5),
-                              Color(0xFFFCE4EC),
-                            ],
+                            colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
@@ -875,11 +1002,24 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                         ),
                         child: Column(
                           children: [
-                            _buildInfoRow('Patient Name', _linkedPatientName, Icons.pregnant_woman),
+                            _buildInfoRow(
+                              'Patient Name',
+                              _linkedPatientName,
+                              Icons.pregnant_woman,
+                            ),
                             const SizedBox(height: 12),
-                            _buildInfoRow('Relationship', _relationship, Icons.family_restroom),
+                            _buildInfoRow(
+                              'Relationship',
+                              _relationship.isNotEmpty ? _relationship : 'Not set',
+                              Icons.family_restroom,
+                            ),
                             const SizedBox(height: 12),
-                            _buildInfoRow('Connection Status', 'Active', Icons.check_circle, color: Color(0xFF4CAF50)),
+                            _buildInfoRow(
+                              'Connection Status',
+                              'Active',
+                              Icons.check_circle,
+                              color: Color(0xFF4CAF50),
+                            ),
                           ],
                         ),
                       ),
@@ -901,10 +1041,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                           gradient: const LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFF3E5F5),
-                              Color(0xFFFCE4EC),
-                            ],
+                            colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
@@ -917,13 +1054,24 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                         ),
                         child: Column(
                           children: [
-                            _buildSettingRow('Change Password', Icons.lock, _showChangePasswordPopup),
+                            _buildSettingRow(
+                              'Change Password',
+                              Icons.lock,
+                              _showChangePasswordPopup,
+                            ),
                             const SizedBox(height: 16),
-                            _buildSettingRow('Notification Settings', Icons.notifications, _showNotificationSettings),
+                            _buildSettingRow(
+                              'Privacy & Security',
+                              Icons.security,
+                              _showPrivacyPolicy,
+                            ),
                             const SizedBox(height: 16),
-                            _buildSettingRow('Privacy & Security', Icons.security, _showPrivacyPolicy),
-                            const SizedBox(height: 16),
-                            _buildSettingRow('Sign Out', Icons.logout, _showSignOutDialog, isSignOut: true),
+                            _buildSettingRow(
+                              'Sign Out',
+                              Icons.logout,
+                              _showSignOutDialog,
+                              isSignOut: true,
+                            ),
                           ],
                         ),
                       ),
@@ -939,7 +1087,13 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
     );
   }
 
-  Widget _buildEditableInfoRow(String title, String value, IconData icon, VoidCallback onTap) {
+  // Rest of your widget methods remain the same...
+  Widget _buildEditableInfoRow(
+    String title,
+    String value,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -974,7 +1128,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    value,
+                    value.isNotEmpty ? value : 'Not set',
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -984,18 +1138,19 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                 ],
               ),
             ),
-            const Icon(
-              Icons.edit,
-              color: Color(0xFFE91E63),
-              size: 18,
-            ),
+            const Icon(Icons.edit, color: Color(0xFFE91E63), size: 18),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInfoRow(String title, String value, IconData icon, {Color color = const Color(0xFF2196F3)}) {
+  Widget _buildInfoRow(
+    String title,
+    String value,
+    IconData icon, {
+    Color color = const Color(0xFF2196F3),
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1028,7 +1183,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  value,
+                  value.isNotEmpty ? value : 'Not set',
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -1043,7 +1198,12 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
     );
   }
 
-  Widget _buildSettingRow(String title, IconData icon, VoidCallback onTap, {bool isSignOut = false}) {
+  Widget _buildSettingRow(
+    String title,
+    IconData icon,
+    VoidCallback onTap, {
+    bool isSignOut = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1058,7 +1218,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isSignOut 
+                color: isSignOut
                     ? const Color(0xFFF44336).withOpacity(0.1)
                     : const Color(0xFF2196F3).withOpacity(0.1),
                 shape: BoxShape.circle,
@@ -1112,8 +1272,12 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
           children: [
             _buildNavItem(context, Icons.home_filled, 'Home', 0),
             _buildNavItem(context, Icons.assignment_outlined, 'View Log', 1),
-            _buildNavItem(context, Icons.calendar_today_outlined, 'Appointments', 2),
-            _buildNavItem(context, Icons.contact_phone_outlined, 'Contacts', 3),
+            _buildNavItem(
+              context,
+              Icons.calendar_today_outlined,
+              'Appointments',
+              2,
+            ),
             _buildNavItem(context, Icons.menu_book_outlined, 'Learn', 4),
           ],
         ),
@@ -1121,7 +1285,12 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index) {
+  Widget _buildNavItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    int index,
+  ) {
     return GestureDetector(
       onTap: () => FamilyNavigationHandler.navigateToScreen(context, index),
       child: Column(
@@ -1129,9 +1298,7 @@ class _FamilyProfileScreenState extends State<FamilyProfileScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-            ),
+            decoration: const BoxDecoration(shape: BoxShape.circle),
             child: Icon(
               icon,
               color: const Color(0xFFE91E63).withOpacity(0.6),

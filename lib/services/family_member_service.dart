@@ -8,8 +8,7 @@ class FamilyMemberService {
 
   // ==================== PATIENT VERIFICATION ====================
 
-  /// Check if patient exists using multiple field name possibilities
-  /// Check if patient exists - UPDATED for document ID search
+  /// Check if patient exists - searches in both users and patients collections
   static Future<bool> checkPatientExists(String patientId) async {
     try {
       print('🔍 Checking patient existence for ID: "$patientId"');
@@ -21,44 +20,44 @@ class FamilyMemberService {
 
       final trimmedId = patientId.trim();
 
-      // Method 1: Try as Document ID (Primary method for your case)
+      // Method 1: Try as Document ID in users collection
       try {
-        final doc = await _firestore
-            .collection('patients')
-            .doc(trimmedId)
-            .get();
-        if (doc.exists) {
-          print('✅ Patient found using Document ID');
+        final userDoc = await _firestore.collection('users').doc(trimmedId).get();
+        if (userDoc.exists) {
+          print('✅ Patient found in users collection using Document ID');
           return true;
         }
       } catch (e) {
-        print('⚠️ Error checking document ID: $e');
+        print('⚠️ Error checking users collection: $e');
       }
 
-      // Method 2: Try common field names (fallback)
-      final fieldNames = [
-        'patientId',
-        'id',
-        'patientID',
-        'patient_code',
-        'medicalRecordNumber',
-        'uid',
-      ];
+      // Method 2: Try as Document ID in patients collection
+      try {
+        final patientDoc = await _firestore.collection('patients').doc(trimmedId).get();
+        if (patientDoc.exists) {
+          print('✅ Patient found in patients collection using Document ID');
+          return true;
+        }
+      } catch (e) {
+        print('⚠️ Error checking patients collection: $e');
+      }
 
+      // Method 3: Try common field names in users collection
+      final fieldNames = ['patientId', 'id', 'patientID', 'uid'];
       for (final fieldName in fieldNames) {
         try {
           final query = await _firestore
-              .collection('patients')
+              .collection('users')
               .where(fieldName, isEqualTo: trimmedId)
               .limit(1)
               .get();
 
           if (query.docs.isNotEmpty) {
-            print('✅ Patient found using field: $fieldName');
+            print('✅ Patient found in users collection using field: $fieldName');
             return true;
           }
         } catch (e) {
-          print('⚠️ Error querying field $fieldName: $e');
+          print('⚠️ Error querying field $fieldName in users: $e');
         }
       }
 
@@ -70,23 +69,53 @@ class FamilyMemberService {
     }
   }
 
-  /// Get patient by patientId with multiple fallback methods - FIXED VERSION
-  /// Get patient by patientId with multiple fallback methods - UPDATED
+  /// Get patient data from users collection by patientId
   static Future<QuerySnapshot> getPatientByPatientId(String patientId) async {
     try {
       print('🔍 Getting patient details for ID: "$patientId"');
 
       final trimmedId = patientId.trim();
 
-      // Method 1: Try as Document ID (This is your case!)
+      // Method 1: Try as Document ID in users collection
       try {
-        final doc = await _firestore
-            .collection('patients')
-            .doc(trimmedId)
-            .get();
+        final doc = await _firestore.collection('users').doc(trimmedId).get();
         if (doc.exists) {
-          print('✅ Patient found using Document ID');
-          // Create a query that matches this document
+          print('✅ Patient found in users collection using Document ID');
+          final query = await _firestore
+              .collection('users')
+              .where(FieldPath.documentId, isEqualTo: trimmedId)
+              .limit(1)
+              .get();
+          return query;
+        }
+      } catch (e) {
+        print('⚠️ Error with document ID search in users: $e');
+      }
+
+      // Method 2: Try common field names in users collection
+      final fieldNames = ['patientId', 'id', 'patientID', 'uid'];
+      for (final fieldName in fieldNames) {
+        try {
+          final query = await _firestore
+              .collection('users')
+              .where(fieldName, isEqualTo: trimmedId)
+              .limit(1)
+              .get();
+
+          if (query.docs.isNotEmpty) {
+            print('✅ Patient found in users collection using field: $fieldName');
+            return query;
+          }
+        } catch (e) {
+          print('⚠️ Error querying field $fieldName in users: $e');
+        }
+      }
+
+      // Fallback to patients collection
+      try {
+        final doc = await _firestore.collection('patients').doc(trimmedId).get();
+        if (doc.exists) {
+          print('✅ Patient found in patients collection using Document ID');
           final query = await _firestore
               .collection('patients')
               .where(FieldPath.documentId, isEqualTo: trimmedId)
@@ -95,51 +124,63 @@ class FamilyMemberService {
           return query;
         }
       } catch (e) {
-        print('⚠️ Error with document ID search: $e');
-      }
-
-      // Method 2: Try common field names (fallback)
-      final fieldNames = [
-        'patientId',
-        'id',
-        'patientID',
-        'patient_code',
-        'medicalRecordNumber',
-        'uid',
-      ];
-
-      for (final fieldName in fieldNames) {
-        try {
-          final query = await _firestore
-              .collection('patients')
-              .where(fieldName, isEqualTo: trimmedId)
-              .limit(1)
-              .get();
-
-          if (query.docs.isNotEmpty) {
-            print('✅ Patient found using field: $fieldName');
-            return query;
-          }
-        } catch (e) {
-          print('⚠️ Error querying field $fieldName: $e');
-        }
+        print('⚠️ Error with document ID search in patients: $e');
       }
 
       print('❌ No patient found with any method');
       return await _firestore
-          .collection('patients')
+          .collection('users')
           .where('nonExistentField', isEqualTo: 'shouldReturnEmpty')
           .limit(0)
           .get();
     } catch (e) {
       print('❌ Error getting patient: $e');
       return await _firestore
-          .collection('patients')
+          .collection('users')
           .where('nonExistentField', isEqualTo: 'shouldReturnEmpty')
           .limit(0)
           .get();
     }
   }
+
+  /// Get patient name from users collection using patientUserId
+  static Future<String> getPatientName(String patientUserId) async {
+    try {
+      print('🔍 Getting patient name for user ID: $patientUserId');
+      
+      // First try users collection
+      final userDoc = await _firestore.collection('users').doc(patientUserId).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        final name = userData?['fullName'] ?? 
+                    userData?['name'] ?? 
+                    userData?['patientName'] ??
+                    userData?['displayName'] ??
+                    'Patient';
+        print('✅ Patient name found in users collection: $name');
+        return name;
+      }
+
+      // Fallback to patients collection
+      final patientDoc = await _firestore.collection('patients').doc(patientUserId).get();
+      if (patientDoc.exists) {
+        final patientData = patientDoc.data();
+        final name = patientData?['fullName'] ?? 
+                    patientData?['name'] ?? 
+                    patientData?['patientName'] ??
+                    'Patient';
+        print('✅ Patient name found in patients collection: $name');
+        return name;
+      }
+
+      print('❌ Patient name not found');
+      return 'Patient';
+    } catch (e) {
+      print('❌ Error getting patient name: $e');
+      return 'Patient';
+    }
+  }
+
   // ==================== FAMILY MEMBER OPERATIONS ====================
 
   /// Create a new family member
@@ -170,21 +211,21 @@ class FamilyMemberService {
     }
   }
   
-/// Check if email exists in family_members collection - MODIFIED
-static Future<bool> checkEmailExists(String email) async {
-  try {
-    final query = await _firestore
-        .collection('family_members')
-        .where('email', isEqualTo: email.trim().toLowerCase())
-        .limit(1)
-        .get();
-    return query.docs.isNotEmpty;
-  } catch (e) {
-    print('⚠️ Email check failed (but continuing): $e');
-    // Return false and let Firebase Auth handle duplicate emails
-    return false;
+  /// Check if email exists in family_members collection
+  static Future<bool> checkEmailExists(String email) async {
+    try {
+      final query = await _firestore
+          .collection('family_members')
+          .where('email', isEqualTo: email.trim().toLowerCase())
+          .limit(1)
+          .get();
+      return query.docs.isNotEmpty;
+    } catch (e) {
+      print('⚠️ Email check failed (but continuing): $e');
+      return false;
+    }
   }
-}
+
   /// Link family member to patient
   static Future<void> linkFamilyMemberToPatient({
     required String patientUserId,
@@ -212,81 +253,49 @@ static Future<bool> checkEmailExists(String email) async {
       print('✅ Family member linked to patient successfully');
     } catch (e) {
       print('⚠️ Linking failed (optional): $e');
-      // Don't throw - this is optional
     }
   }
 
   // ==================== UTILITY METHODS ====================
 
-  /// Debug method to check patient collection structure
-  static Future<void> debugPatientCollection() async {
+  /// Debug method to check collections structure
+  static Future<void> debugCollections() async {
     try {
-      print('=== 🔍 DEBUG: Patient Collection Structure ===');
-      final allPatients = await _firestore
-          .collection('patients')
-          .limit(10)
-          .get();
-
-      if (allPatients.docs.isEmpty) {
-        print('❌ No patients found in collection!');
-        return;
+      print('=== 🔍 DEBUG: Collections Structure ===');
+      
+      // Check users collection
+      final users = await _firestore.collection('users').limit(5).get();
+      print('📊 Users found: ${users.docs.length}');
+      for (var i = 0; i < users.docs.length; i++) {
+        final doc = users.docs[i];
+        print('\n--- User ${i + 1} ---');
+        print('Document ID: ${doc.id}');
+        print('Fields: ${doc.data().keys.join(', ')}');
       }
 
-      print('📊 Total patients found: ${allPatients.docs.length}');
-
-      for (var i = 0; i < allPatients.docs.length; i++) {
-        final doc = allPatients.docs[i];
+      // Check patients collection
+      final patients = await _firestore.collection('patients').limit(5).get();
+      print('\n📊 Patients found: ${patients.docs.length}');
+      for (var i = 0; i < patients.docs.length; i++) {
+        final doc = patients.docs[i];
         print('\n--- Patient ${i + 1} ---');
         print('Document ID: ${doc.id}');
-        print('All Fields:');
-        doc.data().forEach((key, value) {
-          print('  $key: $value');
-        });
+        print('Fields: ${doc.data().keys.join(', ')}');
       }
+
+      // Check family_members collection
+      final familyMembers = await _firestore.collection('family_members').limit(5).get();
+      print('\n📊 Family Members found: ${familyMembers.docs.length}');
+      for (var i = 0; i < familyMembers.docs.length; i++) {
+        final doc = familyMembers.docs[i];
+        print('\n--- Family Member ${i + 1} ---');
+        print('Document ID: ${doc.id}');
+        print('Fields: ${doc.data().keys.join(', ')}');
+      }
+
       print('=== END DEBUG ===\n');
     } catch (e) {
       print('❌ Debug error: $e');
-    }
-  }
-
-  /// Get sample patient IDs for testing
-  static Future<List<String>> getSamplePatientIds() async {
-    try {
-      final patients = await _firestore.collection('patients').limit(5).get();
-      final ids = patients.docs
-          .map((doc) {
-            final data = doc.data();
-            return data['patientId'] ??
-                data['id'] ??
-                data['patientID'] ??
-                doc.id;
-          })
-          .where((id) => id != null)
-          .cast<String>()
-          .toList();
-
-      print('📝 Sample patient IDs: $ids');
-      return ids;
-    } catch (e) {
-      print('❌ Error getting sample IDs: $e');
-      return [];
-    }
-  }
-
-  // ==================== PRIVATE HELPER METHODS ====================
-
-  /// Helper method to check field values with case-insensitive comparison
-  static bool _checkFieldValue(
-    Map<String, dynamic> data,
-    String fieldName,
-    String value,
-  ) {
-    try {
-      final fieldValue = data[fieldName]?.toString();
-      return fieldValue != null &&
-          fieldValue.toLowerCase() == value.toLowerCase();
-    } catch (e) {
-      return false;
     }
   }
 

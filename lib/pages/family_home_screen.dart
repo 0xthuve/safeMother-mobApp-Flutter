@@ -1,13 +1,13 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../navigation/family_navigation_handler.dart';
 import '../models/family_member_model.dart';
+import '../models/patient.dart';
 import '../services/family_member_service.dart';
+import '../services/familyMember_patient_service.dart';
 
 class FamilyHomeScreen extends StatefulWidget {
   const FamilyHomeScreen({super.key});
@@ -18,8 +18,11 @@ class FamilyHomeScreen extends StatefulWidget {
 
 class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
   FamilyMember? _currentUser;
+  Patient? _patient;
   bool _isLoading = true;
-  Map<String, dynamic>? _patientData;
+  Map<String, dynamic> _pregnancyProgress = {};
+  Map<String, dynamic> _healthMetrics = {};
+  Map<String, dynamic> _latestLog = {};
 
   @override
   void initState() {
@@ -30,18 +33,16 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
   Future<void> _loadUserData() async {
     try {
       // Get current user's family member data
-      final familyMember = await FamilyMemberService.getCurrentUserFamilyMember();
-      
+      final familyMember =
+          await FamilyMemberService.getCurrentUserFamilyMember();
+
       if (familyMember != null) {
         setState(() {
           _currentUser = familyMember;
         });
 
-        // Load patient data if patientUserId exists
-        if (familyMember.patientUserId.isNotEmpty && 
-            familyMember.patientUserId != 'temp_${familyMember.patientId}') {
-          await _loadPatientData(familyMember.patientUserId);
-        }
+        // Load patient data
+        await _loadPatientData();
       }
     } catch (e) {
       print('Error loading user data: $e');
@@ -52,28 +53,104 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
     }
   }
 
-  Future<void> _loadPatientData(String patientUserId) async {
+  Future<void> _loadPatientData() async {
     try {
-      final patientDoc = await FirebaseFirestore.instance
-          .collection('patients')
-          .doc(patientUserId)
-          .get();
-      
-      if (patientDoc.exists) {
-        setState(() {
-          _patientData = patientDoc.data();
-        });
+      // Load patient data
+      _patient = await FamilyMemberPatientService.getLinkedPatient();
+
+      if (_patient != null) {
+        // Get patient user ID from family member
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          final familyMemberDoc = await FirebaseFirestore.instance
+              .collection('family_members')
+              .doc(currentUser.uid)
+              .get();
+
+          if (familyMemberDoc.exists) {
+            final familyMemberData = familyMemberDoc.data()!;
+            final patientUserId = familyMemberData['patientUserId'] ?? '';
+
+            if (patientUserId.isNotEmpty) {
+              // Load pregnancy data
+              _pregnancyProgress =
+                  await FamilyMemberPatientService.getPregnancyProgress(
+                    patientUserId,
+                  );
+
+              // Load health metrics
+              _healthMetrics =
+                  await FamilyMemberPatientService.getLatestHealthMetrics(
+                    patientUserId,
+                  );
+
+              // Load latest symptom log for additional data
+              await _loadLatestSymptomLog(patientUserId);
+            }
+          }
+        }
       }
+
+      setState(() {});
     } catch (e) {
       print('Error loading patient data: $e');
     }
   }
 
-  String _getPatientName() {
-    if (_patientData != null) {
-      return _patientData!['fullName'] ?? 'Sarah';
+  Future<void> _loadLatestSymptomLog(String patientUserId) async {
+    try {
+      final logsQuery = await FirebaseFirestore.instance
+          .collection('symptom_logs')
+          .where('patientId', isEqualTo: patientUserId)
+          .orderBy('logDate', descending: true)
+          .limit(1)
+          .get();
+
+      if (logsQuery.docs.isNotEmpty) {
+        final logData = logsQuery.docs.first.data();
+        setState(() {
+          _latestLog = logData;
+        });
+        
+        // Update health metrics with latest log data
+        _healthMetrics = {
+          'heartRate': _extractHeartRate(logData['bloodPressure'] ?? ''),
+          'bloodPressure': logData['bloodPressure'] ?? 'Not recorded',
+          'weight': logData['weight'] != null ? '${logData['weight']} kg' : 'Not recorded',
+          'babyKicks': logData['babyKicks'] ?? 'Not recorded',
+          'mood': logData['mood'] ?? 'Not recorded',
+          'lastUpdated': (logData['logDate'] as Timestamp).toDate(),
+        };
+      }
+    } catch (e) {
+      print('Error loading latest symptom log: $e');
     }
-    return 'Sarah'; // Default fallback
+  }
+
+  String _extractHeartRate(String bloodPressure) {
+    if (bloodPressure.isEmpty || bloodPressure == 'Not recorded') return '--';
+    try {
+      final parts = bloodPressure.split('/');
+      if (parts.isNotEmpty) {
+        final systolic = int.tryParse(parts[0]);
+        return systolic != null ? systolic.toString() : '--';
+      }
+    } catch (e) {
+      return '--';
+    }
+    return '--';
+  }
+
+  String _getPatientName() {
+    if (_patient != null) {
+      String rawName = _patient!.name;
+
+      // Clean the name by taking only the first name
+      String patientName = rawName.split(' ').first.trim();
+      patientName = patientName.replaceAll(RegExp(r'[^a-zA-Z\s]'), '').trim();
+      return patientName.isNotEmpty ? patientName : 'Your Loved One';
+    }
+    return 'Your Loved One';
   }
 
   String _getGreeting() {
@@ -87,6 +164,63 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
     }
   }
 
+  String _getHealthStatus(String metric, String value) {
+    if (value == 'Not recorded' || value == '--') return 'Not recorded';
+
+    switch (metric) {
+      case 'heartRate':
+        final hr = int.tryParse(value);
+        if (hr == null) return 'Normal';
+        return (hr >= 60 && hr <= 100) ? 'Normal' : 'Check';
+      case 'bloodPressure':
+        if (value == 'Not recorded' || value == '--') return 'Not recorded';
+        try {
+          final parts = value.split('/');
+          if (parts.length == 2) {
+            final systolic = int.tryParse(parts[0]);
+            final diastolic = int.tryParse(parts[1]);
+            if (systolic != null && diastolic != null) {
+              if (systolic <= 120 && diastolic <= 80) return 'Normal';
+              if (systolic <= 139 && diastolic <= 89) return 'Monitor';
+              return 'Check';
+            }
+          }
+        } catch (e) {
+          return 'Normal';
+        }
+        return 'Normal';
+      case 'weight':
+        return value == 'Not recorded' ? 'Not recorded' : 'Healthy';
+      case 'babyKicks':
+        final kicks = int.tryParse(value);
+        if (kicks == null) return 'Active';
+        return kicks >= 10 ? 'Active' : 'Monitor';
+      case 'mood':
+        if (value == 'Not recorded') return 'Not recorded';
+        return value == 'Excellent' || value == 'Good' ? 'Good' : 'Monitor';
+      default:
+        return 'Normal';
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'normal':
+      case 'stable':
+      case 'healthy':
+      case 'active':
+      case 'good':
+        return Colors.green;
+      case 'check':
+      case 'monitor':
+        return Colors.orange;
+      case 'not recorded':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,48 +230,30 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFCE4EC), // Light pink
-              Color(0xFFE3F2FD), // Light blue
-              Colors.white,
-            ],
+            colors: [Color(0xFFFCE4EC), Color(0xFFE3F2FD), Colors.white],
             stops: [0.0, 0.3, 0.7],
           ),
         ),
         child: Column(
           children: [
-            // Custom App Bar
             _buildCustomAppBar(context),
             Expanded(
-              child: _isLoading 
+              child: _isLoading
                   ? _buildLoadingIndicator()
                   : SingleChildScrollView(
                       padding: const EdgeInsets.all(20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Welcome Section
                           _buildWelcomeSection(),
                           const SizedBox(height: 28),
-                          
-                          // Role Badge
                           _buildRoleBadge(),
                           const SizedBox(height: 28),
-                          
-                          // Pregnancy Progress Section
                           _buildPregnancyProgressSection(context),
                           const SizedBox(height: 28),
-                          
-                          // Health Overview Cards
                           _buildHealthOverviewSection(),
                           const SizedBox(height: 28),
-                          
-                          // Support Actions
-                          _buildSupportActionsSection(),
-                          const SizedBox(height: 28),
-                          
-                          // Recent Updates
-                          _buildRecentUpdatesSection(),
+                          _buildRecentActivitySection(),
                         ],
                       ),
                     ),
@@ -165,116 +281,135 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           colors: [
             const Color(0xFFE91E63).withOpacity(0.9),
             const Color(0xFF2196F3).withOpacity(0.9),
-        ],
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(25),
+          bottomRight: Radius.circular(25),
+        ),
       ),
-      borderRadius: const BorderRadius.only(
-        bottomLeft: Radius.circular(25),
-        bottomRight: Radius.circular(25),
-      ),
-    ),
-    child: Row(
-      children: [
-        const SizedBox(width: 48),
-        Expanded(
-          child: Center(
-            child: Text(
-              'Safe Mother',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 26,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                letterSpacing: 1.2,
+      child: Row(
+        children: [
+          // App Logo
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: Colors.white.withOpacity(0.2),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.asset(
+                'assets/logo.png',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.favorite,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  );
+                },
               ),
             ),
           ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Center(
+              child: Text(
+                'Safe Mother',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () => FamilyNavigationHandler.navigateToProfile(context),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.5),
+                  width: 1.5,
+                ),
+              ),
+              child: const Icon(
+                Icons.person_outlined,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWelcomeSection() {
+    String rawName = _currentUser?.fullName ?? 'Family Member';
+    String userName = rawName.split(' ').first.trim();
+    userName = userName.replaceAll(RegExp(r'[^a-zA-Z\s]'), '').trim();
+    if (userName.isEmpty) userName = 'Family Member';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${_getGreeting()},',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            color: const Color(0xFF5D5D5D),
+            fontWeight: FontWeight.w400,
+          ),
         ),
-        GestureDetector(
-          onTap: () => FamilyNavigationHandler.navigateToProfile(context),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
-            ),
-            child: const Icon(
-              Icons.person_outlined,
-              color: Colors.white,
-              size: 24,
-            ),
+        const SizedBox(height: 6),
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: '$userName ',
+                style: GoogleFonts.inter(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF2C2C2C),
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const TextSpan(text: '👋', style: TextStyle(fontSize: 28)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Supporting your loved one through this beautiful journey',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: const Color(0xFF757575),
+            fontWeight: FontWeight.w400,
+            height: 1.4,
           ),
         ),
       ],
-    ),
-  );
+    );
   }
-
-Widget _buildWelcomeSection() {
-  // Clean the username by removing any extra text and taking only the first part
-  String rawName = _currentUser?.fullName ?? 'Family Member';
-
-  // Split by spaces and take only the first word (first name)
-  String userName = rawName.split(' ').first.trim();
-
-  // Additional cleanup to remove any special characters or unwanted text
-  userName = userName.replaceAll(RegExp(r'[^a-zA-Z\s]'), '').trim();
-
-  // Fallback if name is empty
-  if (userName.isEmpty) {
-    userName = 'Family Member';
-  }
-
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        '${_getGreeting()},', // ✅ Corrected here
-        style: GoogleFonts.inter(
-          fontSize: 18,
-          color: const Color(0xFF5D5D5D),
-          fontWeight: FontWeight.w400,
-        ),
-      ),
-      const SizedBox(height: 6),
-      RichText(
-        text: TextSpan(
-          children: [
-            TextSpan(
-              text: '$userName ',
-              style: GoogleFonts.inter(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: const Color(0xFF2C2C2C),
-                letterSpacing: 0.5,
-              ),
-            ),
-            const TextSpan(
-              text: '👋',
-              style: TextStyle(fontSize: 28),
-            ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 8),
-      Text(
-        'Supporting your loved one through this beautiful journey',
-        style: GoogleFonts.inter(
-          fontSize: 14,
-          color: const Color(0xFF757575),
-          fontWeight: FontWeight.w400,
-          height: 1.4,
-        ),
-      ),
-    ],
-  );
-}
-
 
   Widget _buildRoleBadge() {
     final relationship = _currentUser?.relationship ?? 'Family Member';
     final patientName = _getPatientName();
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
@@ -332,7 +467,7 @@ Widget _buildWelcomeSection() {
 
   Widget _buildPregnancyProgressSection(BuildContext context) {
     final patientName = _getPatientName();
-    
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -372,13 +507,16 @@ Widget _buildWelcomeSection() {
               ),
               const SizedBox(width: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE91E63).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  'First Trimester',
+                  _pregnancyProgress['trimester'] ?? 'Not started',
                   style: GoogleFonts.inter(
                     color: Color(0xFFE91E63),
                     fontSize: 12,
@@ -389,25 +527,35 @@ Widget _buildWelcomeSection() {
             ],
           ),
           const SizedBox(height: 20),
-          
-          // Progress Stats
+
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               Expanded(
-                child: _buildProgressStat('8', 'Weeks', Icons.cake_outlined),
+                child: _buildProgressStat(
+                  (_pregnancyProgress['weeks'] ?? 0).toString(),
+                  'Weeks',
+                  Icons.cake_outlined,
+                ),
               ),
               Expanded(
-                child: _buildProgressStat('224', 'Days to go', Icons.access_time_outlined),
+                child: _buildProgressStat(
+                  (_pregnancyProgress['daysToGo'] ?? 280).toString(),
+                  'Days to go',
+                  Icons.access_time_outlined,
+                ),
               ),
               Expanded(
-                child: _buildProgressStat('20%', 'Completed', Icons.flag_outlined),
+                child: _buildProgressStat(
+                  '${_pregnancyProgress['progressPercentage'] ?? 0}%',
+                  'Completed',
+                  Icons.flag_outlined,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          
-          // Progress Bar
+
           Container(
             height: 12,
             decoration: BoxDecoration(
@@ -417,7 +565,9 @@ Widget _buildWelcomeSection() {
             child: Stack(
               children: [
                 Container(
-                  width: MediaQuery.of(context).size.width * 0.2,
+                  width:
+                      MediaQuery.of(context).size.width *
+                      ((_pregnancyProgress['progressPercentage'] ?? 0) / 100),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFFE91E63), Color(0xFF2196F3)],
@@ -433,14 +583,14 @@ Widget _buildWelcomeSection() {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Due: May 15, 2026',
+                'Due: ${_pregnancyProgress['dueDate'] ?? 'Not set'}',
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w600,
                   color: const Color(0xFF5D5D5D),
                 ),
               ),
               Text(
-                '20% complete',
+                '${_pregnancyProgress['progressPercentage'] ?? 0}% complete',
                 style: GoogleFonts.inter(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.w500,
@@ -494,301 +644,327 @@ Widget _buildWelcomeSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Health Overview',
-          style: GoogleFonts.inter(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF2C2C2C),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF3E5F5), // Light purple
-                Color(0xFFFCE4EC), // Light pink
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildHealthCard(
-                        'Heart Rate',
-                        '72 bpm',
-                        Icons.favorite_border,
-                        const Color(0xFFE91E63),
-                        'Normal',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildHealthCard(
-                        'Blood Pressure',
-                        '120/80',
-                        Icons.monitor_heart_outlined,
-                        const Color(0xFF2196F3),
-                        'Stable',
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildHealthCard(
-                        'Weight',
-                        '65.2 kg',
-                        Icons.line_weight_outlined,
-                        const Color(0xFF4CAF50),
-                        '+1.2 kg',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildHealthCard(
-                        'Baby Kicks',
-                        '12 today',
-                        Icons.child_care_outlined,
-                        const Color(0xFF9C27B0),
-                        'Active',
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHealthCard(String title, String value, IconData icon, Color color, String status) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.9), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const Spacer(),
-              Text(
-                status,
-                style: GoogleFonts.inter(
-                  color: color,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF2C2C2C),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSupportActionsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Support Actions',
-          style: GoogleFonts.inter(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF2C2C2C),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF3E5F5), // Light purple
-                Color(0xFFFCE4EC), // Light pink
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              children: [
-                _buildSupportAction(
-                  'Send\nEncouragement',
-                  Icons.favorite_outline,
-                  const Color(0xFFE91E63),
-                ),
-                _buildSupportAction(
-                  'Schedule\nAppointment',
-                  Icons.calendar_today_outlined,
-                  const Color(0xFF2196F3),
-                ),
-                _buildSupportAction(
-                  'Meal\nPlanning',
-                  Icons.restaurant_outlined,
-                  const Color(0xFF4CAF50),
-                ),
-                _buildSupportAction(
-                  'Emergency\nContacts',
-                  Icons.contact_phone_outlined,
-                  const Color(0xFFFF9800),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSupportAction(String title, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.9), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF2C2C2C),
-              height: 1.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecentUpdatesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Recent Updates',
+              'Health Overview',
               style: GoogleFonts.inter(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF2C2C2C),
               ),
             ),
-            Spacer(),
-            Text(
-              'View All',
-              style: GoogleFonts.inter(
-                color: Color(0xFF2196F3),
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+            Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFE91E63), Color(0xFF2196F3)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                onPressed: () {
+                  FamilyNavigationHandler.navigateToScreen(context, 1);
+                },
+                icon: const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                padding: const EdgeInsets.all(8),
               ),
             ),
           ],
         ),
         const SizedBox(height: 16),
+        
+        // Modern health metrics cards with unique design
         Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF667eea).withOpacity(0.4),
+                blurRadius: 25,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // First row - 2 metrics
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildModernHealthCard(
+                        title: 'Heart Rate',
+                        value: _healthMetrics['heartRate'] ?? '--',
+                        unit: 'bpm',
+                        icon: Icons.favorite_outline,
+                        color: Colors.white,
+                        status: _getHealthStatus('heartRate', _healthMetrics['heartRate'] ?? '--'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildModernHealthCard(
+                        title: 'Blood Pressure',
+                        value: _healthMetrics['bloodPressure']?.split('/').first ?? '--',
+                        unit: 'mmHg',
+                        icon: Icons.monitor_heart_outlined,
+                        color: Colors.white,
+                        status: _getHealthStatus('bloodPressure', _healthMetrics['bloodPressure'] ?? '--'),
+                        isBloodPressure: true,
+                        fullBPValue: _healthMetrics['bloodPressure'] ?? '--/--',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                
+                // Second row - 2 metrics
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildModernHealthCard(
+                        title: 'Baby Kicks',
+                        value: _healthMetrics['babyKicks'] ?? '--',
+                        unit: 'today',
+                        icon: Icons.child_care_outlined,
+                        color: Colors.white,
+                        status: _getHealthStatus('babyKicks', _healthMetrics['babyKicks'] ?? '--'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildModernHealthCard(
+                        title: 'Mood',
+                        value: _healthMetrics['mood']?.split(' ').first ?? '--',
+                        unit: _healthMetrics['mood'] != null && _healthMetrics['mood'] != 'Not recorded' 
+                            ? _healthMetrics['mood']!.replaceFirst(RegExp(r'\w+\s?'), '').trim()
+                            : '',
+                        icon: Icons.sentiment_satisfied_alt_outlined,
+                        color: Colors.white,
+                        status: _getHealthStatus('mood', _healthMetrics['mood'] ?? '--'),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // See More Button
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.white.withOpacity(0.2),
+                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  ),
+                  child: TextButton(
+                    onPressed: () {
+                      FamilyNavigationHandler.navigateToScreen(context, 1);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'View All Health Data',
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.arrow_forward, color: Colors.white, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernHealthCard({
+    required String title,
+    required String value,
+    required String unit,
+    required IconData icon,
+    required Color color,
+    required String status,
+    bool isBloodPressure = false,
+    String fullBPValue = '',
+  }) {
+    final statusColor = _getStatusColor(status);
+    
+    // Get mood emoji
+    String getMoodEmoji(String mood) {
+      switch (mood.toLowerCase()) {
+        case 'excellent':
+          return '😊';
+        case 'good':
+          return '🙂';
+        case 'okay':
+          return '😐';
+        case 'low':
+          return '😔';
+        case 'anxious':
+          return '😰';
+        default:
+          return '😊';
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with icon and status
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  status,
+                  style: GoogleFonts.inter(
+                    color: statusColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Value with emoji for mood
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (title == 'Mood' && value != '--' && value != 'Not recorded')
+                Text(
+                  getMoodEmoji(value),
+                  style: const TextStyle(fontSize: 24),
+                )
+              else
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: isBloodPressure && fullBPValue != '--/--' ? 18 : 24,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 0.9,
+                  ),
+                ),
+              
+              if (title == 'Mood' && value != '--' && value != 'Not recorded')
+                const SizedBox(width: 8),
+              
+              if (isBloodPressure && fullBPValue != '--/--')
+                Expanded(
+                  child: Text(
+                    '/${fullBPValue.split('/').last}',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 0.9,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          
+          // Title and unit
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          
+          if (unit.isNotEmpty)
+            Text(
+              unit,
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                color: Colors.white.withOpacity(0.6),
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentActivitySection() {
+    final hasRecentActivity = _latestLog.isNotEmpty;
+    final lastUpdate = _healthMetrics['lastUpdated'];
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Recent Activity',
+          style: GoogleFonts.inter(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF2C2C2C),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFF3E5F5), // Light purple
-                Color(0xFFFCE4EC), // Light pink
-              ],
+              colors: [Color(0xFFF3E5F5), Color(0xFFFCE4EC)],
             ),
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
@@ -799,65 +975,65 @@ Widget _buildWelcomeSection() {
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildUpdateItem(
-                  'Health Check Completed',
-                  '${_getPatientName()} completed daily health log with stable vitals',
-                  Icons.health_and_safety_outlined,
-                  Colors.green,
-                  '2 hours ago',
-                ),
-                const SizedBox(height: 12),
-                _buildUpdateItem(
-                  'Next Appointment',
-                  'Prenatal checkup scheduled for tomorrow at 2:00 PM',
-                  Icons.calendar_today_outlined,
-                  Colors.blue,
-                  '5 hours ago',
-                ),
-                const SizedBox(height: 12),
-                _buildUpdateItem(
-                  'Nutrition Log',
-                  'Healthy meal choices recorded throughout the day',
-                  Icons.restaurant_outlined,
-                  Colors.orange,
-                  '8 hours ago',
-                ),
-              ],
-            ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.update,
+                    color: Color(0xFFE91E63),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Last Health Update',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2C2C2C),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (lastUpdate != null)
+                    Text(
+                      DateFormat('MMM dd, hh:mm a').format(lastUpdate),
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (hasRecentActivity)
+                _buildActivityItem('Health Log', 'Symptom tracking completed', Icons.assignment_outlined)
+              else
+                _buildActivityItem('No recent activity', 'Health data will appear here', Icons.info_outline),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildUpdateItem(String title, String subtitle, IconData icon, Color color, String time) {
+  Widget _buildActivityItem(String title, String subtitle, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.7),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.9), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: Colors.white.withOpacity(0.9)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: const Color(0xFFE91E63).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: Color(0xFFE91E63), size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -867,29 +1043,19 @@ Widget _buildWelcomeSection() {
                 Text(
                   title,
                   style: GoogleFonts.inter(
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
                     color: Color(0xFF2C2C2C),
                   ),
                 ),
-                const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: GoogleFonts.inter(
-                    fontSize: 13,
+                    fontSize: 12,
                     color: Colors.grey[600],
-                    height: 1.4,
                   ),
                 ),
               ],
-            ),
-          ),
-          Text(
-            time,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: Colors.grey[500],
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -918,8 +1084,12 @@ Widget _buildWelcomeSection() {
           children: [
             _buildNavItem(context, Icons.home_filled, 'Home', 0),
             _buildNavItem(context, Icons.assignment_outlined, 'View Log', 1),
-            _buildNavItem(context, Icons.calendar_today_outlined, 'Appointments', 2),
-            _buildNavItem(context, Icons.contact_phone_outlined, 'Contacts', 3),
+            _buildNavItem(
+              context,
+              Icons.calendar_today_outlined,
+              'Appointments',
+              2,
+            ),
             _buildNavItem(context, Icons.menu_book_outlined, 'Learn', 4),
           ],
         ),
@@ -927,8 +1097,13 @@ Widget _buildWelcomeSection() {
     );
   }
 
-  Widget _buildNavItem(BuildContext context, IconData icon, String label, int index) {
-    final isActive = index == 0; // Home is always active on home screen
+  Widget _buildNavItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    int index,
+  ) {
+    final isActive = index == 0;
     return GestureDetector(
       onTap: () => FamilyNavigationHandler.navigateToScreen(context, index),
       child: Column(
@@ -948,7 +1123,9 @@ Widget _buildWelcomeSection() {
             ),
             child: Icon(
               icon,
-              color: isActive ? Colors.white : const Color(0xFFE91E63).withOpacity(0.6),
+              color: isActive
+                  ? Colors.white
+                  : const Color(0xFFE91E63).withOpacity(0.6),
               size: 22,
             ),
           ),
@@ -957,7 +1134,9 @@ Widget _buildWelcomeSection() {
             label,
             style: GoogleFonts.inter(
               fontSize: 11,
-              color: isActive ? const Color(0xFFE91E63) : const Color(0xFFE91E63).withOpacity(0.6),
+              color: isActive
+                  ? const Color(0xFFE91E63)
+                  : const Color(0xFFE91E63).withOpacity(0.6),
               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
             ),
           ),
