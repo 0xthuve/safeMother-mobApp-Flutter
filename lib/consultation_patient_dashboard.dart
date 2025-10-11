@@ -9,6 +9,7 @@ import 'services/appointment_service.dart';
 import 'services/session_manager.dart';
 import 'models/doctor.dart';
 import 'models/appointment.dart';
+import 'l10n/app_localizations.dart';
 
 
 
@@ -237,7 +238,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           // Content
           SafeArea(
             child: _isLoading 
-              ? const Center(
+              ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -246,8 +247,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                       ),
                       SizedBox(height: 16),
                       Text(
-                        'Loading consultation data...',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.loadingConsultationData,
+                        style: const TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 16,
                         ),
@@ -270,9 +271,9 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                             },
                             icon: const Icon(Icons.arrow_back, color: Color(0xFF5A5A5A)),
                           ),
-                          const Text(
-                            'Consultation',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!.consultation,
+                            style: const TextStyle(
                               color: Color(0xFF7B1FA2),
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
@@ -296,7 +297,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                       const SizedBox(height: 32),
                       
                       // Linked Doctors Section
-                      _buildSectionHeader('Your Doctors'),
+                      _buildSectionHeader(AppLocalizations.of(context)!.yourDoctors),
                       
                       const SizedBox(height: 16),
                       
@@ -312,7 +313,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                       const SizedBox(height: 32),
                       
                       // Upcoming Appointments Section
-                      _buildSectionHeader('Upcoming Appointments'),
+                      _buildSectionHeader(AppLocalizations.of(context)!.upcomingAppointments),
                       
                       const SizedBox(height: 16),
                       
@@ -400,8 +401,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Quick Actions',
+              Text(
+                AppLocalizations.of(context)!.quickActions,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -416,7 +417,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.calendar_today,
-                  title: 'Book\nAppointment',
+                  title: AppLocalizations.of(context)!.bookAppointment,
                   color: const Color(0xFF4A90E2),
                   onTap: () => _showBookAppointmentBottomSheet(),
                 ),
@@ -425,7 +426,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.chat,
-                  title: 'Quick\nChat',
+                  title: AppLocalizations.of(context)!.quickChat,
                   color: const Color(0xFFE91E63),
                   onTap: () => _showQuickChatOptions(),
                 ),
@@ -585,8 +586,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
             color: Colors.grey[400],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No Doctors Linked',
+          Text(
+            AppLocalizations.of(context)!.noDoctorsLinked,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -594,8 +595,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'You haven\'t linked with any doctors yet. Visit your profile to send connection requests to healthcare professionals.',
+          Text(
+            AppLocalizations.of(context)!.noDoctorsLinkedDesc,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -610,8 +611,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Go to Profile → Settings → Link with Doctors'),
+                      SnackBar(
+                        content: Text(AppLocalizations.of(context)!.goToProfileSettings),
                         backgroundColor: Color(0xFF7B1FA2),
                       ),
                     );
@@ -627,8 +628,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                     color: Colors.white,
                     size: 16,
                   ),
-                  label: const Text(
-                    'Link Doctors',
+                  label: Text(
+                    AppLocalizations.of(context)!.linkDoctors,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -653,8 +654,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                     color: Colors.white,
                     size: 16,
                   ),
-                  label: const Text(
-                    'Refresh',
+                  label: Text(
+                    AppLocalizations.of(context)!.refresh,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -780,8 +781,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
             color: Colors.grey[400],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'No Upcoming Appointments',
+          Text(
+            AppLocalizations.of(context)!.noUpcomingAppointments,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
@@ -790,8 +791,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Schedule an appointment with your doctor',
+          Text(
+            AppLocalizations.of(context)!.scheduleAppointment,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -822,8 +823,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   void _showQuickChatOptions() {
     if (_linkedDoctors.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please link with a doctor first to start chatting'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.linkDoctorFirstChat),
           backgroundColor: Colors.orange,
         ),
       );
@@ -833,8 +834,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text(
-          'Quick Chat',
+        title: Text(
+          AppLocalizations.of(context)!.quickChatTitle,
           style: TextStyle(
             color: Color(0xFFE91E63),
             fontWeight: FontWeight.bold,
@@ -844,8 +845,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Choose a doctor to start chatting:',
+            Text(
+              AppLocalizations.of(context)!.chooseDoctorChat,
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
@@ -889,8 +890,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
+            child: Text(
+              AppLocalizations.of(context)!.cancel,
               style: TextStyle(color: Color(0xFF9575CD)),
             ),
           ),
@@ -910,8 +911,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
               color: Colors.white,
               size: 16,
             ),
-            label: const Text(
-              'AI Chat',
+            label: Text(
+              AppLocalizations.of(context)!.aiChat,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 12,
@@ -1029,8 +1030,8 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                const Text(
-                  'Book Appointment',
+                Text(
+                  AppLocalizations.of(context)!.bookAppointmentButton,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -1052,8 +1053,8 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Doctor Selection
-                  const Text(
-                    'Select Doctor',
+                  Text(
+                    AppLocalizations.of(context)!.selectDoctor,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -1079,14 +1080,14 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                         _availableTimeSlots = [];
                       });
                     },
-                    hint: const Text('Choose your doctor'),
+                    hint: Text(AppLocalizations.of(context)!.chooseYourDoctor),
                   ),
                   
                   const SizedBox(height: 16),
                   
                   // Date Selection
-                  const Text(
-                    'Select Date',
+                  Text(
+                    AppLocalizations.of(context)!.selectDate,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -1105,7 +1106,7 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                           Text(
                             _selectedDate != null
                                 ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                : 'Choose appointment date',
+                                : AppLocalizations.of(context)!.chooseAppointmentDate,
                           ),
                         ],
                       ),
@@ -1116,8 +1117,8 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                   
                   // Time Slot Selection
                   if (_availableTimeSlots.isNotEmpty) ...[
-                    const Text(
-                      'Select Time',
+                    Text(
+                      AppLocalizations.of(context)!.selectTime,
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -1141,14 +1142,14 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                   ],
                   
                   // Reason
-                  const Text(
-                    'Reason for Visit',
+                  Text(
+                    AppLocalizations.of(context)!.reasonForVisit,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     decoration: InputDecoration(
-                      hintText: 'e.g., Regular checkup, Consultation',
+                      hintText: AppLocalizations.of(context)!.appointmentExample,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -1159,15 +1160,15 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                   const SizedBox(height: 16),
                   
                   // Notes
-                  const Text(
-                    'Additional Notes (Optional)',
+                  Text(
+                    AppLocalizations.of(context)!.additionalNotesOptional,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'Any specific concerns or information',
+                      hintText: AppLocalizations.of(context)!.specificConcerns,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -1191,8 +1192,8 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Book Appointment',
+                          : Text(
+                              AppLocalizations.of(context)!.bookAppointmentButton,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -1281,8 +1282,8 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
         widget.onAppointmentBooked();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Appointment booked successfully!'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.appointmentBookedSuccess),
             backgroundColor: Colors.green,
           ),
         );
@@ -1607,7 +1608,7 @@ class _ChatDialogState extends State<_ChatDialog> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'Start a conversation with\nDr. ${widget.doctor.name}',
+                            AppLocalizations.of(context)!.startConversation(widget.doctor.name),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
@@ -1617,7 +1618,7 @@ class _ChatDialogState extends State<_ChatDialog> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Your messages are secure and private',
+                            AppLocalizations.of(context)!.messagesSecure,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
@@ -1650,7 +1651,7 @@ class _ChatDialogState extends State<_ChatDialog> {
                     child: TextField(
                       controller: _messageController,
                       decoration: InputDecoration(
-                        hintText: 'Type your message...',
+                        hintText: AppLocalizations.of(context)!.typeMessage,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -1767,11 +1768,11 @@ class _ChatDialogState extends State<_ChatDialog> {
     final difference = now.difference(time);
 
     if (difference.inMinutes < 1) {
-      return 'Now';
+      return AppLocalizations.of(context)!.now;
     } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}m ago';
+      return AppLocalizations.of(context)!.minutesAgo(difference.inMinutes);
     } else if (difference.inDays < 1) {
-      return '${difference.inHours}h ago';
+      return AppLocalizations.of(context)!.hoursAgo(difference.inHours);
     } else {
       return '${time.day}/${time.month}/${time.year}';
     }
@@ -1836,8 +1837,8 @@ class _ChatDialogState extends State<_ChatDialog> {
       // Show error to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to send message. Please try again.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.failedSendMessage),
             backgroundColor: Colors.red,
           ),
         );

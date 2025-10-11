@@ -15,6 +15,13 @@ class Patient {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // Pregnancy-specific fields
+  final DateTime? expectedDeliveryDate;
+  final DateTime? pregnancyConfirmedDate;
+  final double? weight;
+  final bool isFirstChild;
+  final bool hasPregnancyLoss;
+
   Patient({
     this.id,
     required this.name,
@@ -31,6 +38,12 @@ class Patient {
     this.assignedDoctorId,
     required this.createdAt,
     required this.updatedAt,
+    // Pregnancy fields
+    this.expectedDeliveryDate,
+    this.pregnancyConfirmedDate,
+    this.weight,
+    this.isFirstChild = true,
+    this.hasPregnancyLoss = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -50,6 +63,12 @@ class Patient {
       'assignedDoctorId': assignedDoctorId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      // Pregnancy fields
+      'expectedDeliveryDate': expectedDeliveryDate?.toIso8601String(),
+      'pregnancyConfirmedDate': pregnancyConfirmedDate?.toIso8601String(),
+      'weight': weight,
+      'isFirstChild': isFirstChild,
+      'hasPregnancyLoss': hasPregnancyLoss,
     };
   }
 
@@ -70,6 +89,16 @@ class Patient {
       assignedDoctorId: map['assignedDoctorId'],
       createdAt: DateTime.parse(map['createdAt']),
       updatedAt: DateTime.parse(map['updatedAt']),
+      // Pregnancy fields
+      expectedDeliveryDate: map['expectedDeliveryDate'] != null 
+          ? DateTime.parse(map['expectedDeliveryDate']) 
+          : null,
+      pregnancyConfirmedDate: map['pregnancyConfirmedDate'] != null 
+          ? DateTime.parse(map['pregnancyConfirmedDate']) 
+          : null,
+      weight: map['weight']?.toDouble(),
+      isFirstChild: map['isFirstChild'] ?? true,
+      hasPregnancyLoss: map['hasPregnancyLoss'] ?? false,
     );
   }
 
@@ -89,6 +118,12 @@ class Patient {
     String? assignedDoctorId,
     DateTime? createdAt,
     DateTime? updatedAt,
+    // Pregnancy fields
+    DateTime? expectedDeliveryDate,
+    DateTime? pregnancyConfirmedDate,
+    double? weight,
+    bool? isFirstChild,
+    bool? hasPregnancyLoss,
   }) {
     return Patient(
       id: id ?? this.id,
@@ -106,6 +141,12 @@ class Patient {
       assignedDoctorId: assignedDoctorId ?? this.assignedDoctorId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      // Pregnancy fields
+      expectedDeliveryDate: expectedDeliveryDate ?? this.expectedDeliveryDate,
+      pregnancyConfirmedDate: pregnancyConfirmedDate ?? this.pregnancyConfirmedDate,
+      weight: weight ?? this.weight,
+      isFirstChild: isFirstChild ?? this.isFirstChild,
+      hasPregnancyLoss: hasPregnancyLoss ?? this.hasPregnancyLoss,
     );
   }
 }

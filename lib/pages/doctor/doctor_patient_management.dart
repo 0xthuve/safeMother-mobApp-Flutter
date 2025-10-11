@@ -61,6 +61,10 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         try {
           // ...existing code...
           final patientData = await FirebaseService.getUserData(patientLink.patientId);
+          
+          // Also fetch pregnancy information from patient collection
+          final pregnancyData = await _backendService.getPatientPregnancyInfo(patientLink.patientId);
+          
           if (patientData != null) {
             // Ensure safe type handling for dynamic data
             final safePatientData = <String, dynamic>{};
@@ -72,6 +76,11 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
                 safePatientData[key] = value;
               }
             });
+            
+            // Merge pregnancy data with user data
+            if (pregnancyData != null) {
+              safePatientData.addAll(pregnancyData);
+            }
             
             patientsWithData.add({
               'link': patientLink,
@@ -120,6 +129,10 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         try {
           // ...existing code...
           final patientData = await FirebaseService.getUserData(request.patientId);
+          
+          // Also fetch pregnancy information from patient collection
+          final pregnancyData = await _backendService.getPatientPregnancyInfo(request.patientId);
+          
           if (patientData != null) {
             // Ensure safe type handling for dynamic data
             final safePatientData = <String, dynamic>{};
@@ -131,6 +144,11 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
                 safePatientData[key] = value;
               }
             });
+            
+            // Merge pregnancy data with user data
+            if (pregnancyData != null) {
+              safePatientData.addAll(pregnancyData);
+            }
             
             requestsWithData.add({
               'link': request,
@@ -1086,6 +1104,25 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
+  String _formatDateTime(dynamic dateValue) {
+    if (dateValue == null) return 'Not provided';
+    
+    try {
+      DateTime date;
+      if (dateValue is String) {
+        date = DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        date = dateValue;
+      } else {
+        return 'Invalid date format';
+      }
+      
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return 'Invalid date';
+    }
+  }
+
   void _viewPatientDetails(Map<String, dynamic> patientWithData) {
     final patientData = patientWithData['data'] as Map<String, dynamic>;
     final name = patientData['fullName'] ?? 'Unknown Patient';
@@ -1099,24 +1136,127 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailRow('Email', patientData['email']?.toString() ?? 'No email'),
-              _buildDetailRow('Phone', patientData['phone']?.toString() ?? patientData['contact']?.toString() ?? 'No phone'),
-              if (patientData['bloodType'] != null && patientData['bloodType'].toString().isNotEmpty)
-                _buildDetailRow('Blood Type', patientData['bloodType'].toString()),
-              if (patientData['allergies'] != null) ...[
-                if (patientData['allergies'] is List)
-                  _buildDetailRow('Allergies', (patientData['allergies'] as List).map((item) => item.toString()).join(', '))
-                else if (patientData['allergies'].toString().isNotEmpty && patientData['allergies'].toString() != 'None')
-                  _buildDetailRow('Allergies', patientData['allergies'].toString()),
-              ],
-              if (patientData['medicalHistory'] != null && patientData['medicalHistory'].toString().isNotEmpty)
-                _buildDetailRow('Medical History', patientData['medicalHistory'].toString()),
-              if (patientData['currentMedications'] != null) ...[
-                if (patientData['currentMedications'] is List)
-                  _buildDetailRow('Current Medications', (patientData['currentMedications'] as List).map((item) => item.toString()).join(', '))
-                else if (patientData['currentMedications'].toString().isNotEmpty)
-                  _buildDetailRow('Current Medications', patientData['currentMedications'].toString()),
-              ],
+              // Basic Information Section
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.person, color: Colors.blue[700], size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Basic Information',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow('Email', patientData['email']?.toString() ?? 'No email'),
+                    _buildDetailRow('Phone', patientData['phone']?.toString() ?? patientData['contact']?.toString() ?? 'No phone'),
+                    if (patientData['bloodType'] != null && patientData['bloodType'].toString().isNotEmpty)
+                      _buildDetailRow('Blood Type', patientData['bloodType'].toString()),
+                    if (patientData['allergies'] != null) ...[
+                      if (patientData['allergies'] is List)
+                        _buildDetailRow('Allergies', (patientData['allergies'] as List).map((item) => item.toString()).join(', '))
+                      else if (patientData['allergies'].toString().isNotEmpty && patientData['allergies'].toString() != 'None')
+                        _buildDetailRow('Allergies', patientData['allergies'].toString()),
+                    ],
+                    if (patientData['medicalHistory'] != null && patientData['medicalHistory'].toString().isNotEmpty)
+                      _buildDetailRow('Medical History', patientData['medicalHistory'].toString()),
+                    if (patientData['currentMedications'] != null) ...[
+                      if (patientData['currentMedications'] is List)
+                        _buildDetailRow('Current Medications', (patientData['currentMedications'] as List).map((item) => item.toString()).join(', '))
+                      else if (patientData['currentMedications'].toString().isNotEmpty)
+                        _buildDetailRow('Current Medications', patientData['currentMedications'].toString()),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Pregnancy Information Section
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.pink[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.pink[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.pregnant_woman, color: Colors.pink[700], size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Pregnancy Information',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.pink[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (patientData['expectedDeliveryDate'] != null)
+                      _buildDetailRow('Expected Delivery Date', _formatDateTime(patientData['expectedDeliveryDate']))
+                    else
+                      _buildDetailRow('Expected Delivery Date', 'Not provided'),
+                    
+                    if (patientData['pregnancyConfirmedDate'] != null)
+                      _buildDetailRow('Pregnancy Confirmed Date', _formatDateTime(patientData['pregnancyConfirmedDate']))
+                    else
+                      _buildDetailRow('Pregnancy Confirmed Date', 'Not provided'),
+                    
+                    if (patientData['weight'] != null)
+                      _buildDetailRow('Weight', '${patientData['weight']} kg')
+                    else
+                      _buildDetailRow('Weight', 'Not provided'),
+                    
+                    if (patientData['isFirstChild'] != null)
+                      _buildDetailRow('First Child', patientData['isFirstChild'] ? 'Yes' : 'No')
+                    else
+                      _buildDetailRow('First Child', 'Not specified'),
+                    
+                    if (patientData['hasPregnancyLoss'] != null)
+                      _buildDetailRow('Previous Pregnancy Loss', patientData['hasPregnancyLoss'] ? 'Yes' : 'No')
+                    else
+                      _buildDetailRow('Previous Pregnancy Loss', 'Not specified'),
+                    
+                    // Calculate and show current pregnancy week
+                    Builder(
+                      builder: (context) {
+                        if (patientData['pregnancyConfirmedDate'] != null) {
+                          try {
+                            final confirmedDate = DateTime.parse(patientData['pregnancyConfirmedDate']);
+                            final now = DateTime.now();
+                            final difference = now.difference(confirmedDate).inDays;
+                            final weeks = (difference / 7).floor();
+                            return _buildDetailRow('Current Pregnancy Week', 'Week ${weeks + 1}');
+                          } catch (e) {
+                            return _buildDetailRow('Current Pregnancy Week', 'Unable to calculate');
+                          }
+                        }
+                        return _buildDetailRow('Current Pregnancy Week', 'Date not available');
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

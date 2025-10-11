@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../services/backend_service.dart';
 import '../services/appointment_service.dart';
 import '../services/session_manager.dart';
@@ -149,7 +150,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    'Welcome back!',
+                    AppLocalizations.of(context)!.welcomeBack,
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -161,7 +162,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    'Hope you\'re feeling well today',
+                    AppLocalizations.of(context)!.feelingWell,
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey.shade600,
@@ -197,7 +198,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
       children: [
         Expanded(
           child: _buildStatCard(
-            'Appointments',
+            AppLocalizations.of(context)!.appointments,
             upcomingAppointments.length.toString(),
             Icons.calendar_today,
             Colors.blue,
@@ -206,7 +207,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-            'Reminders',
+            AppLocalizations.of(context)!.reminders,
             todayReminders.length.toString(),
             Icons.notifications,
             Colors.orange,
@@ -215,7 +216,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
         const SizedBox(width: 12),
         Expanded(
           child: _buildStatCard(
-            'Records',
+            AppLocalizations.of(context)!.records,
             recentRecords.length.toString(),
             Icons.folder,
             Colors.green,
@@ -274,14 +275,14 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
 
   Widget _buildTodayReminders() {
     return _buildSectionCard(
-      title: 'Today\'s Reminders',
+      title: AppLocalizations.of(context)!.todaysReminders,
       icon: Icons.notifications_active,
       iconColor: Colors.orange,
       child: todayReminders.isEmpty
-          ? const Center(
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Text('No reminders for today'),
+                padding: const EdgeInsets.all(20),
+                child: Text(AppLocalizations.of(context)!.noRemindersToday),
               ),
             )
           : Column(
@@ -358,14 +359,14 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
 
   Widget _buildUpcomingAppointments() {
     return _buildSectionCard(
-      title: 'Upcoming Appointments',
+      title: AppLocalizations.of(context)!.upcomingAppointments,
       icon: Icons.calendar_today,
       iconColor: Colors.blue,
       child: upcomingAppointments.isEmpty
-          ? const Center(
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Text('No upcoming appointments'),
+                padding: const EdgeInsets.all(20),
+                child: Text(AppLocalizations.of(context)!.noUpcomingAppointments),
               ),
             )
           : Column(
@@ -486,14 +487,14 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
 
   Widget _buildRecentMedicalRecords() {
     return _buildSectionCard(
-      title: 'Recent Medical Records',
+      title: AppLocalizations.of(context)!.recentMedicalRecords,
       icon: Icons.folder_outlined,
       iconColor: Colors.green,
       child: recentRecords.isEmpty
-          ? const Center(
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.all(20),
-                child: Text('No recent medical records'),
+                padding: const EdgeInsets.all(20),
+                child: Text(AppLocalizations.of(context)!.noRecentRecords),
               ),
             )
           : Column(
@@ -564,7 +565,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
 
   Widget _buildQuickActions() {
     return _buildSectionCard(
-      title: 'Quick Actions',
+      title: AppLocalizations.of(context)!.quickActions,
       icon: Icons.flash_on,
       iconColor: Colors.purple,
       child: Padding(
@@ -575,7 +576,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
               children: [
                 Expanded(
                   child: _buildActionButton(
-                    'Book Appointment',
+                    AppLocalizations.of(context)!.bookAppointment,
                     Icons.add_circle,
                     Colors.blue,
                     () => _showBookAppointmentDialog(),
@@ -584,7 +585,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildActionButton(
-                    'Add Reminder',
+                    AppLocalizations.of(context)!.addReminder,
                     Icons.notification_add,
                     Colors.orange,
                     () => _showAddReminderDialog(),
@@ -597,7 +598,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
               children: [
                 Expanded(
                   child: _buildActionButton(
-                    'Emergency Contact',
+                    AppLocalizations.of(context)!.emergencyContact,
                     Icons.emergency,
                     Colors.red,
                     () => _showEmergencyContacts(),
@@ -606,7 +607,7 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildActionButton(
-                    'Health Tips',
+                    AppLocalizations.of(context)!.healthTips,
                     Icons.lightbulb,
                     Colors.green,
                     () => _showHealthTips(),
@@ -762,8 +763,8 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Book Appointment'),
-        content: const Text('Appointment booking feature coming soon!'),
+        title: Text(AppLocalizations.of(context)!.bookAppointment),
+        content: Text(AppLocalizations.of(context)!.appointmentBookingComingSoon),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -778,8 +779,8 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Reminder'),
-        content: const Text('Add reminder feature coming soon!'),
+        title: Text(AppLocalizations.of(context)!.addReminder),
+        content: Text(AppLocalizations.of(context)!.addReminderComingSoon),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -794,16 +795,16 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Emergency Contacts'),
-        content: const Column(
+        title: Text(AppLocalizations.of(context)!.emergencyContact),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('🚨 Emergency: 911'),
-            SizedBox(height: 8),
-            Text('🏥 Hospital: +1-555-0199'),
-            SizedBox(height: 8),
-            Text('👩‍⚕️ Doctor: +1-555-0101'),
+            Text('${AppLocalizations.of(context)!.emergency}: 911'),
+            const SizedBox(height: 8),
+            Text('${AppLocalizations.of(context)!.hospital}: +1-555-0199'),
+            const SizedBox(height: 8),
+            Text('${AppLocalizations.of(context)!.doctor}: +1-555-0101'),
           ],
         ),
         actions: [
@@ -820,18 +821,18 @@ class _EnhancedPatientDashboardState extends State<EnhancedPatientDashboard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Health Tips'),
-        content: const Column(
+        title: Text(AppLocalizations.of(context)!.healthTips),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('💧 Stay hydrated - drink plenty of water'),
-            SizedBox(height: 8),
-            Text('🥗 Eat nutritious meals regularly'),
-            SizedBox(height: 8),
-            Text('😴 Get adequate rest (7-9 hours)'),
-            SizedBox(height: 8),
-            Text('🚶‍♀️ Light exercise as approved by doctor'),
+            Text(AppLocalizations.of(context)!.stayHydrated),
+            const SizedBox(height: 8),
+            Text(AppLocalizations.of(context)!.eatNutritious),
+            const SizedBox(height: 8),
+            Text(AppLocalizations.of(context)!.getAdequateRest),
+            const SizedBox(height: 8),
+            Text(AppLocalizations.of(context)!.lightExercise),
           ],
         ),
         actions: [

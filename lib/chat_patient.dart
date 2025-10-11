@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../l10n/app_localizations.dart';
 import 'navigation_handler.dart';
 
 void main() {
@@ -293,11 +294,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Icon(Icons.pregnant_woman, color: Colors.white),
                       ),
                       const SizedBox(width: 12),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Pregnancy Assistant',
+                            AppLocalizations.of(context)!.pregnancyAssistant,
                             style: TextStyle(
                               color: Color(0xFF111611),
                               fontSize: 18,
@@ -305,7 +306,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           ),
                           Text(
-                            'AI-powered support',
+                            AppLocalizations.of(context)!.aiPoweredSupport,
                             style: TextStyle(
                               color: Color(0xFF638763),
                               fontSize: 12,
@@ -385,8 +386,8 @@ class _ChatScreenState extends State<ChatScreen> {
                               Expanded(
                                 child: TextField(
                                   controller: _messageController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Ask a pregnancy-related question...',
+                                  decoration: InputDecoration(
+                                    hintText: AppLocalizations.of(context)!.askPregnancyQuestion,
                                     border: InputBorder.none,
                                     hintStyle: TextStyle(color: Color(0xFF638763)),
                                   ),
@@ -435,8 +436,8 @@ class _ChatScreenState extends State<ChatScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Common Pregnancy Questions',
+              Text(
+                AppLocalizations.of(context)!.commonPregnancyQuestions,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -444,11 +445,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildSuggestionItem('What foods should I avoid during pregnancy?'),
-              _buildSuggestionItem('What are safe exercises for the third trimester?'),
-              _buildSuggestionItem('How can I relieve morning sickness?'),
-              _buildSuggestionItem('What are the signs of preterm labor?'),
-              _buildSuggestionItem('How much weight should I gain during pregnancy?'),
+              _buildSuggestionItem(AppLocalizations.of(context)!.avoidFoodsQuestion),
+              _buildSuggestionItem(AppLocalizations.of(context)!.safeExercisesQuestion),
+              _buildSuggestionItem(AppLocalizations.of(context)!.relieveMorningSicknessQuestion),
+              _buildSuggestionItem(AppLocalizations.of(context)!.pretermLaborSignsQuestion),
+              _buildSuggestionItem(AppLocalizations.of(context)!.weightGainQuestion),
               const SizedBox(height: 16),
             ],
           ),
@@ -564,10 +565,10 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(left: 8, bottom: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8, bottom: 4),
                   child: Text(
-                    'Pregnancy Assistant',
+                    AppLocalizations.of(context)!.pregnancyAssistantSender,
                     style: TextStyle(
                       color: Color(0xFF638763),
                       fontSize: 12,
@@ -585,7 +586,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       bottomRight: const Radius.circular(12),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       SizedBox(
@@ -598,7 +599,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       SizedBox(width: 12),
                       Text(
-                        'Thinking...',
+                        AppLocalizations.of(context)!.thinking,
                         style: TextStyle(
                           color: Color(0xFF111611),
                           fontSize: 16,

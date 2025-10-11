@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../services/tips_service.dart';
 import '../services/backend_service.dart';
 import '../services/session_manager.dart';
@@ -86,9 +87,9 @@ class _LearnPageState extends State<LearnPage> with TickerProviderStateMixin {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF7B1FA2)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Learn & Tips',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.learnAndTips,
+          style: const TextStyle(
             color: Color(0xFF7B1FA2),
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -147,9 +148,9 @@ class _LearnPageState extends State<LearnPage> with TickerProviderStateMixin {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Text(
-                              "Today's Featured Tip",
-                              style: TextStyle(
+                            Text(
+                              AppLocalizations.of(context)!.todaysFeaturedTip,
+                              style: const TextStyle(
                                 color: Color(0xFF7B1FA2),
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -205,9 +206,9 @@ class _LearnPageState extends State<LearnPage> with TickerProviderStateMixin {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: const Text(
-                                  'Read Full Article',
-                                  style: TextStyle(
+                                child: Text(
+                                  AppLocalizations.of(context)!.readFullArticle,
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                   ),

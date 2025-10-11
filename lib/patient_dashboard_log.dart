@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/app_localizations.dart';
 import 'models/symptom_log.dart';
 import 'models/doctor_alert.dart';
 import 'services/backend_service.dart';
@@ -247,7 +248,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Health Assessment',
+                  AppLocalizations.of(context)!.healthAssessment,
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -283,7 +284,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                 
                 // AI Message
                 Text(
-                  'Assessment Results:',
+                  AppLocalizations.of(context)!.assessmentResults,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -300,7 +301,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                 // Recommendations
                 if (assessment.recommendations.isNotEmpty) ...[
                   Text(
-                    'Recommendations:',
+                    AppLocalizations.of(context)!.recommendations,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
@@ -365,7 +366,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'High risk detected! Please contact your healthcare provider immediately.',
+                            AppLocalizations.of(context)!.highRiskDetected,
                             style: TextStyle(
                               color: Colors.red.shade700,
                               fontWeight: FontWeight.w600,
@@ -388,14 +389,14 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                   _showContactDoctorDialog();
                 },
                 icon: const Icon(Icons.phone, color: Colors.red),
-                label: const Text(
-                  'Contact Doctor',
+                label: Text(
+                  AppLocalizations.of(context)!.contactDoctor,
                   style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                 ),
               ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Understood'),
+              child: Text(AppLocalizations.of(context)!.close),
             ),
           ],
         );
@@ -490,8 +491,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
             children: [
               Icon(Icons.local_hospital, color: Colors.red.shade600),
               const SizedBox(width: 8),
-              const Text(
-                'Contact Your Doctors',
+              Text(
+                AppLocalizations.of(context)!.contactYourDoctors,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -514,7 +515,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                 if (snapshot.hasError) {
                   return Center(
                     child: Text(
-                      'Error loading doctors: ${snapshot.error}',
+                      AppLocalizations.of(context)!.errorLoadingDoctors('${snapshot.error}'),
                       style: TextStyle(color: Colors.red.shade600),
                     ),
                   );
@@ -533,7 +534,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No doctors linked to your account yet.',
+                        AppLocalizations.of(context)!.noDoctorsLinked,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.grey.shade600,
@@ -542,7 +543,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Please link with a doctor first to enable emergency contact.',
+                        AppLocalizations.of(context)!.linkDoctorFirst,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.grey.shade500,
@@ -604,7 +605,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
+              child: Text(AppLocalizations.of(context)!.close),
             ),
           ],
         );
@@ -630,7 +631,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
     if (phoneNumber == null || phoneNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Phone number not available'),
+          content: Text(AppLocalizations.of(context)!.phoneNumberNotAvailable),
           backgroundColor: Colors.red.shade600,
         ),
       );
@@ -645,11 +646,11 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Call Doctor'),
+            title: Text(AppLocalizations.of(context)!.callDoctor),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Please call this number:'),
+                Text(AppLocalizations.of(context)!.pleaseCallNumber),
                 const SizedBox(height: 8),
                 SelectableText(
                   phoneNumber,
@@ -663,7 +664,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
+                child: Text(AppLocalizations.of(context)!.close),
               ),
             ],
           ),
@@ -679,7 +680,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to make call: $e'),
+          content: Text(AppLocalizations.of(context)!.unableToMakeCall('$e')),
           backgroundColor: Colors.red.shade600,
         ),
       );
@@ -728,9 +729,9 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Recent Health Logs',
+                        AppLocalizations.of(context)!.recentHealthLogs,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -769,8 +770,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 ),
                               ),
                               const SizedBox(height: 16),
-                              const Text(
-                                'No Health Logs Yet',
+                              Text(
+                                AppLocalizations.of(context)!.noHealthLogsYet,
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
@@ -778,8 +779,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              const Text(
-                                'Start logging your health data to see your history here',
+                              Text(
+                                AppLocalizations.of(context)!.startLoggingHealthData,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 14,
@@ -863,7 +864,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       Expanded(
                                         child: _buildPopupLogInfoItem(
                                           Icons.favorite,
-                                          'BP',
+                                          AppLocalizations.of(context)!.bpLabel,
                                           log.bloodPressure,
                                           const Color(0xFF7B1FA2),
                                         ),
@@ -872,7 +873,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       Expanded(
                                         child: _buildPopupLogInfoItem(
                                           Icons.monitor_weight,
-                                          'Weight',
+                                          AppLocalizations.of(context)!.weightLabel,
                                           '${log.weight}kg',
                                           const Color(0xFF9C27B0),
                                         ),
@@ -885,7 +886,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       Expanded(
                                         child: _buildPopupLogInfoItem(
                                           Icons.child_friendly,
-                                          'Kicks',
+                                          AppLocalizations.of(context)!.kicksLabel,
                                           log.babyKicks,
                                           const Color(0xFFFF9800),
                                         ),
@@ -894,7 +895,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       Expanded(
                                         child: _buildPopupLogInfoItem(
                                           Icons.bedtime,
-                                          'Sleep',
+                                          AppLocalizations.of(context)!.sleepLabel,
                                           '${log.sleepHours}h',
                                           const Color(0xFF3F51B5),
                                         ),
@@ -921,7 +922,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                           const SizedBox(width: 8),
                                           Expanded(
                                             child: Text(
-                                              'Symptoms: ${log.symptoms}',
+                                              AppLocalizations.of(context)!.symptomsLabel(log.symptoms),
                                               style: const TextStyle(
                                                 fontSize: 12,
                                                 color: Color(0xFF2D1B69),
@@ -952,7 +953,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                           const SizedBox(width: 8),
                                           Expanded(
                                             child: Text(
-                                              'Notes: ${log.additionalNotes}',
+                                              AppLocalizations.of(context)!.notesLabel(log.additionalNotes ?? ''),
                                               style: const TextStyle(
                                                 fontSize: 12,
                                                 color: Color(0xFF2D1B69),
@@ -995,8 +996,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                         borderRadius: BorderRadius.circular(15),
                       ),
                     ),
-                    child: const Text(
-                      'Close',
+                    child: Text(
+                      AppLocalizations.of(context)!.close,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -1096,7 +1097,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
               ),
               SizedBox(width: 12),
               Text(
-                'Baby Kicks Counter',
+                AppLocalizations.of(context)!.babyKicksCounter,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -1208,7 +1209,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
               ),
               SizedBox(width: 12),
               Text(
-                'How are you feeling?',
+                AppLocalizations.of(context)!.howAreYouFeeling,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -1436,8 +1437,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                           color: Color(0xFF5A5A5A),
                         ),
                       ),
-                      const Text(
-                        'Health Log',
+                      Text(
+                        AppLocalizations.of(context)!.healthLog,
                         style: TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 20,
@@ -1507,7 +1508,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                     ),
                                     SizedBox(width: 12),
                                     Text(
-                                      'Today\'s Health Check',
+                                      AppLocalizations.of(context)!.todaysHealthCheck,
                                       style: TextStyle(
                                         fontSize: 20,
                                         fontWeight: FontWeight.bold,
@@ -1521,12 +1522,12 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Blood Pressure
                                 _buildCustomTextField(
                                   controller: _bloodPressureController,
-                                  label: 'Blood Pressure (e.g., 120/80)',
+                                  label: AppLocalizations.of(context)!.bloodPressureExample,
                                   icon: Icons.favorite,
                                   iconColor: Color(0xFF7B1FA2),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter your blood pressure';
+                                      return AppLocalizations.of(context)!.enterBloodPressure;
                                     }
                                     return null;
                                   },
@@ -1535,13 +1536,13 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Weight
                                 _buildCustomTextField(
                                   controller: _weightController,
-                                  label: 'Weight (kg)',
+                                  label: AppLocalizations.of(context)!.weightKg,
                                   icon: Icons.monitor_weight,
                                   iconColor: Color(0xFF9C27B0),
                                   keyboardType: TextInputType.number,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter your weight';
+                                      return AppLocalizations.of(context)!.enterWeight;
                                     }
                                     return null;
                                   },
@@ -1556,7 +1557,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Symptoms
                                 _buildCustomTextField(
                                   controller: _symptomsController,
-                                  label: 'Symptoms (if any)',
+                                  label: AppLocalizations.of(context)!.symptomsIfAny,
                                   icon: Icons.healing,
                                   iconColor: Color(0xFFFF9800),
                                   maxLines: 2,
@@ -1565,12 +1566,12 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Sleep Hours
                                 _buildCustomTextField(
                                   controller: _sleepHoursController,
-                                  label: 'Sleep Hours (e.g., 8)',
+                                  label: AppLocalizations.of(context)!.sleepHoursExample,
                                   icon: Icons.bedtime,
                                   iconColor: Color(0xFF3F51B5),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter sleep hours';
+                                      return AppLocalizations.of(context)!.enterSleepHours;
                                     }
                                     return null;
                                   },
@@ -1579,12 +1580,12 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Water Intake
                                 _buildCustomTextField(
                                   controller: _waterIntakeController,
-                                  label: 'Water Intake (glasses/day)',
+                                  label: AppLocalizations.of(context)!.waterIntakeGlasses,
                                   icon: Icons.local_drink,
                                   iconColor: Color(0xFF2196F3),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter water intake';
+                                      return AppLocalizations.of(context)!.enterWaterIntake;
                                     }
                                     return null;
                                   },
@@ -1593,12 +1594,12 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Exercise Minutes
                                 _buildCustomTextField(
                                   controller: _exerciseMinutesController,
-                                  label: 'Exercise Minutes (daily)',
+                                  label: AppLocalizations.of(context)!.exerciseMinutesDaily,
                                   icon: Icons.fitness_center,
                                   iconColor: Color(0xFF4CAF50),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter exercise minutes';
+                                      return AppLocalizations.of(context)!.enterExerciseMinutes;
                                     }
                                     return null;
                                   },
@@ -1606,7 +1607,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
 
                                 // Energy Level Selector
                                 _buildDropdownSelector(
-                                  title: 'Energy Level',
+                                  title: AppLocalizations.of(context)!.energyLevel,
                                   options: _energyLevelOptions,
                                   selectedValue: _energyLevel,
                                   onChanged: (value) {
@@ -1620,7 +1621,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
 
                                 // Appetite Level Selector
                                 _buildDropdownSelector(
-                                  title: 'Appetite Level',
+                                  title: AppLocalizations.of(context)!.appetiteLevel,
                                   options: _appetiteLevelOptions,
                                   selectedValue: _appetiteLevel,
                                   onChanged: (value) {
@@ -1634,7 +1635,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
 
                                 // Pain Level Selector
                                 _buildDropdownSelector(
-                                  title: 'Pain Level',
+                                  title: AppLocalizations.of(context)!.painLevel,
                                   options: _painLevelOptions,
                                   selectedValue: _painLevel,
                                   onChanged: (value) {
@@ -1665,7 +1666,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                           ),
                                           SizedBox(width: 8),
                                           Text(
-                                            'Health Indicators',
+                                            AppLocalizations.of(context)!.healthIndicators,
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
@@ -1677,7 +1678,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       SizedBox(height: 12),
 
                                       CheckboxListTile(
-                                        title: Text('Had Contractions'),
+                                        title: Text(AppLocalizations.of(context)!.hadContractions),
                                         value: _hadContractions,
                                         onChanged: (value) {
                                           setState(() {
@@ -1690,7 +1691,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       ),
 
                                       CheckboxListTile(
-                                        title: Text('Had Headaches'),
+                                        title: Text(AppLocalizations.of(context)!.hadHeadaches),
                                         value: _hadHeadaches,
                                         onChanged: (value) {
                                           setState(() {
@@ -1703,7 +1704,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       ),
 
                                       CheckboxListTile(
-                                        title: Text('Had Swelling'),
+                                        title: Text(AppLocalizations.of(context)!.hadSwelling),
                                         value: _hadSwelling,
                                         onChanged: (value) {
                                           setState(() {
@@ -1716,7 +1717,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       ),
 
                                       CheckboxListTile(
-                                        title: Text('Took Vitamins'),
+                                        title: Text(AppLocalizations.of(context)!.tookVitamins),
                                         value: _tookVitamins,
                                         onChanged: (value) {
                                           setState(() {
@@ -1734,7 +1735,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Nausea Details
                                 _buildCustomTextField(
                                   controller: _nauseaController,
-                                  label: 'Nausea Details (if any)',
+                                  label: AppLocalizations.of(context)!.nauseaDetailsIfAny,
                                   icon: Icons.sick,
                                   iconColor: Color(0xFF9C27B0),
                                   maxLines: 2,
@@ -1743,7 +1744,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Medications
                                 _buildCustomTextField(
                                   controller: _medicationsController,
-                                  label: 'Current Medications',
+                                  label: AppLocalizations.of(context)!.currentMedications,
                                   icon: Icons.medication,
                                   iconColor: Color(0xFF607D8B),
                                   maxLines: 2,
@@ -1752,7 +1753,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Additional Notes
                                 _buildCustomTextField(
                                   controller: _notesController,
-                                  label: 'Additional Notes',
+                                  label: AppLocalizations.of(context)!.additionalNotes,
                                   icon: Icons.note_add,
                                   iconColor: Color(0xFF4CAF50),
                                   maxLines: 3,
@@ -1806,7 +1807,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                               ),
                                               SizedBox(width: 8),
                                               Text(
-                                                'Save Health Log',
+                                                AppLocalizations.of(context)!.saveHealthLog,
                                                 style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w600,

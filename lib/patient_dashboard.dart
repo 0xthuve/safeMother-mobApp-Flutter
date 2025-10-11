@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../l10n/app_localizations.dart';
 import 'bottom_navigation.dart'; // Import the separate navigation bar
 import 'navigation_handler.dart';
 import 'patient_profile.dart';
@@ -216,80 +218,98 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                  // Header with profile - Fixed responsive layout
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileScreen(),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFFFCDD2).withOpacity(0.5),
-                              width: 1.5,
-                            ),
-                            image: const DecorationImage(
-                              image: AssetImage('assets/profile.png'),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                  // Header with profile and greeting - Refactored layout
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                      Expanded(
-                        child: Center(
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Left side: Icon and greeting in Column
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // User icon
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ProfileScreen(),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3E5F5),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.woman,
+                                  color: Color(0xFFE91E63),
+                                  size: 32,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Greeting text
+                            _isLoading
+                                ? const CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B1FA2)),
+                                  )
+                                : RichText(
+                                    text: TextSpan(
+                                      style: GoogleFonts.poppins(),
+                                      children: [
+                                        TextSpan(
+                                          text: '${_getGreetingTime()},\n',
+                                          style: GoogleFonts.poppins(
+                                            color: const Color(0xFF7B1FA2),
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: _userName,
+                                          style: GoogleFonts.poppins(
+                                            color: const Color(0xFF7B1FA2),
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                          ],
+                        ),
+                        
+                        // Right side: App title
+                        Flexible(
                           child: Text(
                             'Safe Mother',
-                            style: const TextStyle(
-                              color: Color(0xFF7B1FA2),
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF7B1FA2),
                               fontSize: 20,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.bold,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 48), // Balance the profile image width
-                    ],
+                      ],
+                    ),
                   ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Greeting
-                  _isLoading
-                      ? const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B1FA2)),
-                        )
-                      : RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: '${_getGreetingTime()},\n',
-                                style: const TextStyle(
-                                  color: Color(0xFF7B1FA2),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              TextSpan(
-                                text: _userName,
-                                style: const TextStyle(
-                                  color: Color(0xFF7B1FA2),
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                   
                   const SizedBox(height: 24),
                   
@@ -316,8 +336,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Today Meal Preference',
+                      Text(
+                        AppLocalizations.of(context)!.todayMealPreference,
                         style: TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 18,
@@ -331,9 +351,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: const Color(0xFF4CAF50).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'Doctor Recommended',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context)!.doctorRecommended,
+                            style: const TextStyle(
                               color: Color(0xFF4CAF50),
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -362,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.grey.shade200),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -373,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       SizedBox(height: 12),
                                       Text(
-                                        'No Meal Prescribed',
+                                        AppLocalizations.of(context)!.noMealPrescribed,
                                         style: TextStyle(
                                           color: Colors.grey,
                                           fontSize: 16,
@@ -382,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       SizedBox(height: 4),
                                       Text(
-                                        'Your doctor hasn\'t prescribed any specific meals yet.',
+                                        AppLocalizations.of(context)!.noMealPrescribedDesc,
                                         style: TextStyle(
                                           color: Colors.grey,
                                           fontSize: 12,
@@ -410,8 +430,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Today Exercise Preference',
+                      Text(
+                        AppLocalizations.of(context)!.todayExercisePreference,
                         style: TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 18,
@@ -425,8 +445,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: const Color(0xFF4CAF50).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'Doctor Recommended',
+                          child: Text(
+                            AppLocalizations.of(context)!.doctorRecommended,
                             style: TextStyle(
                               color: Color(0xFF4CAF50),
                               fontSize: 10,
@@ -453,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.grey.shade200),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -464,7 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       SizedBox(height: 8),
                                       Text(
-                                        'No Exercise Prescribed',
+                                        AppLocalizations.of(context)!.noExercisePrescribed,
                                         style: TextStyle(
                                           color: Colors.grey,
                                           fontSize: 14,
@@ -473,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       SizedBox(height: 4),
                                       Text(
-                                        'Your doctor hasn\'t prescribed any exercises yet.',
+                                        AppLocalizations.of(context)!.noExercisePrescribedDesc,
                                         style: TextStyle(
                                           color: Colors.grey,
                                           fontSize: 11,
@@ -515,8 +535,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Quick Actions',
+                        Text(
+                          AppLocalizations.of(context)!.quickActions,
                           style: TextStyle(
                             color: Color(0xFF7B1FA2),
                             fontSize: 18,
@@ -555,8 +575,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: Colors.white,
                                     size: 18,
                                   ),
-                                  label: const Text(
-                                    'Log Symptoms',
+                                  label: Text(
+                                    AppLocalizations.of(context)!.logSymptoms,
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,

@@ -69,46 +69,62 @@ class BackendService {
   }
 
   Future<Map<String, dynamic>> calculatePregnancyProgress(String userId) async {
-    final tracking = await getPregnancyTracking(userId);
-    if (tracking == null) {
-      return {
-        'weeks': 0,
-        'days': 0,
-        'percentage': 0.0,
-        'trimester': 'First',
-        'weeksRemaining': 40,
-        'daysRemaining': 280,
-        'totalDays': 0,
-        'babyName': 'Your Baby',
-        'expectedDeliveryDate': null,
-        'confirmationDate': null,
-        'isOverdue': false,
-        'trimesterProgress': 0.0,
-      };
-    }
-
-    int currentWeek = tracking.currentWeek ?? 0;
-    int currentDay = tracking.currentDay ?? 0;
-    DateTime? calculationBaseDate;
-
-    // Auto-calculate if we have LMP or confirmed date
-    if (tracking.lastMenstrualPeriod != null || tracking.pregnancyConfirmedDate != null) {
-      DateTime? expectedDeliveryDate = tracking.expectedDeliveryDate;
+    try {
+      // First try to get pregnancy data from Firebase patient collection
+      final patientData = await FirebaseService.getRoleData(userId, 'patient');
       
-      if (tracking.lastMenstrualPeriod != null) {
-        // Use LMP for most accurate calculation
-        calculationBaseDate = tracking.lastMenstrualPeriod!;
-        final calculated = PregnancyTracking.calculatePregnancyWeek(calculationBaseDate);
-        currentWeek = calculated['weeks']!;
-        currentDay = calculated['days']!;
-        
-        // Auto-calculate expected delivery date if not set (280 days from LMP)
-        if (expectedDeliveryDate == null) {
-          expectedDeliveryDate = PregnancyTracking.calculateExpectedDeliveryDate(tracking.lastMenstrualPeriod);
+      DateTime? pregnancyConfirmedDate;
+      DateTime? expectedDeliveryDate;
+      double? weight;
+      
+      if (patientData != null) {
+        // Parse dates from Firebase data
+        if (patientData['pregnancyConfirmedDate'] != null) {
+          pregnancyConfirmedDate = DateTime.tryParse(patientData['pregnancyConfirmedDate']);
         }
-      } else if (tracking.pregnancyConfirmedDate != null) {
-        // Use confirmation date as the start of pregnancy journey (day 0)
-        calculationBaseDate = tracking.pregnancyConfirmedDate!;
+        if (patientData['expectedDeliveryDate'] != null) {
+          expectedDeliveryDate = DateTime.tryParse(patientData['expectedDeliveryDate']);
+        }
+        weight = patientData['weight']?.toDouble();
+        
+        print('BackendService: Using Firebase patient data for calculations');
+      }
+      
+      // If no Firebase data, fall back to PregnancyTracking
+      if (pregnancyConfirmedDate == null) {
+        final tracking = await getPregnancyTracking(userId);
+        if (tracking == null) {
+          return {
+            'weeks': 0,
+            'days': 0,
+            'percentage': 0.0,
+            'trimester': 'First',
+            'weeksRemaining': 40,
+            'daysRemaining': 280,
+            'totalDays': 0,
+            'babyName': 'Your Baby',
+            'expectedDeliveryDate': null,
+            'confirmationDate': null,
+            'isOverdue': false,
+            'trimesterProgress': 0.0,
+          };
+        }
+        
+        pregnancyConfirmedDate = tracking.pregnancyConfirmedDate;
+        expectedDeliveryDate = tracking.expectedDeliveryDate;
+        weight = tracking.weight;
+        
+        print('BackendService: Using PregnancyTracking data for calculations');
+      }
+
+      // Calculate pregnancy progress
+      int currentWeek = 0;
+      int currentDay = 0;
+      DateTime? calculationBaseDate;
+
+      // Use confirmation date as the start of pregnancy journey (day 0)
+      if (pregnancyConfirmedDate != null) {
+        calculationBaseDate = pregnancyConfirmedDate;
         final daysSinceConfirmation = DateTime.now().difference(calculationBaseDate).inDays;
         currentWeek = (daysSinceConfirmation / 7).floor().clamp(0, 45);
         currentDay = (daysSinceConfirmation % 7).clamp(0, 6);
@@ -125,61 +141,67 @@ class BackendService {
         }
       }
 
-      // Update tracking with calculated values
-      await updatePregnancyTracking(userId, {
-        'currentWeek': currentWeek,
-        'currentDay': currentDay,
-        'trimester': PregnancyTracking.getTrimester(currentWeek),
+      // Calculate remaining days more precisely
+      final totalPregnancyDays = 280; // 40 weeks * 7 days
+      final currentTotalDays = (currentWeek * 7) + currentDay;
+      final remainingDays = (totalPregnancyDays - currentTotalDays).clamp(0, totalPregnancyDays);
+      
+      // Calculate trimester progress
+      final trimester = PregnancyTracking.getTrimester(currentWeek);
+      double trimesterProgress = 0.0;
+      if (trimester == 'First') {
+        trimesterProgress = (currentWeek / 12.0 * 100).clamp(0.0, 100.0);
+      } else if (trimester == 'Second') {
+        trimesterProgress = ((currentWeek - 12) / 16.0 * 100).clamp(0.0, 100.0);
+      } else if (trimester == 'Third') {
+        trimesterProgress = ((currentWeek - 28) / 12.0 * 100).clamp(0.0, 100.0);
+      }
+
+      // Check if overdue (past 40 weeks)
+      final isOverdue = currentWeek > 40;
+
+      return {
+        'weeks': currentWeek,
+        'days': currentDay,
+        'percentage': (currentWeek / 40.0 * 100).clamp(0.0, 100.0),
+        'trimester': trimester,
+        'trimesterProgress': trimesterProgress,
+        'weeksRemaining': (40 - currentWeek).clamp(0, 40),
+        'daysRemaining': remainingDays,
+        'totalDays': currentTotalDays,
+        'babyName': 'Your Baby', // Could be enhanced to get from patient data
+        'babyGender': null,
         'expectedDeliveryDate': expectedDeliveryDate?.toIso8601String(),
-      });
+        'confirmationDate': pregnancyConfirmedDate?.toIso8601String(),
+        'lastMenstrualPeriod': null, // Not used in Firebase approach
+        'isOverdue': isOverdue,
+        'weight': weight,
+        'height': null, // Could be added to patient data
+        'isFirstChild': patientData?['isFirstChild'] ?? false,
+        'medicalHistory': patientData?['medicalHistory'] ?? '',
+        'symptoms': [], // Could be enhanced
+        'medications': [], // Could be enhanced
+        'vitals': {}, // Could be enhanced
+        'calculationBaseDate': calculationBaseDate?.toIso8601String(),
+      };
+    } catch (e) {
+      print('BackendService: Error calculating pregnancy progress: $e');
+      // Return default values on error
+      return {
+        'weeks': 0,
+        'days': 0,
+        'percentage': 0.0,
+        'trimester': 'First',
+        'weeksRemaining': 40,
+        'daysRemaining': 280,
+        'totalDays': 0,
+        'babyName': 'Your Baby',
+        'expectedDeliveryDate': null,
+        'confirmationDate': null,
+        'isOverdue': false,
+        'trimesterProgress': 0.0,
+      };
     }
-
-    // Calculate remaining days more precisely
-    final totalPregnancyDays = 280; // 40 weeks * 7 days
-    final currentTotalDays = (currentWeek * 7) + currentDay;
-    final remainingDays = (totalPregnancyDays - currentTotalDays).clamp(0, totalPregnancyDays);
-    
-    // Calculate trimester progress
-    final trimester = PregnancyTracking.getTrimester(currentWeek);
-    double trimesterProgress = 0.0;
-    if (trimester == 'First') {
-      trimesterProgress = (currentWeek / 12.0 * 100).clamp(0.0, 100.0);
-    } else if (trimester == 'Second') {
-      trimesterProgress = ((currentWeek - 12) / 16.0 * 100).clamp(0.0, 100.0);
-    } else if (trimester == 'Third') {
-      trimesterProgress = ((currentWeek - 28) / 12.0 * 100).clamp(0.0, 100.0);
-    }
-
-    // Check if overdue (past 40 weeks)
-    final isOverdue = currentWeek > 40;
-
-    // Get expected delivery date
-    final expectedDeliveryDate = tracking.expectedDeliveryDate;
-
-    return {
-      'weeks': currentWeek,
-      'days': currentDay,
-      'percentage': (currentWeek / 40.0 * 100).clamp(0.0, 100.0),
-      'trimester': trimester,
-      'trimesterProgress': trimesterProgress,
-      'weeksRemaining': (40 - currentWeek).clamp(0, 40),
-      'daysRemaining': remainingDays,
-      'totalDays': currentTotalDays,
-      'babyName': tracking.babyName ?? 'Your Baby',
-      'babyGender': tracking.babyGender,
-      'expectedDeliveryDate': expectedDeliveryDate?.toIso8601String(),
-      'confirmationDate': tracking.pregnancyConfirmedDate?.toIso8601String(),
-      'lastMenstrualPeriod': tracking.lastMenstrualPeriod?.toIso8601String(),
-      'isOverdue': isOverdue,
-      'weight': tracking.weight,
-      'height': tracking.height,
-      'isFirstChild': tracking.isFirstChild,
-      'medicalHistory': tracking.medicalHistory,
-      'symptoms': tracking.symptoms,
-      'medications': tracking.medications,
-      'vitals': tracking.vitals,
-      'calculationBaseDate': calculationBaseDate?.toIso8601String(),
-    };
   }
 
   // ========== MEDICAL RECORDS OPERATIONS ==========
@@ -928,36 +950,83 @@ class BackendService {
     }
   }
 
-  // ========== UTILITY METHODS ==========
+  // ========== PATIENT PREGNANCY INFORMATION OPERATIONS ========== 
 
+  Future<bool> updatePatientPregnancyInfo(String userId, {
+    DateTime? expectedDeliveryDate,
+    DateTime? pregnancyConfirmedDate,
+    double? weight,
+    bool? isFirstChild,
+    bool? hasPregnancyLoss,
+    String? medicalHistory,
+  }) async {
+    try {
+      // Get current patient data from Firebase
+      final patientData = await FirebaseService.getRoleData(userId, 'patient');
+      
+      if (patientData == null) {
+        print('BackendService: No patient data found for user $userId');
+        return false;
+      }
+
+      // Update pregnancy fields
+      final updatedData = {
+        ...patientData,
+        'expectedDeliveryDate': expectedDeliveryDate?.toIso8601String(),
+        'pregnancyConfirmedDate': pregnancyConfirmedDate?.toIso8601String(),
+        'weight': weight,
+        'isFirstChild': isFirstChild,
+        'hasPregnancyLoss': hasPregnancyLoss,
+        'medicalHistory': medicalHistory,
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+
+      // Save to Firebase patients collection
+      await FirebaseService.createRoleData(userId, 'patient', updatedData);
+      
+      print('BackendService: Successfully updated pregnancy info for patient $userId');
+      return true;
+    } catch (e) {
+      print('BackendService: Error updating patient pregnancy info: $e');
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getPatientPregnancyInfo(String userId) async {
+    try {
+      final patientData = await FirebaseService.getRoleData(userId, 'patient');
+      return patientData;
+    } catch (e) {
+      print('BackendService: Error getting patient pregnancy info: $e');
+      return null;
+    }
+  }
+
+  // Get dashboard summary for a patient
   Future<Map<String, dynamic>> getDashboardSummary(String userId) async {
-    final pregnancyProgress = await calculatePregnancyProgress(userId);
-    final upcomingAppointments = await getUpcomingAppointments(userId);
-    final dueReminders = await getDueReminders(userId);
-    final recentRecords = await getMedicalRecords(userId);
-
-    return {
-      'pregnancyProgress': pregnancyProgress,
-      'upcomingAppointments': upcomingAppointments.take(3).map((a) => {
-        'id': a.id,
-        'date': a.appointmentDate.toIso8601String(),
-        'timeSlot': a.timeSlot,
-        'reason': a.reason,
-        'doctorId': a.doctorId,
-      }).toList(),
-      'dueReminders': dueReminders.take(5).map((r) => {
-        'id': r.id,
-        'title': r.title,
-        'type': r.type,
-        'reminderDate': r.reminderDate.toIso8601String(),
-      }).toList(),
-      'recentRecords': recentRecords.take(3).map((r) => {
-        'id': r.id,
-        'title': r.title,
-        'type': r.recordType,
-        'recordDate': r.recordDate.toIso8601String(),
-      }).toList(),
-    };
+    try {
+      // Get pregnancy progress
+      final progress = await calculatePregnancyProgress(userId);
+      
+      // Get recent symptom logs count
+      final recentLogs = await getRecentSymptomLogs(userId, days: 7);
+      
+      // Get upcoming appointments count
+      final appointments = await getAppointments(userId: userId);
+      final upcomingAppointments = appointments.where((apt) => 
+        apt.appointmentDate.isAfter(DateTime.now())
+      ).toList();
+      
+      return {
+        'pregnancyProgress': progress,
+        'recentSymptomLogsCount': recentLogs.length,
+        'upcomingAppointmentsCount': upcomingAppointments.length,
+        'lastUpdated': DateTime.now().toIso8601String(),
+      };
+    } catch (e) {
+      print('BackendService: Error getting dashboard summary: $e');
+      return {};
+    }
   }
 
   // ========== PATIENT'S LINKED DOCTORS OPERATIONS ==========
@@ -1254,6 +1323,24 @@ class BackendService {
     } catch (e) {
       print('BackendService: Error getting linked doctors with contact: $e');
       return [];
+    }
+  }
+
+  /// Get user's language preference
+  Future<String> getLanguagePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_language_preference') ?? 'en';
+  }
+
+  /// Save user's language preference
+  Future<bool> saveLanguagePreference(String languageCode) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_language_preference', languageCode);
+      return true;
+    } catch (e) {
+      print('BackendService: Error saving language preference: $e');
+      return false;
     }
   }
 }

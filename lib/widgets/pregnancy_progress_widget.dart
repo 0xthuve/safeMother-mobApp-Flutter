@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/backend_service.dart';
 import '../services/session_manager.dart';
 import '../pages/pregnancy_journey_detail.dart';
+import '../l10n/app_localizations.dart';
 
 class PregnancyProgressWidget extends StatefulWidget {
   final VoidCallback? onTap;
@@ -102,18 +103,18 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
               size: 48,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Start Your Pregnancy Journey',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.startYourPregnancyJourney,
+              style: const TextStyle(
                 color: Color(0xFF7B1FA2),
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Complete your pregnancy details to start tracking',
-              style: TextStyle(
+            Text(
+              AppLocalizations.of(context)!.completePregnancyDetails,
+              style: const TextStyle(
                 color: Colors.grey,
                 fontSize: 14,
               ),
@@ -131,9 +132,9 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Setup Pregnancy Tracking',
-                style: TextStyle(color: Colors.white),
+              child: Text(
+                AppLocalizations.of(context)!.setupPregnancyTracking,
+                style: const TextStyle(color: Colors.white),
               ),
             ),
           ],
@@ -201,7 +202,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                     children: [
                       Expanded(
                         child: Text(
-                          'Your Pregnancy Journey',
+                          AppLocalizations.of(context)!.yourPregnancyJourney,
                           style: const TextStyle(
                             color: Color(0xFF7B1FA2),
                             fontSize: 18,
@@ -232,7 +233,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            '$trimester Trimester',
+                            AppLocalizations.of(context)!.trimesterLabel(trimester),
                             style: const TextStyle(
                               color: Color(0xFFE91E63),
                               fontSize: 12,
@@ -253,7 +254,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Your Pregnancy Journey',
+                              AppLocalizations.of(context)!.yourPregnancyJourney,
                               style: const TextStyle(
                                 color: Color(0xFF7B1FA2),
                                 fontSize: 18,
@@ -341,9 +342,9 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                const Text(
-                                  'weeks',
-                                  style: TextStyle(
+                                Text(
+                                  AppLocalizations.of(context)!.weeksLabel,
+                                  style: const TextStyle(
                                     color: Color(0xFF7B1FA2),
                                     fontSize: 10,
                                     fontWeight: FontWeight.w500,
@@ -395,9 +396,9 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                const Text(
-                                  'weeks',
-                                  style: TextStyle(
+                                Text(
+                                  AppLocalizations.of(context)!.weeksLabel,
+                                  style: const TextStyle(
                                     color: Color(0xFF7B1FA2),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
@@ -460,9 +461,9 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Expected Due Date',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!.expectedDueDate,
+                            style: const TextStyle(
                               color: Color(0xFF7B1FA2),
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -515,9 +516,9 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'This Week\'s Development',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)!.thisWeeksDevelopment,
+                        style: const TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -557,7 +558,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                   );
                 },
                 icon: const Icon(Icons.timeline, size: 18),
-                label: const Text('View Full Journey'),
+                label: Text(AppLocalizations.of(context)!.viewFullJourney),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFE91E63),
                   foregroundColor: Colors.white,
@@ -577,15 +578,15 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
 
   Widget _buildMilestoneTimeline(int weeks, String trimester) {
     List<Map<String, dynamic>> milestones = [
-      {'week': 4, 'title': 'Heart Begins', 'icon': Icons.favorite, 'completed': weeks >= 4},
-      {'week': 8, 'title': 'All Organs', 'icon': Icons.psychology, 'completed': weeks >= 8},
-      {'week': 12, 'title': 'End 1st Trimester', 'icon': Icons.celebration, 'completed': weeks >= 12},
-      {'week': 20, 'title': 'Halfway Point', 'icon': Icons.star, 'completed': weeks >= 20},
-      {'week': 24, 'title': 'Viability', 'icon': Icons.security, 'completed': weeks >= 24},
-      {'week': 28, 'title': 'Eyes Open', 'icon': Icons.visibility, 'completed': weeks >= 28},
-      {'week': 32, 'title': 'Rapid Growth', 'icon': Icons.trending_up, 'completed': weeks >= 32},
-      {'week': 36, 'title': 'Full Term Soon', 'icon': Icons.baby_changing_station, 'completed': weeks >= 36},
-      {'week': 40, 'title': 'Due Date', 'icon': Icons.cake, 'completed': weeks >= 40},
+      {'week': 4, 'title': AppLocalizations.of(context)!.heartBegins, 'icon': Icons.favorite, 'completed': weeks >= 4},
+      {'week': 8, 'title': AppLocalizations.of(context)!.allOrgans, 'icon': Icons.psychology, 'completed': weeks >= 8},
+      {'week': 12, 'title': AppLocalizations.of(context)!.endFirstTrimester, 'icon': Icons.celebration, 'completed': weeks >= 12},
+      {'week': 20, 'title': AppLocalizations.of(context)!.halfwayPoint, 'icon': Icons.star, 'completed': weeks >= 20},
+      {'week': 24, 'title': AppLocalizations.of(context)!.viability, 'icon': Icons.security, 'completed': weeks >= 24},
+      {'week': 28, 'title': AppLocalizations.of(context)!.eyesOpen, 'icon': Icons.visibility, 'completed': weeks >= 28},
+      {'week': 32, 'title': AppLocalizations.of(context)!.rapidGrowth, 'icon': Icons.trending_up, 'completed': weeks >= 32},
+      {'week': 36, 'title': AppLocalizations.of(context)!.fullTermSoon, 'icon': Icons.baby_changing_station, 'completed': weeks >= 36},
+      {'week': 40, 'title': AppLocalizations.of(context)!.dueDate, 'icon': Icons.cake, 'completed': weeks >= 40},
     ];
 
     return Container(
@@ -601,9 +602,9 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Pregnancy Milestones',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.pregnancyMilestones,
+            style: const TextStyle(
               color: Color(0xFF7B1FA2),
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -684,7 +685,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '$babyName is growing!',
+          AppLocalizations.of(context)!.babyGrowing(babyName),
           style: const TextStyle(
             color: Color(0xFF111611),
             fontSize: 16,
@@ -707,7 +708,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                'Day $totalDays',
+                AppLocalizations.of(context)!.dayLabel(totalDays),
                 style: const TextStyle(
                   color: Color(0xFF638763),
                   fontSize: 12,
@@ -722,7 +723,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                '$weeks weeks, $days days',
+                AppLocalizations.of(context)!.weeksDaysLabel(days, weeks),
                 style: const TextStyle(
                   color: Color(0xFFE91E63),
                   fontSize: 12,
@@ -746,7 +747,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
             const SizedBox(width: 4),
             Expanded(
               child: Text(
-                '$weeksRemaining weeks, ${daysRemaining % 7} days to go',
+                AppLocalizations.of(context)!.timeRemaining(daysRemaining % 7, weeksRemaining),
                 style: const TextStyle(
                   color: Color(0xFFE91E63),
                   fontSize: 12,
@@ -783,7 +784,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
         
         // Progress percentage - simplified
         Text(
-          '${percentage.toStringAsFixed(1)}% complete (${totalDays}/280 days)',
+          AppLocalizations.of(context)!.progressComplete(percentage.toStringAsFixed(1), totalDays),
           style: const TextStyle(
             color: Color(0xFFE91E63),
             fontSize: 11,
@@ -796,25 +797,25 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
 
   String _getBabyDevelopmentText(int weeks) {
     if (weeks < 4) {
-      return 'Your baby is just beginning to develop. The fertilized egg is implanting in your uterus.';
+      return AppLocalizations.of(context)!.babyDevWeek4;
     } else if (weeks < 8) {
-      return 'Your baby\'s heart is starting to beat and major organs are beginning to form.';
+      return AppLocalizations.of(context)!.babyDevWeek8;
     } else if (weeks < 12) {
-      return 'Your baby is now about the size of a lime and all major organs are formed.';
+      return AppLocalizations.of(context)!.babyDevWeek12;
     } else if (weeks < 16) {
-      return 'Your baby can now make facial expressions and may even be sucking their thumb.';
+      return AppLocalizations.of(context)!.babyDevWeek16;
     } else if (weeks < 20) {
-      return 'Your baby is about the size of a banana and you might start feeling movement soon.';
+      return AppLocalizations.of(context)!.babyDevWeek20;
     } else if (weeks < 24) {
-      return 'Your baby\'s hearing is developing and they can hear your voice and heartbeat.';
+      return AppLocalizations.of(context)!.babyDevWeek24;
     } else if (weeks < 28) {
-      return 'Your baby\'s eyes can now open and close, and they may have hiccups.';
+      return AppLocalizations.of(context)!.babyDevWeek28;
     } else if (weeks < 32) {
-      return 'Your baby is gaining weight rapidly and their bones are hardening.';
+      return AppLocalizations.of(context)!.babyDevWeek32;
     } else if (weeks < 36) {
-      return 'Your baby\'s lungs are maturing and they\'re getting ready for life outside the womb.';
+      return AppLocalizations.of(context)!.babyDevWeek36;
     } else {
-      return 'Your baby is full-term and ready to meet you! They could arrive any day now.';
+      return AppLocalizations.of(context)!.babyDevWeek40;
     }
   }
 }
