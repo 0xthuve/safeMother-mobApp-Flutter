@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../l10n/app_localizations.dart';
 import 'bottom_navigation.dart'; // Import the separate navigation bar
 import 'navigation_handler.dart';
 import 'patient_profile.dart';
@@ -8,9 +10,11 @@ import 'services/backend_service.dart';
 import 'services/nutrition_exercise_service.dart';
 import 'widgets/pregnancy_progress_widget.dart';
 import 'widgets/dynamic_tip_widget.dart';
+import 'widgets/ambulance_button.dart';
 import 'pages/learn_page.dart';
 import 'models/meal.dart';
 import 'models/exercise.dart';
+import 'dart:async';
 
 void main() {
   runApp(const PregnancyApp());
@@ -56,11 +60,43 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   List<Meal> _todaysMeals = [];
   List<Exercise> _todaysExercises = [];
+  Timer? _syncTimer;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _startPeriodicSync();
+  }
+
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startPeriodicSync() {
+    // Sync data every 5 minutes when app is in foreground
+    _syncTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+      _syncPatientData();
+    });
+  }
+
+  Future<void> _syncPatientData() async {
+    try {
+      final userId = await SessionManager.getUserId();
+      if (userId != null) {
+        // Sync patient data in background
+        await _backendService.getPregnancyTracking(userId);
+        await _backendService.getMedicalRecords(userId);
+        await _backendService.getUpcomingAppointments(userId);
+        await _backendService.getDueReminders(userId);
+        // Refresh UI data if needed
+        _loadUserData();
+      }
+    } catch (e) {
+      print('Error syncing patient data: $e');
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -165,84 +201,115 @@ class _HomeScreenState extends State<HomeScreen> {
           SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header with profile - Fixed responsive layout
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileScreen(),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFFFCDD2).withOpacity(0.5),
-                              width: 1.5,
-                            ),
-                            image: const DecorationImage(
-                              image: AssetImage('assets/profile.png'),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Responsive padding based on screen width
+                  final horizontalPadding = constraints.maxWidth > 600 
+                      ? 32.0 
+                      : constraints.maxWidth > 400 
+                          ? 20.0 
+                          : 16.0;
+                  
+                  return Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding,
+                      vertical: 16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                  // Header with profile and greeting - Refactored layout
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                      Expanded(
-                        child: Center(
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Left side: Icon and greeting in Column
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // User icon
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ProfileScreen(),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3E5F5),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.woman,
+                                  color: Color(0xFFE91E63),
+                                  size: 32,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Greeting text
+                            _isLoading
+                                ? const CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B1FA2)),
+                                  )
+                                : RichText(
+                                    text: TextSpan(
+                                      style: GoogleFonts.poppins(),
+                                      children: [
+                                        TextSpan(
+                                          text: '${_getGreetingTime()},\n',
+                                          style: GoogleFonts.poppins(
+                                            color: const Color(0xFF7B1FA2),
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: _userName,
+                                          style: GoogleFonts.poppins(
+                                            color: const Color(0xFF7B1FA2),
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                          ],
+                        ),
+                        
+                        // Right side: App title
+                        Flexible(
                           child: Text(
                             'Safe Mother',
-                            style: const TextStyle(
-                              color: Color(0xFF7B1FA2),
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF7B1FA2),
                               fontSize: 20,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.bold,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 48), // Balance the profile image width
-                    ],
+                      ],
+                    ),
                   ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Greeting
-                  _isLoading
-                      ? const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B1FA2)),
-                        )
-                      : RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: '${_getGreetingTime()},\n',
-                                style: const TextStyle(
-                                  color: Color(0xFF7B1FA2),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              TextSpan(
-                                text: _userName,
-                                style: const TextStyle(
-                                  color: Color(0xFF7B1FA2),
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                   
                   const SizedBox(height: 24),
                   
@@ -269,8 +336,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Today Meal Preference',
+                      Text(
+                        AppLocalizations.of(context)!.todayMealPreference,
                         style: TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 18,
@@ -284,9 +351,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: const Color(0xFF4CAF50).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'Doctor Recommended',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context)!.doctorRecommended,
+                            style: const TextStyle(
                               color: Color(0xFF4CAF50),
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -315,7 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.grey.shade200),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -326,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       SizedBox(height: 12),
                                       Text(
-                                        'No Meal Prescribed',
+                                        AppLocalizations.of(context)!.noMealPrescribed,
                                         style: TextStyle(
                                           color: Colors.grey,
                                           fontSize: 16,
@@ -335,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       SizedBox(height: 4),
                                       Text(
-                                        'Your doctor hasn\'t prescribed any specific meals yet.',
+                                        AppLocalizations.of(context)!.noMealPrescribedDesc,
                                         style: TextStyle(
                                           color: Colors.grey,
                                           fontSize: 12,
@@ -348,9 +415,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               )
                             : ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
                                 itemCount: _todaysMeals.length,
-                                separatorBuilder: (context, index) => const SizedBox(width: 16),
+                                separatorBuilder: (context, index) => const SizedBox(width: 12),
                                 itemBuilder: (context, index) {
                                   final meal = _todaysMeals[index];
                                   return _buildMealItem(meal);
@@ -363,8 +430,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Today Exercise Preference',
+                      Text(
+                        AppLocalizations.of(context)!.todayExercisePreference,
                         style: TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 18,
@@ -378,8 +445,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: const Color(0xFF4CAF50).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'Doctor Recommended',
+                          child: Text(
+                            AppLocalizations.of(context)!.doctorRecommended,
                             style: TextStyle(
                               color: Color(0xFF4CAF50),
                               fontSize: 10,
@@ -406,7 +473,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.grey.shade200),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -417,7 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       SizedBox(height: 8),
                                       Text(
-                                        'No Exercise Prescribed',
+                                        AppLocalizations.of(context)!.noExercisePrescribed,
                                         style: TextStyle(
                                           color: Colors.grey,
                                           fontSize: 14,
@@ -426,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       SizedBox(height: 4),
                                       Text(
-                                        'Your doctor hasn\'t prescribed any exercises yet.',
+                                        AppLocalizations.of(context)!.noExercisePrescribedDesc,
                                         style: TextStyle(
                                           color: Colors.grey,
                                           fontSize: 11,
@@ -439,9 +506,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               )
                             : ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
                                 itemCount: _todaysExercises.length,
-                                separatorBuilder: (context, index) => const SizedBox(width: 12),
+                                separatorBuilder: (context, index) => const SizedBox(width: 10),
                                 itemBuilder: (context, index) {
                                   final exercise = _todaysExercises[index];
                                   return _buildExerciseItem(exercise);
@@ -449,42 +516,107 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                   ),
                   
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   
-                  // Log symptoms button - Fixed responsive
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        minWidth: 150,
-                        maxWidth: 250,
-                      ),
-                      child: SizedBox(
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            NavigationHandler.navigateToScreen(context, 1);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE91E63),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                          ),
-                          child: const Text(
-                            'Log Symptoms',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
+                  // Quick Actions Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppLocalizations.of(context)!.quickActions,
+                          style: TextStyle(
+                            color: Color(0xFF7B1FA2),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            // Log symptoms button - Equal width
+                            Expanded(
+                              flex: 1,
+                              child: Container(
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFE91E63), Color(0xFFAD1457)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFE91E63).withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    NavigationHandler.navigateToScreen(context, 1);
+                                  },
+                                  icon: const Icon(
+                                    Icons.medical_services,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                  label: Text(
+                                    AppLocalizations.of(context)!.logSymptoms,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            const SizedBox(width: 10),
+                            
+                            // Emergency ambulance button - Equal width
+                            Expanded(
+                              flex: 1,
+                              child: SizedBox(
+                                height: 56,
+                                child: const AmbulanceButton(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   
-                  const SizedBox(height: 80), // Space for bottom navigation
-                ],
+                        const SizedBox(height: 80), // Space for bottom navigation
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -506,20 +638,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   
   Widget _buildMealItem(Meal meal) {
-    return Container(
-      width: 140,
-      constraints: const BoxConstraints(minWidth: 120, maxWidth: 160),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
+    return GestureDetector(
+      onTap: () {
+        _showMealDetails(meal);
+      },
+      child: Container(
+        width: 140,
+        constraints: const BoxConstraints(minWidth: 120, maxWidth: 160),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
         child: Column(
           children: [
             Expanded(
@@ -532,23 +668,41 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: meal.imageUrl.isNotEmpty
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          meal.imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(12),
+                        child: meal.imageUrl.startsWith('http')
+                            ? Image.network(
+                                meal.imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade200,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.restaurant,
+                                      color: Colors.grey,
+                                      size: 40,
+                                    ),
+                                  );
+                                },
+                              )
+                            : Image.asset(
+                                meal.imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade200,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.restaurant,
+                                      color: Colors.grey,
+                                      size: 40,
+                                    ),
+                                  );
+                                },
                               ),
-                              child: const Icon(
-                                Icons.restaurant,
-                                color: Colors.grey,
-                                size: 40,
-                              ),
-                            );
-                          },
-                        ),
                       )
                     : Container(
                         decoration: BoxDecoration(
@@ -592,7 +746,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      );
+      ),
+    );
   }
 
   Widget _buildExerciseItem(Exercise exercise) {
@@ -602,7 +757,7 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Container(
         width: 130,
-        constraints: const BoxConstraints(minWidth: 115, maxWidth: 145),
+        constraints: const BoxConstraints(minWidth: 110, maxWidth: 150),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -698,6 +853,311 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
+
+  void _showMealDetails(Meal meal) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.restaurant_menu,
+                color: const Color(0xFF4CAF50),
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  meal.name,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Food Image
+                Container(
+                  width: double.infinity,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey.shade100,
+                  ),
+                  child: meal.imageUrl.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: meal.imageUrl.startsWith('http')
+                              ? Image.network(
+                                  meal.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.restaurant,
+                                        color: Colors.grey,
+                                        size: 60,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Image.asset(
+                                  meal.imageUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.restaurant,
+                                        color: Colors.grey,
+                                        size: 60,
+                                      ),
+                                    );
+                                  },
+                                ),
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.restaurant,
+                            color: Colors.grey,
+                            size: 60,
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Calories and Category
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE91E63).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.local_fire_department,
+                            color: Color(0xFFE91E63),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${meal.calories} cal',
+                            style: const TextStyle(
+                              color: Color(0xFFE91E63),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        meal.category,
+                        style: const TextStyle(
+                          color: Color(0xFF4CAF50),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Description
+                const Text(
+                  'Description:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  meal.description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Nutritional Benefits
+                const Text(
+                  'Nutritional Benefits:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: meal.nutritionalBenefits.map((benefit) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2196F3).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF2196F3).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      benefit,
+                      style: const TextStyle(
+                        color: Color(0xFF2196F3),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  )).toList(),
+                ),
+                const SizedBox(height: 16),
+                
+                // Ingredients
+                const Text(
+                  'Ingredients:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                ...meal.ingredients.map((ingredient) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.fiber_manual_record,
+                        size: 8,
+                        color: Color(0xFF9E9E9E),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          ingredient,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF666666),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )).toList(),
+                const SizedBox(height: 16),
+                
+                // Preparation
+                const Text(
+                  'Preparation:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  meal.preparation,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
+                    height: 1.4,
+                  ),
+                ),
+                
+                // Pregnancy Safety Badge
+                if (meal.isPregnancySafe) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CAF50).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFF4CAF50).withOpacity(0.3),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.verified_user,
+                          color: Color(0xFF4CAF50),
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Safe for Pregnancy',
+                            style: TextStyle(
+                              color: Color(0xFF4CAF50),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Close',
+                style: TextStyle(
+                  color: Color(0xFF666666),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   void _showExerciseDetails(Exercise exercise) {
     showDialog(

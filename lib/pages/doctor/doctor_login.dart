@@ -16,7 +16,6 @@ class _DoctorLoginState extends State<DoctorLogin> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
   bool _isLoading = false;
 
   @override
@@ -275,7 +274,7 @@ class _DoctorLoginState extends State<DoctorLogin> {
                                 controller: _emailController,
                                 style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 decoration: InputDecoration(
-                                  labelText: 'Email or License Number',
+                                  labelText: 'Email',
                                   labelStyle: const TextStyle(color: Color(0xFF64B5F6)),
                                   filled: true,
                                   fillColor: const Color(0xFFF5F5F5),
@@ -288,7 +287,7 @@ class _DoctorLoginState extends State<DoctorLogin> {
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter your email or license number';
+                                    return 'Please enter your email';
                                   }
                                   return null;
                                 },
@@ -335,30 +334,10 @@ class _DoctorLoginState extends State<DoctorLogin> {
                               ),
                               const SizedBox(height: 16),
                               
-                              // Remember me checkbox
+                              // Forgot password
                               Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  Checkbox(
-                                    value: _rememberMe,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _rememberMe = value ?? false;
-                                      });
-                                    },
-                                    activeColor: const Color(0xFF1976D2),
-                                    checkColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  const Text(
-                                    'Remember me',
-                                    style: TextStyle(
-                                      color: Color(0xFF64B5F6),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const Spacer(),
                                   TextButton(
                                     onPressed: () {
                                       ScaffoldMessenger.of(context).showSnackBar(

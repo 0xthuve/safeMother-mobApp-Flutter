@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'patient_dashboard.dart';
 import 'services/session_manager.dart';
 import 'services/user_management_service.dart';
 import 'services/backend_service.dart';
 import 'models/doctor.dart';
 import 'pages/edit_profile.dart';
+import 'package:flutter/services.dart';
 
 import 'signin.dart';
+import 'l10n/app_localizations.dart';
+import 'main.dart';
 
 void main() {
   runApp(const PatientProfile());
@@ -50,41 +52,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _userAge = '';
   String _userContact = '';
   String _userRole = 'Mother';
+  String _userId = '';
   bool _isLoading = true;
   List<Map<String, dynamic>> _assignedDoctors = [];
   
-  // Removed pregnancy data variables
+  // Pregnancy information
+  DateTime? _expectedDeliveryDate;
+  DateTime? _pregnancyConfirmedDate;
+  double? _weight;
+  bool? _isFirstChild;
+  bool? _hasPregnancyLoss;
+  String? _medicalHistory;
 
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
-  final TextEditingController _contactController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
-  
-  // Helper method to show loading dialog
-  void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => PopScope(
-        canPop: false,
-        child: const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
-          ),
-        ),
-      ),
-    );
-  }
-  
-  // Helper method to dismiss loading dialog safely
-  void _dismissLoadingDialog() {
-    if (mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
-  }
   
   // Helper method to navigate to dashboard with success message
   void _navigateToDashboard(String message) {
@@ -131,6 +113,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Get user data from session and Firebase with timeout
       final userName = await SessionManager.getUserName();
       final userEmail = await SessionManager.getUserEmail();
+      final userId = await SessionManager.getUserId();
       
       // Add timeout to prevent hanging
       final userData = await UserManagementService.getCurrentUserData()
@@ -138,10 +121,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return null;
       });
 
+      // Load pregnancy information from Firebase patient collection
+      final pregnancyData = await BackendService().getPatientPregnancyInfo(userId ?? '');
+
       if (mounted) {
         setState(() {
           _userName = userName ?? 'User';
           _userEmail = userEmail ?? '';
+          _userId = userId ?? '';
           
           // Extract additional profile data from Firebase
           if (userData != null) {
@@ -149,15 +136,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _userContact = userData['phone'] ?? userData['contact'] ?? '';
             _userRole = userData['role'] ?? 'Mother';
           }
+
+          // Extract pregnancy data from Firebase
+          if (pregnancyData != null) {
+            _expectedDeliveryDate = pregnancyData['expectedDeliveryDate'] != null 
+                ? DateTime.tryParse(pregnancyData['expectedDeliveryDate']) 
+                : null;
+            _pregnancyConfirmedDate = pregnancyData['pregnancyConfirmedDate'] != null 
+                ? DateTime.tryParse(pregnancyData['pregnancyConfirmedDate']) 
+                : null;
+            _weight = pregnancyData['weight']?.toDouble();
+            _isFirstChild = pregnancyData['isFirstChild'];
+            _hasPregnancyLoss = pregnancyData['hasPregnancyLoss'];
+            _medicalHistory = pregnancyData['medicalHistory'];
+          }
           
           _isLoading = false;
         });
 
-        // Update text controllers
-        _nameController.text = _userName;
-        _ageController.text = _userAge;
-        _contactController.text = _userContact;
-        _emailController.text = _userEmail;
+
       }
     } catch (e) {
 
@@ -195,186 +192,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 
 
-  Future<void> _saveUserData(String key, String value) async {
-    try {
-      // Update Firebase data
-      Map<String, dynamic> updateData = {};
-      
-      switch (key) {
-        case 'userName':
-          updateData['fullName'] = value;
-          break;
-        case 'userAge':
-          updateData['age'] = int.tryParse(value) ?? 0;
-          break;
-        case 'userContact':
-          updateData['phone'] = value;
-          updateData['contact'] = value;
-          break;
-        case 'userEmail':
-          updateData['email'] = value;
-          break;
-      }
-
-      final success = await UserManagementService.updateUserProfile(updateData);
-      
-      if (success) {
-        // Also save to local preferences as backup
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(key, value);
-        
-        // Update the local state variables immediately instead of reloading everything
-        setState(() {
-          switch (key) {
-            case 'userName':
-              _userName = value;
-              break;
-            case 'userAge':
-              _userAge = value;
-              break;
-            case 'userContact':
-              _userContact = value;
-              break;
-            case 'userEmail':
-              _userEmail = value;
-              break;
-          }
-        });
-      } else {
-        throw Exception('Failed to update profile');
-      }
-    } catch (e) {
-
-      rethrow; // Re-throw the error so it can be handled in the UI
-    }
-  }
-
-  void _showEditPopup(String field, String currentValue, TextEditingController controller) {
-    controller.text = currentValue;
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Edit $field',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF111611),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: controller,
-                  decoration: InputDecoration(
-                    hintText: 'Enter your $field',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF5F5F5),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          color: Color(0xFF638763),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () async {
-                        if (controller.text.isNotEmpty) {
-                          Navigator.of(context).pop(); // Close edit dialog first
-                          
-                          // Show loading indicator
-                          _showLoadingDialog();
-
-                          try {
-                            String key = '';
-                            if (field == 'Name') {
-                              key = 'userName';
-                            } else if (field == 'Age') {
-                              key = 'userAge';
-                            } else if (field == 'Contact') {
-                              key = 'userContact';
-                            } else if (field == 'Email') {
-                              key = 'userEmail';
-                            }
-
-                            await _saveUserData(key, controller.text);
-                            
-                            // Dismiss loading dialog
-                            _dismissLoadingDialog();
-                            
-                            // Navigate to dashboard with success message
-                            _navigateToDashboard('$field updated successfully!');
-                          } catch (e) {
-                            // Dismiss loading dialog even on error
-                            _dismissLoadingDialog();
-                            
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Failed to update $field: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                            }
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE91E63),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Save',
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   void _showChangePasswordPopup() {
     _passwordController.clear();
     _newPasswordController.clear();
@@ -397,9 +214,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Change Password',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context)?.changePasswordTitle ?? 'Change Password',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF111611),
@@ -410,7 +227,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    hintText: 'Current Password',
+                    hintText: AppLocalizations.of(context)?.currentPassword ?? 'Current Password',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -424,7 +241,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   controller: _newPasswordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    hintText: 'New Password',
+                    hintText: AppLocalizations.of(context)?.newPassword ?? 'New Password',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -438,7 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   controller: _confirmPasswordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    hintText: 'Confirm New Password',
+                    hintText: AppLocalizations.of(context)?.confirmNewPassword ?? 'Confirm New Password',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -455,8 +272,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
-                      child: const Text(
-                        'Cancel',
+                      child: Text(
+                        AppLocalizations.of(context)?.cancel ?? 'Cancel',
                         style: TextStyle(
                           color: Color(0xFF638763),
                         ),
@@ -467,8 +284,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onPressed: () {
                         if (_passwordController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please enter current password'),
+                            SnackBar(
+                              content: Text(AppLocalizations.of(context)?.enterCurrentPassword ?? 'Please enter current password'),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -477,8 +294,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         
                         if (_newPasswordController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please enter new password'),
+                            SnackBar(
+                              content: Text(AppLocalizations.of(context)?.enterNewPassword ?? 'Please enter new password'),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -487,8 +304,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         
                         if (_newPasswordController.text != _confirmPasswordController.text) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('New passwords do not match'),
+                            SnackBar(
+                              content: Text(AppLocalizations.of(context)?.passwordsNotMatch ?? 'New passwords do not match'),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -506,8 +323,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: const Text(
-                        'Change Password',
+                      child: Text(
+                        AppLocalizations.of(context)?.changePassword ?? 'Change Password',
                         style: TextStyle(
                           color: Colors.white,
                         ),
@@ -518,117 +335,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  void _showNotificationPreferencesPopup() {
-    bool emailNotifications = true;
-    bool pushNotifications = true;
-    bool smsNotifications = false;
-    
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Notification Preferences',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111611),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SwitchListTile(
-                      title: const Text('Email Notifications'),
-                      value: emailNotifications,
-                      onChanged: (value) {
-                        setState(() {
-                          emailNotifications = value;
-                        });
-                      },
-                      activeThumbColor: const Color(0xFFE91E63),
-                    ),
-                    SwitchListTile(
-                      title: const Text('Push Notifications'),
-                      value: pushNotifications,
-                      onChanged: (value) {
-                        setState(() {
-                          pushNotifications = value;
-                        });
-                      },
-                      activeThumbColor: const Color(0xFFE91E63),
-                    ),
-                    SwitchListTile(
-                      title: const Text('SMS Notifications'),
-                      value: smsNotifications,
-                      onChanged: (value) {
-                        setState(() {
-                          smsNotifications = value;
-                        });
-                      },
-                      activeThumbColor: const Color(0xFFE91E63),
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(
-                              color: Color(0xFF638763),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            
-                            // Navigate to dashboard after saving preferences
-                            _navigateToDashboard('Notification preferences saved!');
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFE91E63),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            'Save',
-                            style: TextStyle(
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
         );
       },
     );
@@ -652,8 +358,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Linked Family Members',
+                Text(
+                  AppLocalizations.of(context)?.linkFamilyMembers ?? 'Link Family Members',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -661,44 +367,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'No family members linked yet.',
+                Text(
+                  AppLocalizations.of(context)?.sharePatientId ?? 'Share your Patient ID with family members so they can register and link their accounts to receive updates about your pregnancy journey.',
                   style: TextStyle(
                     color: Color(0xFF638763),
+                    height: 1.4,
                   ),
                 ),
                 const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Add functionality to link family members
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE91E63),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Add Family Member',
-                      style: TextStyle(
-                        color: Colors.white,
-                      ),
-                    ),
+                Text(
+                  AppLocalizations.of(context)?.patientId ?? 'Your Patient ID:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF111611),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFE91E63).withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _userId.isEmpty ? 'Loading...' : _userId,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF111611),
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          if (_userId.isNotEmpty) {
+                            Clipboard.setData(ClipboardData(text: _userId));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(AppLocalizations.of(context)?.patientIdCopied ?? 'Patient ID copied to clipboard'),
+                                duration: Duration(seconds: 2),
+                                backgroundColor: Color(0xFFE91E63),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.copy,
+                          color: Color(0xFFE91E63),
+                          size: 20,
+                        ),
+                        tooltip: 'Copy Patient ID',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.green.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: Colors.green,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          AppLocalizations.of(context)?.familyMembersInfo ?? 'Family members can use this ID during registration to create linked accounts and receive pregnancy updates.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.green,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    child: const Text(
-                      'Close',
+                    child: Text(
+                      AppLocalizations.of(context)?.close ?? 'Close',
                       style: TextStyle(
                         color: Color(0xFF638763),
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -738,8 +514,8 @@ void _showPrivacySettingsPopup() {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Safe Mother Privacy',
+              Text(
+                AppLocalizations.of(context)?.safeMotherPrivacy ?? 'Safe Mother Privacy',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -747,8 +523,8 @@ void _showPrivacySettingsPopup() {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Your privacy and safety are our top priority. '
+              Text(
+                AppLocalizations.of(context)?.privacyDescription ?? 'Your privacy and safety are our top priority. '
                 'We ensure that your personal and medical information '
                 'is securely protected and never shared without your consent. '
                 'Safe Mother safeguards your details to provide you with '
@@ -765,8 +541,8 @@ void _showPrivacySettingsPopup() {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
-                  child: const Text(
-                    'Close',
+                  child: Text(
+                    AppLocalizations.of(context)?.close ?? 'Close',
                     style: TextStyle(
                       color: Color(0xFF638763),
                       fontWeight: FontWeight.bold,
@@ -814,8 +590,8 @@ void _showPrivacySettingsPopup() {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Sign Out',
+                Text(
+                  AppLocalizations.of(context)?.signOut ?? 'Sign Out',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -823,8 +599,8 @@ void _showPrivacySettingsPopup() {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Are you sure you want to sign out of your account?',
+                Text(
+                  AppLocalizations.of(context)?.signOutConfirm ?? 'Are you sure you want to sign out of your account?',
                   style: TextStyle(
                     color: Color(0xFF638763),
                     fontSize: 14,
@@ -846,8 +622,8 @@ void _showPrivacySettingsPopup() {
                             side: const BorderSide(color: Color(0xFF638763)),
                           ),
                         ),
-                        child: const Text(
-                          'Cancel',
+                        child: Text(
+                          AppLocalizations.of(context)?.cancel ?? 'Cancel',
                           style: TextStyle(
                             color: Color(0xFF638763),
                             fontWeight: FontWeight.w600,
@@ -869,8 +645,8 @@ void _showPrivacySettingsPopup() {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Sign Out',
+                        child: Text(
+                          AppLocalizations.of(context)?.signOut ?? 'Sign Out',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
@@ -918,7 +694,7 @@ void _showPrivacySettingsPopup() {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Successfully signed out'),
+            content: Text(AppLocalizations.of(context)?.signOutSuccess ?? 'Successfully signed out'),
             backgroundColor: const Color(0xFFE91E63),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -934,7 +710,7 @@ void _showPrivacySettingsPopup() {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Sign out failed: $e'),
+            content: Text(AppLocalizations.of(context)?.signOutFailed ?? 'Sign out failed: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -995,9 +771,9 @@ void _showPrivacySettingsPopup() {
                               ),
                             ),
                           ),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'My Profile',
+                              AppLocalizations.of(context)?.myProfile ?? 'My Profile',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.white,
@@ -1148,7 +924,7 @@ void _showPrivacySettingsPopup() {
                           const SizedBox(height: 16),
                           
                           // Personal Information Section
-                          _buildSectionHeader('Personal Information', Icons.person_outline),
+                          _buildSectionHeader(AppLocalizations.of(context)?.personalInfo ?? 'Personal Information', Icons.person_outline),
                           const SizedBox(height: 16),
                       
                           _isLoading
@@ -1169,42 +945,101 @@ void _showPrivacySettingsPopup() {
                                   ),
                                   child: Column(
                                     children: [
-                                      _buildModernInfoRow('Name', _userName, Icons.person, () {
-                                        _showEditPopup('Name', _userName, _nameController);
-                                      }),
+                                      _buildReadOnlyInfoRow(AppLocalizations.of(context)?.name ?? 'Name', _userName, Icons.person),
                                       
                                       const Divider(height: 32, color: Color(0xFFE0E0E0)),
                                       
-                                      _buildModernInfoRow('Email', _userEmail, Icons.email, () {
-                                        _showEditPopup('Email', _userEmail, _emailController);
-                                      }),
+                                      _buildReadOnlyInfoRow(AppLocalizations.of(context)?.email ?? 'Email', _userEmail, Icons.email),
                                       
                                       const Divider(height: 32, color: Color(0xFFE0E0E0)),
                                       
-                                      _buildModernInfoRow('Age', _userAge.isEmpty ? 'Not set' : _userAge, Icons.cake, () {
-                                        _showEditPopup('Age', _userAge, _ageController);
-                                      }),
+                                      _buildReadOnlyInfoRow(AppLocalizations.of(context)?.age ?? 'Age', _userAge.isEmpty ? 'Not set' : _userAge, Icons.cake),
                                       
                                       const Divider(height: 32, color: Color(0xFFE0E0E0)),
                                       
-                                      _buildModernInfoRow('Contact', _userContact.isEmpty ? 'Not set' : _userContact, Icons.phone, () {
-                                        _showEditPopup('Contact', _userContact, _contactController);
-                                      }),
+                                      _buildReadOnlyInfoRow(AppLocalizations.of(context)?.contact ?? 'Contact', _userContact.isEmpty ? 'Not set' : _userContact, Icons.phone),
+                                      
+                                      const Divider(height: 32, color: Color(0xFFE0E0E0)),
+                                      
+                                      _buildUidInfoRow(AppLocalizations.of(context)?.patientId ?? 'Patient ID', _userId.isEmpty ? 'Not available' : _userId, Icons.tag),
                                     ],
                                   ),
                                 ),
                           
                           const SizedBox(height: 32),
+                          // Pregnancy Information Section
+                          _buildSectionHeader(AppLocalizations.of(context)?.pregnancyInformation ?? 'Pregnancy Information', Icons.pregnant_woman),
+                          const SizedBox(height: 16),
                           
-                          // Quick Actions
-                          _buildSectionHeader('Quick Actions', Icons.flash_on),
+                          _isLoading
+                              ? const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(20.0),
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF8F9FA),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: const Color(0xFFE0E0E0)),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      if (_expectedDeliveryDate != null) ...[
+                                        _buildReadOnlyInfoRow(
+                                          AppLocalizations.of(context)?.expectedDeliveryDate ?? 'Expected Delivery Date', 
+                                          "${_expectedDeliveryDate!.day}/${_expectedDeliveryDate!.month}/${_expectedDeliveryDate!.year}", 
+                                          Icons.calendar_today
+                                        ),
+                                        const Divider(height: 32, color: Color(0xFFE0E0E0)),
+                                      ],
+                                      
+                                      if (_pregnancyConfirmedDate != null) ...[
+                                        _buildReadOnlyInfoRow(
+                                          AppLocalizations.of(context)?.pregnancyConfirmedDate ?? 'Pregnancy Confirmed Date', 
+                                          "${_pregnancyConfirmedDate!.day}/${_pregnancyConfirmedDate!.month}/${_pregnancyConfirmedDate!.year}", 
+                                          Icons.event_available
+                                        ),
+                                        const Divider(height: 32, color: Color(0xFFE0E0E0)),
+                                      ],
+                                      
+                                      if (_weight != null) ...[
+                                        _buildReadOnlyInfoRow(AppLocalizations.of(context)?.weight ?? 'Weight', '${_weight!.toStringAsFixed(1)} kg', Icons.monitor_weight),
+                                        const Divider(height: 32, color: Color(0xFFE0E0E0)),
+                                      ],
+                                      
+                                      if (_isFirstChild != null) ...[
+                                        _buildReadOnlyInfoRow(AppLocalizations.of(context)?.firstChild ?? 'First Child', _isFirstChild! ? 'Yes' : 'No', Icons.child_care),
+                                        const Divider(height: 32, color: Color(0xFFE0E0E0)),
+                                      ],
+                                      
+                                      if (_hasPregnancyLoss != null) ...[
+                                        _buildReadOnlyInfoRow(AppLocalizations.of(context)?.previousPregnancyLoss ?? 'Previous Pregnancy Loss', _hasPregnancyLoss! ? 'Yes' : 'No', Icons.heart_broken),
+                                        const Divider(height: 32, color: Color(0xFFE0E0E0)),
+                                      ],
+                                      
+                                      if (_medicalHistory != null && _medicalHistory!.isNotEmpty) ...[
+                                        _buildReadOnlyInfoRow(AppLocalizations.of(context)?.medicalHistory ?? 'Medical History', _medicalHistory!, Icons.medical_services),
+                                      ] else ...[
+                                        _buildReadOnlyInfoRow(AppLocalizations.of(context)?.medicalHistory ?? 'Medical History', AppLocalizations.of(context)?.notProvided ?? 'Not provided', Icons.medical_services),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                          
+                          const SizedBox(height: 32),
+                          _buildSectionHeader(AppLocalizations.of(context)?.quickActions ?? 'Quick Actions', Icons.flash_on),
                           const SizedBox(height: 16),
                           
                           Row(
                             children: [
                               Expanded(
                                 child: _buildActionButton(
-                                  'Edit Profile',
+                                  AppLocalizations.of(context)?.editProfile ?? 'Edit Profile',
                                   Icons.edit,
                                   const Color(0xFFE91E63),
                                   () async {
@@ -1224,7 +1059,7 @@ void _showPrivacySettingsPopup() {
                               const SizedBox(width: 16),
                               Expanded(
                                 child: _buildActionButton(
-                                  'Change Password',
+                                  AppLocalizations.of(context)?.changePassword ?? 'Change Password',
                                   Icons.lock,
                                   const Color(0xFF9C27B0),
                                   _showChangePasswordPopup,
@@ -1236,7 +1071,7 @@ void _showPrivacySettingsPopup() {
                           const SizedBox(height: 32),
                           
                           // Account Settings Section
-                          _buildSectionHeader('Account Settings', Icons.settings),
+                          _buildSectionHeader(AppLocalizations.of(context)?.accountSettings ?? 'Account Settings', Icons.settings),
                           const SizedBox(height: 16),
                           
                           Container(
@@ -1254,9 +1089,9 @@ void _showPrivacySettingsPopup() {
                             ),
                             child: Column(
                               children: [
-                                _buildModernSettingRow('Notification Preferences', Icons.notifications, _showNotificationPreferencesPopup),
+                                _buildLanguageSettingRow(),
                                 const Divider(height: 1, color: Color(0xFFE0E0E0)),
-                                _buildModernSettingRow('Privacy Settings', Icons.privacy_tip, _showPrivacySettingsPopup),
+                                _buildModernSettingRow(AppLocalizations.of(context)?.privacySettings ?? 'Privacy Settings', Icons.privacy_tip, _showPrivacySettingsPopup),
                               ],
                             ),
                           ),
@@ -1264,14 +1099,14 @@ void _showPrivacySettingsPopup() {
                           const SizedBox(height: 32),
                           
                           // My Doctors Section
-                          _buildSectionHeader('My Doctors', Icons.medical_services),
+                          _buildSectionHeader(AppLocalizations.of(context)?.myDoctors ?? 'My Doctors', Icons.medical_services),
                           const SizedBox(height: 16),
                           _buildAssignedDoctorCard(),
                           
                           const SizedBox(height: 32),
                           
                           // Family & Support Section
-                          _buildSectionHeader('Family & Support', Icons.family_restroom),
+                          _buildSectionHeader(AppLocalizations.of(context)?.familyDoctorLink ?? 'Family & Doctor Link', Icons.family_restroom),
                           const SizedBox(height: 16),
                           
                           Container(
@@ -1289,9 +1124,9 @@ void _showPrivacySettingsPopup() {
                             ),
                             child: Column(
                               children: [
-                                _buildModernSettingRow('Linked Family Members', Icons.family_restroom, _showLinkedMembersPopup),
+                                _buildModernSettingRow(AppLocalizations.of(context)?.linkFamilyMembers ?? 'Link Family Members', Icons.family_restroom, _showLinkedMembersPopup),
                                 const Divider(height: 1, color: Color(0xFFE0E0E0)),
-                                _buildModernSettingRow('Linked Doctors', Icons.local_hospital, _showLinkedDoctorsPopup),
+                                _buildModernSettingRow(AppLocalizations.of(context)?.linkDoctors ?? 'Link Doctors', Icons.local_hospital, _showLinkedDoctorsPopup),
                               ],
                             ),
                           ),
@@ -1336,55 +1171,130 @@ void _showPrivacySettingsPopup() {
     );
   }
 
-  Widget _buildModernInfoRow(String title, String value, IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE91E63).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: const Color(0xFFE91E63), size: 18),
+  Widget _buildReadOnlyInfoRow(String title, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE91E63).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2D3748),
-                    ),
+            child: Icon(icon, color: const Color(0xFFE91E63), size: 18),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2D3748),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF666666),
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF666666),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const Icon(
-              Icons.edit,
-              color: Color(0xFF9CA3AF),
-              size: 18,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildUidInfoRow(String title, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE91E63).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: const Color(0xFFE91E63), size: 18),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2D3748),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            value,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF666666),
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            if (value.isNotEmpty && value != 'Not available') {
+                              Clipboard.setData(ClipboardData(text: value));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(AppLocalizations.of(context)?.appTitle ?? 'Patient ID copied to clipboard'),
+                                  duration: const Duration(seconds: 2),
+                                  backgroundColor: const Color(0xFFE91E63),
+                                ),
+                              );
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.copy,
+                            color: Color(0xFFE91E63),
+                            size: 18,
+                          ),
+                          tooltip: 'Copy Patient ID',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _changeLocale(BuildContext context, Locale newLocale) {
+    // Find the nearest ancestor MaterialApp and update its locale
+    final state = SafeMotherApp.of(context);
+    if (state != null) {
+      state.setLocale(newLocale);
+    }
   }
 
   Widget _buildActionButton(String title, IconData icon, Color color, VoidCallback onTap) {
@@ -1472,6 +1382,51 @@ void _showPrivacySettingsPopup() {
     );
   }
 
+  Widget _buildLanguageSettingRow() {
+    return Material(
+      color: Colors.transparent,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE91E63).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.language, color: Color(0xFFE91E63), size: 18),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                AppLocalizations.of(context)?.language ?? 'Language',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+            ),
+            DropdownButton<Locale>(
+              value: Localizations.localeOf(context),
+              items: const [
+                DropdownMenuItem(value: Locale('en'), child: Text('English')),
+                DropdownMenuItem(value: Locale('ta'), child: Text('Tamil')),
+                DropdownMenuItem(value: Locale('si'), child: Text('Sinhala')),
+              ],
+              onChanged: (Locale? locale) {
+                if (locale != null) {
+                  _changeLocale(context, locale);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAssignedDoctorCard() {
     // Always show the section, even when no doctors are assigned
     if (_assignedDoctors.isEmpty) {
@@ -1504,8 +1459,8 @@ void _showPrivacySettingsPopup() {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No Doctors Assigned',
+            Text(
+              AppLocalizations.of(context)?.noDoctorsAssigned ?? 'No Doctors Assigned',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -1513,8 +1468,8 @@ void _showPrivacySettingsPopup() {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Connect with healthcare providers to get personalized care and guidance throughout your pregnancy journey.',
+            Text(
+              AppLocalizations.of(context)?.connectDoctors ?? 'Connect with healthcare providers to get personalized care and guidance throughout your pregnancy journey.',
               style: TextStyle(
                 fontSize: 14,
                 color: Color(0xFF666666),
@@ -1526,7 +1481,7 @@ void _showPrivacySettingsPopup() {
             ElevatedButton.icon(
               onPressed: _showLinkedDoctorsPopup,
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Find a Doctor'),
+              label: Text(AppLocalizations.of(context)?.findDoctor ?? 'Find a Doctor'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE91E63),
                 foregroundColor: Colors.white,
@@ -1625,8 +1580,8 @@ void _showPrivacySettingsPopup() {
                               color: const Color(0xFF4CAF50),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Text(
-                              'ACTIVE',
+                            child: Text(
+                              AppLocalizations.of(context)?.active ?? 'ACTIVE',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,
@@ -1818,7 +1773,7 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
           final doctor = _doctors.firstWhere(
             (doc) => doc.id == doctorId,
             orElse: () => _doctors.isNotEmpty ? _doctors.first : Doctor(
-              id: doctorId,
+              id: doctorId.toString(),
               name: 'Unknown Doctor',
               email: '',
               phone: '',
@@ -1872,8 +1827,8 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
         Navigator.of(context).pop();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to send request to doctor'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)?.requestFailed ?? 'Failed to send request to doctor'),
             backgroundColor: Colors.red,
           ),
         );
@@ -1891,8 +1846,8 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text(
-        'Select Your Doctor',
+      title: Text(
+        AppLocalizations.of(context)?.selectDoctor ?? 'Select Your Doctor',
         style: TextStyle(
           color: Color(0xFF7B1FA2),
           fontSize: 20,
@@ -1916,8 +1871,8 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Currently Linked:',
+                    Text(
+                      AppLocalizations.of(context)?.currentlyLinked ?? 'Currently Linked:',
                       style: TextStyle(
                         color: Color(0xFF4CAF50),
                         fontSize: 12,
@@ -1944,8 +1899,8 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Select a new doctor to change your current selection:',
+              Text(
+                AppLocalizations.of(context)?.selectNewDoctor ?? 'Select a new doctor to change your current selection:',
                 style: TextStyle(
                   color: Color(0xFF5A5A5A),
                   fontSize: 14,
@@ -1953,8 +1908,8 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
               ),
               const SizedBox(height: 8),
             ] else ...[
-              const Text(
-                'Select a doctor to guide your pregnancy journey:',
+              Text(
+                AppLocalizations.of(context)?.selectDoctorGuide ?? 'Select a doctor to guide your pregnancy journey:',
                 style: TextStyle(
                   color: Color(0xFF5A5A5A),
                   fontSize: 14,
@@ -1995,7 +1950,7 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
                           ),
                         )
                       : _doctors.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
@@ -2006,7 +1961,7 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
                                   ),
                                   SizedBox(height: 16),
                                   Text(
-                                    'No doctors available',
+                                    AppLocalizations.of(context)?.noDoctorsAvailable ?? 'No doctors available',
                                     style: TextStyle(
                                       color: Colors.grey,
                                       fontSize: 16,
@@ -2109,8 +2064,8 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
           onPressed: () {
             Navigator.of(context).pop();
           },
-          child: const Text(
-            'Cancel',
+          child: Text(
+            AppLocalizations.of(context)?.cancel ?? 'Cancel',
             style: TextStyle(color: Colors.grey),
           ),
         ),
@@ -2121,7 +2076,7 @@ class _DoctorSelectionDialogState extends State<_DoctorSelectionDialog> {
             foregroundColor: Colors.white,
           ),
           child: Text(
-            _currentLinkedDoctor != null ? 'Send New Request' : 'Send Request',
+            _currentLinkedDoctor != null ? AppLocalizations.of(context)?.sendNewRequest ?? 'Send New Request' : AppLocalizations.of(context)?.sendRequest ?? 'Send Request',
           ),
         ),
       ],

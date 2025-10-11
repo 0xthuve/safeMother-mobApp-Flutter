@@ -326,36 +326,95 @@ class UserManagementService {
     }
   }
 
-  // Sync session with Firebase auth state
-  static Future<void> syncAuthState() async {
+  // Register family member linked to a patient
+  static Future<bool> registerFamilyMember({
+    required String email,
+    required String password,
+    required String fullName,
+    required String patientId,
+    String relationship = 'Family Member',
+    BuildContext? context,
+  }) async {
     try {
-      if (FirebaseService.isLoggedIn) {
-        final currentUserData = FirebaseService.currentUserData;
-        if (currentUserData != null) {
-          final uid = currentUserData['uid'] as String?;
-          if (uid != null) {
-            final userData = await FirebaseService.getUserData(uid);
-            
-            if (userData != null) {
-              final userRole = userData['role'] as String?;
-              final userName = userData['fullName'] as String? ?? currentUserData['displayName'] as String? ?? 'User';
-              
-              await SessionManager.saveLoginSession(
-                userType: userRole == 'doctor' || userRole == 'healthcare' 
-                    ? SessionManager.userTypeDoctor 
-                    : SessionManager.userTypePatient,
-                userId: uid,
-                userName: userName,
-                userEmail: currentUserData['email'] as String? ?? '',
-              );
-            }
-          }
-        }
-      } else {
-        await SessionManager.clearSession();
+      // First, validate that the patient ID exists and is a patient
+      final patientData = await FirebaseService.getUserData(patientId);
+      if (patientData == null) {
+        throw Exception('Patient ID not found. Please check the ID and try again.');
       }
-    } catch (e) {
+      
+      if (patientData['role'] != 'patient' && patientData['role'] != 'mother') {
+        throw Exception('The provided ID does not belong to a patient account.');
+      }
+      
+      // Check if email is already registered
+      final isEmailTaken = await FirebaseService.isEmailRegistered(email);
+      if (isEmailTaken) {
+        throw Exception('An account already exists for this email.');
+      }
+      
+      // Register the family member
+      final registrationResult = await FirebaseService.registerWithEmailPassword(
+        email: email,
+        password: password,
+        fullName: fullName,
+        role: 'family',
+        additionalData: {
+          'linkedPatientId': patientId,
+          'relationship': relationship,
+          'linkedAt': DateTime.now().toIso8601String(),
+        },
+      );
 
+      if (registrationResult != null) {
+        final uid = registrationResult['uid'] as String?;
+        
+        if (uid != null) {
+          // Create family member role data
+          await FirebaseService.createRoleData(
+            uid,
+            'family',
+            {
+              ..._getDefaultRoleData('family'),
+              'relationship': relationship,
+              'linkedPatients': [patientId],
+              'linkedAt': DateTime.now().toIso8601String(),
+            },
+          );
+
+          // Update the patient's family members list
+          final patientFamilyMembers = List<String>.from(patientData['familyMembers'] ?? []);
+          if (!patientFamilyMembers.contains(uid)) {
+            patientFamilyMembers.add(uid);
+            await FirebaseService.updateUserData(patientId, {
+              'familyMembers': patientFamilyMembers,
+              'updatedAt': DateTime.now().toIso8601String(),
+            });
+          }
+
+          // Save login session for the family member
+          await SessionManager.saveLoginSession(
+            userType: SessionManager.userTypePatient, // Family members use patient flow
+            userId: uid,
+            userName: fullName,
+            userEmail: registrationResult['email'] as String? ?? '',
+          );
+
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      // Re-throw with more user-friendly messages
+      if (e.toString().contains('Patient ID not found') || 
+          e.toString().contains('does not belong to a patient')) {
+        rethrow;
+      }
+      if (e.toString().contains('email-already-in-use') || 
+          e.toString().contains('account already exists')) {
+        throw Exception('An account already exists for this email.');
+      }
+      throw Exception('Failed to register family member. Please try again.');
     }
   }
 }

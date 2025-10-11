@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'patient_dashboard.dart';
 import 'patient_dashboard_log.dart';
-import 'reminder_patient_dashboard.dart';
+import 'consultation_patient_dashboard.dart';
 import 'patient_dashboard_tip.dart';
 import 'chat_patient.dart';
 
@@ -18,7 +18,7 @@ class NavigationHandler {
         targetScreen = PatientDashboardLog();
         break;
       case 2:
-        targetScreen = const RemindersScreen();
+        targetScreen = const ConsultationScreen();
         break;
       case 3:
         targetScreen = const LearnScreen();

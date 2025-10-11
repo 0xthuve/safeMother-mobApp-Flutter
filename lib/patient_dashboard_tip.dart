@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart'; // Add this import
+import 'l10n/app_localizations.dart';
 
 void main() {
   runApp(const PregnancyTip());
@@ -48,13 +49,13 @@ class _LearnScreenState extends State<LearnScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   
-  final List<String> _categories = [
-    'All',
-    'Pregnancy',
-    'Health',
-    'Nutrition',
-    'Baby',
-    'Parenting'
+  List<String> get _categories => [
+    AppLocalizations.of(context)?.all ?? 'All',
+    AppLocalizations.of(context)?.pregnancy ?? 'Pregnancy',
+    AppLocalizations.of(context)?.health ?? 'Health',
+    AppLocalizations.of(context)?.nutrition ?? 'Nutrition',
+    AppLocalizations.of(context)?.baby ?? 'Baby',
+    AppLocalizations.of(context)?.parenting ?? 'Parenting'
   ];
 
   @override
@@ -95,7 +96,7 @@ class _LearnScreenState extends State<LearnScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to load articles. Please try again later.';
+        _errorMessage = AppLocalizations.of(context)?.failedLoadArticles ?? 'Failed to load articles. Please try again later.';
         _isLoading = false;
       });
     }
@@ -169,7 +170,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   
                   // Article Title
                   Text(
-                    article['title'] ?? 'No title',
+                    article['title'] ?? AppLocalizations.of(context)?.noTitle ?? 'No title',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -181,7 +182,7 @@ class _LearnScreenState extends State<LearnScreen> {
                   
                   // Article Description
                   Text(
-                    article['description'] ?? 'No description',
+                    article['description'] ?? AppLocalizations.of(context)?.noDescription ?? 'No description',
                     style: const TextStyle(
                       fontSize: 16,
                       color: Color(0xFF638763),
@@ -208,7 +209,7 @@ class _LearnScreenState extends State<LearnScreen> {
                     children: [
                       if (article['publishedAt'] != null)
                         Text(
-                          'Published: ${_formatDate(article['publishedAt'])}',
+                          AppLocalizations.of(context)?.publishedLabel(_formatDate(article['publishedAt'])) ?? 'Published: ${_formatDate(article['publishedAt'])}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -216,7 +217,7 @@ class _LearnScreenState extends State<LearnScreen> {
                         ),
                       if (article['source']['name'] != null)
                         Text(
-                          'Source: ${article['source']['name']}',
+                          AppLocalizations.of(context)?.sourceLabel(article['source']['name']) ?? 'Source: ${article['source']['name']}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -233,8 +234,19 @@ class _LearnScreenState extends State<LearnScreen> {
                     child: ElevatedButton(
                       onPressed: () {
                         // Open article in browser using url_launcher
-                        if (article['url'] != null) {
-                          _launchURL(article['url']);
+                        final url = article['url'];
+                        if (url != null && url.toString().isNotEmpty && url.toString() != 'null') {
+                          _launchURL(url.toString());
+                        } else {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(AppLocalizations.of(context)?.articleUrlNotAvailable ?? 'Article URL is not available'),
+                                backgroundColor: Colors.orange,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -244,8 +256,8 @@ class _LearnScreenState extends State<LearnScreen> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text(
-                        'Read Full Article',
+                      child: Text(
+                        AppLocalizations.of(context)?.readFullArticle ?? 'Read Full Article',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -263,8 +275,8 @@ class _LearnScreenState extends State<LearnScreen> {
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
-                      child: const Text(
-                        'Close',
+                      child: Text(
+                        AppLocalizations.of(context)?.close ?? 'Close',
                         style: TextStyle(
                           color: Color(0xFF638763),
                         ),
@@ -282,14 +294,42 @@ class _LearnScreenState extends State<LearnScreen> {
 
   // Function to launch URL
   Future<void> _launchURL(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(
+    print('Attempting to launch URL: $url');
+    try {
+      // Validate URL format
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        throw 'Invalid URL format: URL must start with http:// or https://';
+      }
+
+      final Uri uri = Uri.parse(url);
+      print('Parsed URI: $uri');
+
+      // Check if URI is valid
+      if (!uri.hasScheme || !uri.hasAuthority) {
+        throw 'Invalid URI: Missing scheme or authority';
+      }
+
+      // Try to launch directly without canLaunchUrl check
+      final result = await launchUrl(
         uri,
         mode: LaunchMode.externalApplication, // This opens in Chrome/browser
       );
-    } else {
-      throw 'Could not launch $url';
+      print('Launch result: $result');
+      if (!result) {
+        throw 'launchUrl returned false';
+      }
+    } catch (e) {
+      // If direct launch fails, show error message
+      print('Error launching URL: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)?.couldNotOpenArticle(e.toString()) ?? 'Could not open article. Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 
@@ -325,11 +365,11 @@ class _LearnScreenState extends State<LearnScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(Icons.home_outlined, 'Home', 0),
-            _buildNavItem(Icons.assignment_outlined, 'Log', 1),
-            _buildNavItem(Icons.notifications_outlined, 'Reminders', 2),
-            _buildNavItem(Icons.school_outlined, 'Learn', 3),
-            _buildNavItem(Icons.chat_outlined, 'Chat', 4),
+            _buildNavItem(Icons.home_outlined, AppLocalizations.of(context)?.home ?? 'Home', 0),
+            _buildNavItem(Icons.assignment_outlined, AppLocalizations.of(context)?.log ?? 'Log', 1),
+            _buildNavItem(Icons.calendar_today, AppLocalizations.of(context)?.consultationNav ?? 'Consultation', 2),
+            _buildNavItem(Icons.school_outlined, AppLocalizations.of(context)?.learn ?? 'Learn', 3),
+            _buildNavItem(Icons.chat_outlined, AppLocalizations.of(context)?.chat ?? 'Chat', 4),
           ],
         ),
       ),
@@ -417,9 +457,9 @@ class _LearnScreenState extends State<LearnScreen> {
                         icon: const Icon(Icons.arrow_back, color: Color(0xFF111611)),
                       ),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Learn',
+                          AppLocalizations.of(context)?.learn ?? 'Learn',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Color(0xFF111611),
@@ -499,8 +539,8 @@ class _LearnScreenState extends State<LearnScreen> {
                                         Expanded(
                                           child: TextField(
                                             controller: _searchController,
-                                            decoration: const InputDecoration(
-                                              hintText: 'Search articles',
+                                            decoration: InputDecoration(
+                                              hintText: AppLocalizations.of(context)?.searchArticles ?? 'Search articles',
                                               border: InputBorder.none,
                                               hintStyle: TextStyle(color: Color(0xFF638763)),
                                             ),
@@ -627,9 +667,9 @@ class _LearnScreenState extends State<LearnScreen> {
                               ),
                             )
                           : _filteredArticles.isEmpty
-                              ? const Center(
+                              ? Center(
                                   child: Text(
-                                    'No articles found in this category',
+                                    AppLocalizations.of(context)?.noArticlesFound ?? 'No articles found in this category',
                                     style: TextStyle(
                                       color: Color(0xFF638763),
                                       fontSize: 16,
@@ -649,8 +689,8 @@ class _LearnScreenState extends State<LearnScreen> {
                                       },
                                       child: _buildArticleCard(
                                         category: _categories[_selectedCategory],
-                                        title: article['title'] ?? 'No title',
-                                        description: article['description'] ?? 'No description',
+                                        title: article['title'] ?? AppLocalizations.of(context)?.noTitle ?? 'No title',
+                                        description: article['description'] ?? AppLocalizations.of(context)?.noDescription ?? 'No description',
                                         imageUrl: article['urlToImage'],
                                       ),
                                     );

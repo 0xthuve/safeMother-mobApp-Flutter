@@ -190,6 +190,22 @@ class _DeliveryDetailsFormState extends State<DeliveryDetailsForm> {
       final success = await _backendService.savePregnancyTracking(pregnancyTracking);
       
       if (success) {
+        // Also save pregnancy details to Firebase patient collection
+        final firebaseSuccess = await _backendService.updatePatientPregnancyInfo(
+          userId,
+          expectedDeliveryDate: expectedDeliveryDate,
+          pregnancyConfirmedDate: _selectedPregnancyDate,
+          weight: double.tryParse(_weightController.text),
+          isFirstChild: _firstChildValue == 'Yes',
+          hasPregnancyLoss: _pregnancyLossValue == 'Yes',
+          medicalHistory: _medicalHistoryController.text.trim(),
+        );
+        
+        if (!firebaseSuccess) {
+          // Log warning but don't fail the signup since local data is saved
+          print('Warning: Failed to save pregnancy details to Firebase patient collection');
+        }
+        
         // Clear session to ensure user needs to log in again
         await SessionManager.clearSession();
         

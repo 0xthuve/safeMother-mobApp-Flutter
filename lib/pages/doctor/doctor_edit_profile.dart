@@ -23,7 +23,6 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
 
   bool _isLoading = true;
   bool _isSaving = false;
-  bool _isAvailable = true;
 
   @override
   void initState() {
@@ -67,10 +66,6 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
           _experienceController.text = userData['experience']?.toString() ?? '';
           _bioController.text = userData['bio'] ?? '';
           _consultationFeeController.text = userData['consultationFee']?.toString() ?? '';
-          // Ensure availability is properly handled as boolean
-          _isAvailable = userData['isAvailable'] is bool 
-              ? userData['isAvailable'] 
-              : (userData['isAvailable']?.toString().toLowerCase() == 'true' || userData['isAvailable'] == true);
         }
         
         _isLoading = false;
@@ -100,7 +95,6 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
           'experience': _experienceController.text.trim(),
           'bio': _bioController.text.trim(),
           'consultationFee': double.tryParse(_consultationFeeController.text.trim()) ?? 0.0,
-          'isAvailable': _isAvailable,
         };
 
         // Debug logging
@@ -162,29 +156,6 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
         backgroundColor: const Color(0xFF1976D2),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          if (!_isLoading)
-            TextButton(
-              onPressed: _isSaving ? null : _saveProfile,
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text(
-                      'Save',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-            ),
-        ],
       ),
       body: _isLoading
           ? const Center(
@@ -345,68 +316,6 @@ class _DoctorEditProfileState extends State<DoctorEditProfile> {
                       icon: Icons.info_outline,
                       maxLines: 3,
                       hintText: 'Brief description about your practice and expertise...',
-                    ),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Availability Section
-                    _buildSectionTitle('Availability'),
-                    const SizedBox(height: 16),
-                    
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: const Color(0xFFE0E0E0),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            _isAvailable ? Icons.check_circle : Icons.cancel_outlined,
-                            color: _isAvailable ? const Color(0xFF4CAF50) : const Color(0xFFF44336),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Available for appointments',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Color(0xFF5A5A5A),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  _isAvailable ? 'Currently accepting new appointments' : 'Not accepting new appointments',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: _isAvailable ? const Color(0xFF4CAF50) : const Color(0xFFF44336),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: _isAvailable,
-                            onChanged: (value) {
-                              setState(() {
-                                _isAvailable = value;
-                              });
-
-
-                            },
-                            activeColor: const Color(0xFF1976D2),
-                            inactiveThumbColor: Colors.grey,
-                            inactiveTrackColor: Colors.grey.withOpacity(0.3),
-                          ),
-                        ],
-                      ),
                     ),
                     
                     const SizedBox(height: 32),

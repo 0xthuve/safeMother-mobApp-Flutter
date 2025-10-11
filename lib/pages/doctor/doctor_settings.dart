@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../navigation/doctor_navigation_handler.dart';
 import '../../navigation/doctor_bottom_navigation.dart';
+import '../../main.dart';
 
 class DoctorSettings extends StatefulWidget {
   const DoctorSettings({super.key});
@@ -16,6 +17,86 @@ class _DoctorSettingsState extends State<DoctorSettings> {
   String _language = 'English';
   String _theme = 'Light';
 
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentLanguage();
+  }
+
+  Future<void> _loadCurrentLanguage() async {
+    final currentLocale = Localizations.localeOf(context);
+    setState(() {
+      _language = _getLanguageName(currentLocale.languageCode);
+    });
+  }
+
+  String _getLanguageName(String languageCode) {
+    switch (languageCode) {
+      case 'en':
+        return 'English';
+      case 'ta':
+        return 'Tamil';
+      case 'si':
+        return 'Sinhala';
+      case 'es':
+        return 'Spanish';
+      case 'fr':
+        return 'French';
+      default:
+        return 'English';
+    }
+  }
+
+  String _getLanguageCode(String languageName) {
+    switch (languageName) {
+      case 'English':
+        return 'en';
+      case 'Tamil':
+        return 'ta';
+      case 'Sinhala':
+        return 'si';
+      case 'Spanish':
+        return 'es';
+      case 'French':
+        return 'fr';
+      default:
+        return 'en';
+    }
+  }
+
+  void _changeLanguage(String languageName) {
+    final languageCode = _getLanguageCode(languageName);
+    final newLocale = Locale(languageCode);
+    
+    // Update app locale
+    final state = SafeMotherApp.of(context);
+    if (state != null) {
+      state.setLocale(newLocale);
+    }
+    
+    setState(() {
+      _language = languageName;
+    });
+  }
+
+  void _pickLanguage() {
+    showDialog(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Select Language'),
+        children: ['English', 'Tamil', 'Sinhala', 'Spanish', 'French']
+            .map((language) => SimpleDialogOption(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _changeLanguage(language);
+                  },
+                  child: Text(language),
+                ))
+            .toList(),
+      ),
+    );
+  }
+
   void _onItemTapped(int index) {
     if (index == _currentIndex) return;
     DoctorNavigationHandler.navigateToScreen(context, index);
@@ -24,7 +105,6 @@ class _DoctorSettingsState extends State<DoctorSettings> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE3F2FD), // Light blue background
       appBar: AppBar(
         title: const Text('Settings', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF1976D2), // Blue theme
@@ -58,7 +138,7 @@ class _DoctorSettingsState extends State<DoctorSettings> {
               icon: Icons.language,
               title: 'Language',
               subtitle: _language,
-              onTap: () => _pickFrom(['English', 'Spanish', 'French'], (v) => setState(() => _language = v)),
+              onTap: () => _pickLanguage(),
             ),
             _divider(),
             _navTile(
