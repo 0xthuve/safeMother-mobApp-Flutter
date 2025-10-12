@@ -832,7 +832,7 @@ abstract class AppLocalizations {
   /// No description provided for @appetiteLevel.
   ///
   /// In en, this message translates to:
-  /// **'Appetite Level'**
+  /// **'Appetite'**
   String get appetiteLevel;
 
   /// No description provided for @painLevel.
@@ -1648,7 +1648,7 @@ abstract class AppLocalizations {
   /// No description provided for @noArticlesFound.
   ///
   /// In en, this message translates to:
-  /// **'No articles found in this category'**
+  /// **'No Articles Found'**
   String get noArticlesFound;
 
   /// No description provided for @home.
@@ -2008,7 +2008,7 @@ abstract class AppLocalizations {
   /// No description provided for @completed.
   ///
   /// In en, this message translates to:
-  /// **'Completed'**
+  /// **'COMPLETED'**
   String get completed;
 
   /// No description provided for @current.
@@ -2028,7 +2028,514 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This Week\'s Tips'**
   String get thisWeeksTips;
+
+  /// No description provided for @familyWelcomeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Supporting your loved one through this beautiful journey'**
+  String get familyWelcomeMessage;
+
+  /// No description provided for @caregiver.
+  ///
+  /// In en, this message translates to:
+  /// **'Caregiver'**
+  String get caregiver;
+
+  /// No description provided for @healthOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Health Overview'**
+  String get healthOverview;
+
+  /// No description provided for @viewAllHealthData.
+  ///
+  /// In en, this message translates to:
+  /// **'View All Health Data'**
+  String get viewAllHealthData;
+
+  /// No description provided for @recentActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Activity'**
+  String get recentActivity;
+
+  /// No description provided for @lastHealthUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Health Update'**
+  String get lastHealthUpdate;
+
+  /// No description provided for @linkedPatient.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked Patient'**
+  String get linkedPatient;
+
+  /// No description provided for @patientName.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient Name'**
+  String get patientName;
+
+  /// No description provided for @relationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get relationship;
+
+  /// No description provided for @connectionStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection Status'**
+  String get connectionStatus;
+
+  /// No description provided for @privacySecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy & Security'**
+  String get privacySecurity;
+
+  /// No description provided for @familyMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Family Member'**
+  String get familyMember;
+
+  /// No description provided for @linkedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked to'**
+  String get linkedTo;
+
+  /// No description provided for @edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// No description provided for @enterYour.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your'**
+  String get enterYour;
+
+  /// No description provided for @update.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get update;
+
+  /// No description provided for @passwordMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters long!'**
+  String get passwordMinLength;
+
+  /// No description provided for @passwordUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Password updated successfully!'**
+  String get passwordUpdated;
+
+  /// No description provided for @failedUpdatePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update password'**
+  String get failedUpdatePassword;
+
+  /// No description provided for @privacyDescriptionFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Your privacy and the security of {patientName}\'s medical information are our top priority. All data is encrypted and stored securely. Family members can only access information that is explicitly shared with them.'**
+  String privacyDescriptionFamily(Object patientName);
+
+  /// No description provided for @updatedSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'updated successfully!'**
+  String get updatedSuccessfully;
+
+  /// No description provided for @failedUpdateField.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update {field}: {error}'**
+  String failedUpdateField(Object error, Object field);
+
+  /// No description provided for @errorSigningOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Error signing out: {error}'**
+  String errorSigningOut(Object error);
+
+  /// No description provided for @signedOutSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed out successfully'**
+  String get signedOutSuccessfully;
+
+  /// No description provided for @patientHealthLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'{patientName}\'s Health Logs'**
+  String patientHealthLogs(Object patientName);
+
+  /// No description provided for @viewingRecentHealthUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewing recent health updates and vital signs'**
+  String get viewingRecentHealthUpdates;
+
+  /// No description provided for @healthLogsWillAppear.
+  ///
+  /// In en, this message translates to:
+  /// **'Health logs will appear here when {patientName} starts tracking'**
+  String healthLogsWillAppear(Object patientName);
+
+  /// No description provided for @recentLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Logs'**
+  String get recentLogs;
+
+  /// No description provided for @bloodPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Blood Pressure'**
+  String get bloodPressure;
+
+  /// No description provided for @babyKicks.
+  ///
+  /// In en, this message translates to:
+  /// **'Baby Kicks'**
+  String get babyKicks;
+
+  /// No description provided for @sleepHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep'**
+  String get sleepHours;
+
+  /// No description provided for @waterIntake.
+  ///
+  /// In en, this message translates to:
+  /// **'Water Intake'**
+  String get waterIntake;
+
+  /// No description provided for @exerciseMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise'**
+  String get exerciseMinutes;
+
+  /// No description provided for @mood.
+  ///
+  /// In en, this message translates to:
+  /// **'Mood'**
+  String get mood;
+
+  /// No description provided for @energy.
+  ///
+  /// In en, this message translates to:
+  /// **'Energy'**
+  String get energy;
+
+  /// No description provided for @symptoms.
+  ///
+  /// In en, this message translates to:
+  /// **'Symptoms'**
+  String get symptoms;
+
+  /// No description provided for @notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get notes;
+
+  /// No description provided for @medications.
+  ///
+  /// In en, this message translates to:
+  /// **'Medications'**
+  String get medications;
+
+  /// No description provided for @nauseaDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Nausea Details'**
+  String get nauseaDetails;
+
+  /// No description provided for @contractions.
+  ///
+  /// In en, this message translates to:
+  /// **'Contractions'**
+  String get contractions;
+
+  /// No description provided for @headaches.
+  ///
+  /// In en, this message translates to:
+  /// **'Headaches'**
+  String get headaches;
+
+  /// No description provided for @swelling.
+  ///
+  /// In en, this message translates to:
+  /// **'Swelling'**
+  String get swelling;
+
+  /// No description provided for @vitamins.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitamins'**
+  String get vitamins;
+
+  /// No description provided for @highRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'High Risk'**
+  String get highRisk;
+
+  /// No description provided for @moderateRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate Risk'**
+  String get moderateRisk;
+
+  /// No description provided for @lowRisk.
+  ///
+  /// In en, this message translates to:
+  /// **'Low Risk'**
+  String get lowRisk;
+
+  /// No description provided for @excellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent'**
+  String get excellent;
+
+  /// No description provided for @good.
+  ///
+  /// In en, this message translates to:
+  /// **'Good'**
+  String get good;
+
+  /// No description provided for @okay.
+  ///
+  /// In en, this message translates to:
+  /// **'Okay'**
+  String get okay;
+
+  /// No description provided for @low.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get low;
+
+  /// No description provided for @anxious.
+  ///
+  /// In en, this message translates to:
+  /// **'Anxious'**
+  String get anxious;
+
+  /// No description provided for @viewLog.
+  ///
+  /// In en, this message translates to:
+  /// **'View Log'**
+  String get viewLog;
+
+  /// No description provided for @safeMother.
+  ///
+  /// In en, this message translates to:
+  /// **'Safe Mother'**
+  String get safeMother;
+
+  /// No description provided for @patientAppointments.
+  ///
+  /// In en, this message translates to:
+  /// **'{patientName}\'s Appointments'**
+  String patientAppointments(Object patientName);
+
+  /// No description provided for @trackManageAppointments.
+  ///
+  /// In en, this message translates to:
+  /// **'Track and manage healthcare appointments'**
+  String get trackManageAppointments;
+
+  /// No description provided for @upcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'UPCOMING'**
+  String get upcoming;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'TODAY'**
+  String get today;
+
+  /// No description provided for @tomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'TOMORROW'**
+  String get tomorrow;
+
+  /// No description provided for @completedAppointments.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed Appointments'**
+  String get completedAppointments;
+
+  /// No description provided for @noAppointments.
+  ///
+  /// In en, this message translates to:
+  /// **'No Appointments'**
+  String get noAppointments;
+
+  /// No description provided for @noAppointmentsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No appointments found for {patientName}.'**
+  String noAppointmentsFound(Object patientName);
+
+  /// No description provided for @noAppointmentsDialog.
+  ///
+  /// In en, this message translates to:
+  /// **'No Appointments'**
+  String get noAppointmentsDialog;
+
+  /// No description provided for @noAppointmentsDialogMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No appointment schedules found for {patientName}. Appointments will appear here when scheduled.'**
+  String noAppointmentsDialogMessage(Object patientName);
+
+  /// No description provided for @firestoreError.
+  ///
+  /// In en, this message translates to:
+  /// **'Firestore Error'**
+  String get firestoreError;
+
+  /// No description provided for @connectionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection Error'**
+  String get connectionError;
+
+  /// No description provided for @unableToLoadAppointments.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load appointments. Please check your connection and try again.'**
+  String get unableToLoadAppointments;
+
+  /// No description provided for @unexpectedError.
+  ///
+  /// In en, this message translates to:
+  /// **'An unexpected error occurred while loading appointments.'**
+  String get unexpectedError;
+
+  /// No description provided for @failedToLoadAppointments.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load appointments: {error}'**
+  String failedToLoadAppointments(Object error);
+
+  /// No description provided for @videoCallAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Video call available'**
+  String get videoCallAvailable;
+
+  /// No description provided for @joinCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Join Call'**
+  String get joinCall;
+
+  /// No description provided for @joiningVideoCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Joining video call...'**
+  String get joiningVideoCall;
+
+  /// No description provided for @appointmentsLoadingBasicSorting.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointments loading with basic sorting (index building...)'**
+  String get appointmentsLoadingBasicSorting;
+
+  /// No description provided for @appointmentsLoadingBasicSortingFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointments loading with basic sorting. Full sorting will be available soon.'**
+  String get appointmentsLoadingBasicSortingFull;
+
+  /// No description provided for @ok.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ok;
+
+  /// No description provided for @pregnancyAndParentingGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Pregnancy & Parenting Guide'**
+  String get pregnancyAndParentingGuide;
+
+  /// No description provided for @latestArticlesAndResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest articles and resources for {patientName}\'s pregnancy journey'**
+  String latestArticlesAndResources(Object patientName);
+
+  /// No description provided for @searchPregnancyArticles.
+  ///
+  /// In en, this message translates to:
+  /// **'Search pregnancy articles...'**
+  String get searchPregnancyArticles;
+
+  /// No description provided for @loadingArticles.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading articles...'**
+  String get loadingArticles;
+
+  /// No description provided for @unableToLoadArticles.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to Load Articles'**
+  String get unableToLoadArticles;
+
+  /// No description provided for @failedToLoadArticles.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load articles. Please try again later.'**
+  String get failedToLoadArticles;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get tryAgain;
+
+  /// No description provided for @tryAdjustingSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Try adjusting your search or category filter'**
+  String get tryAdjustingSearch;
+
+  /// No description provided for @readArticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read Article'**
+  String get readArticle;
+
+  /// No description provided for @cannotOpenArticle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot open article: {url}'**
+  String cannotOpenArticle(Object url);
 }
+// Add these to your AppLocalizations class
+String get selectLanguage => 'Select Language';
+String get save => 'Save';
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();

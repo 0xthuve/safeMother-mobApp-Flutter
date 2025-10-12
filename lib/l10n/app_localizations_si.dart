@@ -209,7 +209,7 @@ class AppLocalizationsSi extends AppLocalizations {
   String get feelingWell => 'අද ඔබට හොඳින් සිටීමට සුබ පැතුම්';
 
   @override
-  String get appointments => 'නියම කිරීම්';
+  String get appointments => 'නියමයන්';
 
   @override
   String get reminders => 'සිහිකැඳවීම්';
@@ -224,7 +224,7 @@ class AppLocalizationsSi extends AppLocalizations {
   String get noRemindersToday => 'අද සිහිකැඳවීම් නැත';
 
   @override
-  String get upcomingAppointments => 'ඉදිරිපත් නියම කිරීම්';
+  String get upcomingAppointments => 'ඉදිරිපත් නියමයන්';
 
   @override
   String get noUpcomingAppointments => 'ඉදිරිපත් නියම කිරීම් නැත';
@@ -377,10 +377,10 @@ class AppLocalizationsSi extends AppLocalizations {
   String get energyLevel => 'ශක්තිය මට්ටම';
 
   @override
-  String get appetiteLevel => 'භෝජන ආශාව මට්ටම';
+  String get appetiteLevel => 'භෝජන ආශාව';
 
   @override
-  String get painLevel => 'වේදනාව මට්ටම';
+  String get painLevel => 'වේදනා මට්ටම';
 
   @override
   String get healthIndicators => 'සෞඛ්‍ය දක්වනයන්';
@@ -815,16 +815,16 @@ class AppLocalizationsSi extends AppLocalizations {
   }
 
   @override
-  String get learn => 'ඉගෙනීම';
+  String get learn => 'ඉගෙන ගන්න';
 
   @override
   String get searchArticles => 'ලිපි සොයන්න';
 
   @override
-  String get noArticlesFound => 'මෙම ප්‍රවේශයේ ලිපි නැත';
+  String get noArticlesFound => 'ලිපි හමු නොවීය';
 
   @override
-  String get home => 'මුල් පිටුව';
+  String get home => 'නිවස';
 
   @override
   String get log => 'ලොග් කරන්න';
@@ -1005,7 +1005,7 @@ class AppLocalizationsSi extends AppLocalizations {
   String get dueDateDesc => 'ඔබගේ ඇස්තමේන්තු කරන ලද නියමිත දිනය පැමිණේ!';
 
   @override
-  String get completed => 'සම්පූර්ණ කරන ලදි';
+  String get completed => 'සම්පූර්ණයි';
 
   @override
   String get current => 'වර්තමාන';
@@ -1015,4 +1015,278 @@ class AppLocalizationsSi extends AppLocalizations {
 
   @override
   String get thisWeeksTips => 'මෙම සතියේ උපදෙස්';
+
+  @override
+  String get familyWelcomeMessage => 'ඔබගේ ප්‍රියතමයාට මෙම සුන්දර යාත්‍රාවේදී සහාය වීම';
+
+  @override
+  String get caregiver => 'සත්කාරක';
+
+  @override
+  String get healthOverview => 'සෞඛ්‍ය දෘශ්‍යමානය';
+
+  @override
+  String get viewAllHealthData => 'සියලු සෞඛ්‍ය දත්ත බලන්න';
+
+  @override
+  String get recentActivity => 'මෑත ක්‍රියාකාරකම්';
+
+  @override
+  String get lastHealthUpdate => 'අවසාන සෞඛ්‍ය යාවත්කාලීනය';
+
+  @override
+  String get linkedPatient => 'සම්බන්ධිත රෝගියා';
+
+  @override
+  String get patientName => 'රෝගියාගේ නම';
+
+  @override
+  String get relationship => 'සම්බන්ධතාවය';
+
+  @override
+  String get connectionStatus => 'සම්බන්ධතා තත්ත්වය';
+
+  @override
+  String get privacySecurity => 'පුද්ගලිකත්ව සහ ආරක්ෂාව';
+
+  @override
+  String get familyMember => 'පවුලේ සාමාජිකයෙක්';
+
+  @override
+  String get linkedTo => 'සම්බන්ධිතයි';
+
+  @override
+  String get edit => 'සංස්කරණය';
+
+  @override
+  String get enterYour => 'ඔබගේ ආදානය කරන්න';
+
+  @override
+  String get update => 'යාවත්කාලීන කරන්න';
+
+  @override
+  String get passwordMinLength => 'මුරපදය අවම වශයෙන් අක්ෂර 6 ක් වැඩි විය යුතුය!';
+
+  @override
+  String get passwordUpdated => 'මුරපදය සාර්ථකව යාවත්කාලීන කරන ලදී!';
+
+  @override
+  String get failedUpdatePassword => 'මුරපදය යාවත්කාලීන කිරීමට අසාර්ථක විය';
+
+  @override
+  String privacyDescriptionFamily(Object patientName) {
+    return 'ඔබගේ පුද්ගලිකත්ව සහ $patientNameගේ වෛද්‍ය තොරතුරුවල ආරක්ෂාව අපගේ ප්‍රධාන ප්‍රමුඛතාවයි. සියලු දත්ත සංකේතනය කර ආරක්ෂිතව ගබඩා කරනු ලැබේ. පවුලේ සාමාජිකයින්ට සංස්කරණය කරන ලද තොරතුරු පමණක් ප්‍රවේශ විය හැක.';
+  }
+
+  @override
+  String get updatedSuccessfully => 'සාර්ථකව යාවත්කාලීන කරන ලදී!';
+
+  @override
+  String failedUpdateField(Object error, Object field) {
+    return '$field යාවත්කාලීන කිරීමට අසාර්ථක විය: $error';
+  }
+
+  @override
+  String errorSigningOut(Object error) {
+    return 'ඉවත් වීමේ දෝෂය: $error';
+  }
+
+  @override
+  String get signedOutSuccessfully => 'සාර්ථකව ඉවත් විය';
+
+  @override
+  String patientHealthLogs(Object patientName) {
+    return '$patientNameගේ සෞඛ්‍ය පටිගත';
+  }
+
+  @override
+  String get viewingRecentHealthUpdates => 'මෑත සෞඛ්‍ය යාවත්කාලීන සහ ප්‍රධාන ලක්ෂණ බැරෑරුම් කිරීම';
+
+  @override
+  String healthLogsWillAppear(Object patientName) {
+    return '$patientName ලුහුබඳිනවා අරඹින විට සෞඛ්‍ය පටිගත මෙහි පෙනුනු වේ';
+  }
+
+  @override
+  String get recentLogs => 'මෑත පටිගත';
+
+  @override
+  String get bloodPressure => 'රුධිර පීඩනය';
+
+  @override
+  String get babyKicks => 'ළදරුවාගේ පා';
+
+  @override
+  String get sleepHours => 'නින්ද';
+
+  @override
+  String get waterIntake => 'ජල පරිභෝජනය';
+
+  @override
+  String get exerciseMinutes => 'ව්‍යායාමය';
+
+  @override
+  String get mood => 'මනෝභාවය';
+
+  @override
+  String get energy => 'ශක්තිය';
+
+  @override
+  String get symptoms => 'ලක්ෂණ';
+
+  @override
+  String get notes => 'සටහන්';
+
+  @override
+  String get medications => 'ඖෂධ';
+
+  @override
+  String get nauseaDetails => 'වමනයේ විස්තර';
+
+  @override
+  String get contractions => 'සංකෝචන';
+
+  @override
+  String get headaches => 'හිසරදය';
+
+  @override
+  String get swelling => 'විඩාවට තිබීම';
+
+  @override
+  String get vitamins => 'විටමින්';
+
+  @override
+  String get highRisk => 'ඉහළ අවදානම';
+
+  @override
+  String get moderateRisk => 'මධ්‍යම අවදානම';
+
+  @override
+  String get lowRisk => 'අඩු අවදානම';
+
+  @override
+  String get excellent => 'අතිශයෝක්තියි';
+
+  @override
+  String get good => 'හොඳයි';
+
+  @override
+  String get okay => 'හොඳින්ම';
+
+  @override
+  String get low => 'අඩුයි';
+
+  @override
+  String get anxious => 'පීඩාවෙන් යුක්ත';
+
+  @override
+  String get viewLog => 'පටිගත බලන්න';
+
+  @override
+  String get safeMother => 'සුරක්ෂිත මව';
+
+  @override
+  String patientAppointments(Object patientName) {
+    return '$patientNameගේ නියමයන්';
+  }
+
+  @override
+  String get trackManageAppointments => 'සෞඛ්‍ය සත්කාර නියමයන් ලුහුබඳින්න සහ කළමනාකරණය කරන්න';
+
+  @override
+  String get upcoming => 'ඉදිරිපත්';
+
+  @override
+  String get today => 'අද';
+
+  @override
+  String get tomorrow => 'හෙට';
+
+  @override
+  String get completedAppointments => 'සම්පූර්ණ කරන ලද නියමයන්';
+
+  @override
+  String get noAppointments => 'නියමයන් නැත';
+
+  @override
+  String noAppointmentsFound(Object patientName) {
+    return '$patientName සඳහා නියමයන් හමු නොවීය.';
+  }
+
+  @override
+  String get noAppointmentsDialog => 'නියමයන් නැත';
+
+  @override
+  String noAppointmentsDialogMessage(Object patientName) {
+    return '$patientName සඳහා නියම කාලසටහන් හමු නොවීය. නියම කරන විට නියමයන් මෙහි පෙනුනු වේ.';
+  }
+
+  @override
+  String get firestoreError => 'ෆයර්ස්ටෝර් දෝෂය';
+
+  @override
+  String get connectionError => 'සම්බන්ධතා දෝෂය';
+
+  @override
+  String get unableToLoadAppointments => 'නියමයන් පූරණය කළ නොහැක. කරුණාකර ඔබගේ සම්බන්ධතාවය පරීක්ෂා කර නැවත උත්සාහ කරන්න.';
+
+  @override
+  String get unexpectedError => 'නියමයන් පූරණය කිරීමේදී අනපේක්ෂිත දෝෂයක් සිදු විය.';
+
+  @override
+  String failedToLoadAppointments(Object error) {
+    return 'නියමයන් පූරණය කළ නොහැක: $error';
+  }
+
+  @override
+  String get videoCallAvailable => 'වීඩියෝ ඇමතුම් ලබා ගත හැක';
+
+  @override
+  String get joinCall => 'ඇමතුමට සම්බන්ධ වන්න';
+
+  @override
+  String get joiningVideoCall => 'වීඩියෝ ඇමතුමට සම්බන්ධ වෙමින්...';
+
+  @override
+  String get appointmentsLoadingBasicSorting => 'නියමයන් මූලික වින්‍යාසය සමඟ පූරණය වෙමින් (අනුක්‍රමණය ගොඩනැගෙමින්...)';
+
+  @override
+  String get appointmentsLoadingBasicSortingFull => 'නියමයන් මූලික වින්‍යාසය සමඟ පූරණය වෙමින්. සම්පූර්ණ වින්‍යාසය ඉක්මනින් ලබා ගත හැකි වේ.';
+
+  @override
+  String get ok => 'හරි';
+
+  @override
+  String get pregnancyAndParentingGuide => 'ගර්භනී සහ මාපියකම් මාර්ගෝපදේශ';
+
+  @override
+  String latestArticlesAndResources(Object patientName) {
+    return '$patientNameගේ ගර්භනී ගමනය සඳහා නවතම ලිපි සහ සම්පත';
+  }
+
+  @override
+  String get searchPregnancyArticles => 'ගර්භනී ලිපි සොයන්න...';
+
+  @override
+  String get loadingArticles => 'ලිපි පූරණය වෙමින්...';
+
+  @override
+  String get unableToLoadArticles => 'ලිපි පූරණය කළ නොහැක';
+
+  @override
+  String get failedToLoadArticles => 'ලිපි පූරණය කළ නොහැක. කරුණාකර පසුව නැවත උත්සාහ කරන්න.';
+
+  @override
+  String get tryAgain => 'නැවත උත්සාහ කරන්න';
+
+  @override
+  String get tryAdjustingSearch => 'ඔබගේ සෙවීම හෝ කාණ්ඩ පෙරහන සකස් කර උත්සාහ කරන්න';
+
+  @override
+  String get readArticle => 'ලිපිය කියවන්න';
+
+  @override
+  String cannotOpenArticle(Object url) {
+    return 'ලිපිය විවෘත කළ නොහැක: $url';
+  }
 }

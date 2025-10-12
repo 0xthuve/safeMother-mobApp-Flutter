@@ -11,6 +11,11 @@ import '../services/family_member_service.dart';
 import '../services/familyMember_patient_service.dart';
 import '../services/family_notification_service.dart';
 import '../widgets/notification_permission_dialog.dart';
+import 'family_profile_page.dart';
+import 'family_log_page.dart';
+import 'family_appointment_page.dart';
+import 'family_learn_page.dart';
+import '../l10n/app_localizations.dart';
 
 class FamilyHomeScreen extends StatefulWidget {
   const FamilyHomeScreen({super.key});
@@ -466,7 +471,12 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
             ),
           ),
           GestureDetector(
-            onTap: () => FamilyNavigationHandler.navigateToProfile(context),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FamilyProfileScreen()),
+              );
+            },
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -524,7 +534,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Supporting your loved one through this beautiful journey',
+          AppLocalizations.of(context)?.familyWelcomeMessage ?? 'Supporting your loved one through this beautiful journey',
           style: GoogleFonts.inter(
             fontSize: 14,
             color: const Color(0xFF757575),
@@ -581,9 +591,9 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
-              'Caregiver',
-              style: TextStyle(
+            child: Text(
+              AppLocalizations.of(context)?.caregiver ?? 'Caregiver',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -778,7 +788,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Health Overview',
+              AppLocalizations.of(context)?.healthOverview ?? 'Health Overview',
               style: GoogleFonts.inter(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -796,7 +806,10 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
               ),
               child: IconButton(
                 onPressed: () {
-                  FamilyNavigationHandler.navigateToScreen(context, 1);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const FamilyViewLogScreen()),
+                  );
                 },
                 icon: const Icon(Icons.arrow_forward, color: Colors.white, size: 20),
                 padding: const EdgeInsets.all(8),
@@ -897,7 +910,10 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                   ),
                   child: TextButton(
                     onPressed: () {
-                      FamilyNavigationHandler.navigateToScreen(context, 1);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const FamilyViewLogScreen()),
+                      );
                     },
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -909,7 +925,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'View All Health Data',
+                          AppLocalizations.of(context)?.viewAllHealthData ?? 'View All Health Data',
                           style: GoogleFonts.inter(
                             color: Colors.white,
                             fontSize: 16,
@@ -1090,7 +1106,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Recent Activity',
+          AppLocalizations.of(context)?.recentActivity ?? 'Recent Activity',
           style: GoogleFonts.inter(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -1126,7 +1142,7 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Last Health Update',
+                    AppLocalizations.of(context)?.lastHealthUpdate ?? 'Last Health Update',
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1222,15 +1238,11 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(context, Icons.home_filled, 'Home', 0),
-            _buildNavItem(context, Icons.assignment_outlined, 'View Log', 1),
-            _buildNavItem(
-              context,
-              Icons.calendar_today_outlined,
-              'Appointments',
-              2,
-            ),
-            _buildNavItem(context, Icons.menu_book_outlined, 'Learn', 4),
+            _buildNavItem(context, Icons.home_filled, AppLocalizations.of(context)?.home ?? 'Home', 0),
+                        _buildNavItem(context, Icons.assignment_outlined,
+            AppLocalizations.of(context)?.log ?? 'View Log', 1),
+            _buildNavItem(context, Icons.calendar_today_outlined, AppLocalizations.of(context)?.appointments ?? 'Appointments', 2),
+            _buildNavItem(context, Icons.menu_book_outlined, AppLocalizations.of(context)?.learn ?? 'Learn', 3),
           ],
         ),
       ),
@@ -1245,7 +1257,26 @@ class _FamilyHomeScreenState extends State<FamilyHomeScreen> {
   ) {
     final isActive = index == 0;
     return GestureDetector(
-      onTap: () => FamilyNavigationHandler.navigateToScreen(context, index),
+      onTap: () {
+        if (index == 0) {
+          // Home: do nothing or reload
+        } else if (index == 1) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const FamilyViewLogScreen()),
+          );
+        } else if (index == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const FamilyAppointmentsScreen()),
+          );
+        } else if (index == 3) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const FamilyLearnScreen()),
+          );
+        }
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

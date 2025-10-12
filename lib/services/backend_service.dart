@@ -45,7 +45,7 @@ class BackendService {
       await prefs.setString('${pregnancyTrackingKey}_${tracking.userId}', trackingData);
       return true;
     } catch (e) {
-
+      print('BackendService: Error saving pregnancy tracking: $e');
       return false;
     }
   }
@@ -63,7 +63,7 @@ class BackendService {
 
       return await savePregnancyTracking(updatedTracking);
     } catch (e) {
-
+      print('BackendService: Error updating pregnancy tracking: $e');
       return false;
     }
   }
@@ -204,6 +204,105 @@ class BackendService {
     }
   }
 
+  // ========== PATIENT PREGNANCY INFORMATION OPERATIONS ========== 
+
+Future<bool> updatePatientPregnancyInfo(String userId, {
+  DateTime? expectedDeliveryDate,
+  DateTime? pregnancyConfirmedDate,
+  double? weight,
+  bool? isFirstChild,
+  bool? hasPregnancyLoss,
+  String? medicalHistory,
+}) async {
+  try {
+    print('BackendService: Updating pregnancy info for user: $userId');
+    
+    // Check if patient data already exists
+    final patientExists = await FirebaseService.patientDataExists(userId);
+    
+    // Create patient data according to your Firebase structure
+    final patientData = {
+      'uid': userId,
+      'babyName': "", // Empty string as in your sample
+      'bloodType': "", // Empty string as in your sample
+      'expectedDeliveryDate': expectedDeliveryDate?.toIso8601String(),
+      'pregnancyConfirmedDate': pregnancyConfirmedDate?.toIso8601String(),
+      'weight': weight,
+      'isFirstChild': isFirstChild ?? false,
+      'hasPregnancyLoss': hasPregnancyLoss ?? false,
+      'medicalHistory': medicalHistory ?? '',
+      'pregnancyWeek': 0, // Will be calculated later
+      'height': 0, // Default value as in your sample
+      'allergies': [], // Empty array as in your sample
+      'appointments': [], // Empty array as in your sample
+      'emergencyContacts': [], // Empty array as in your sample
+      'medications': [], // Empty array as in your sample
+      'profilePicture': "", // Empty string as in your sample
+      'lastCheckup': null, // null as in your sample
+      'nextCheckup': null, // null as in your sample
+      'createdAt': DateTime.now().toIso8601String(),
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+
+    // Remove null values to avoid Firebase errors
+    final cleanPatientData = Map<String, dynamic>.from(patientData)
+      ..removeWhere((key, value) => value == null);
+
+    print('BackendService: Patient data to save: $cleanPatientData');
+
+    // Save to Firebase patients collection
+    final success = await FirebaseService.createRoleData(userId, 'patient', cleanPatientData);
+    
+    if (success) {
+      print('BackendService: Successfully ${patientExists ? 'updated' : 'created'} pregnancy info for patient $userId');
+      
+      // Also update user role to patient in users collection
+      await _updateUserRole(userId, 'patient');
+      
+      // Add a small delay to ensure Firebase operations complete
+      await Future.delayed(const Duration(milliseconds: 800));
+      return true;
+    } else {
+      print('BackendService: Failed to update pregnancy info for patient $userId');
+      return false;
+    }
+  } catch (e) {
+    print('BackendService: Error updating patient pregnancy info: $e');
+    print('BackendService: Stack trace: ${StackTrace.current}');
+    return false;
+  }
+}
+  // Helper method to update user role
+  Future<bool> _updateUserRole(String userId, String role) async {
+    try {
+      print('BackendService: Updating user role to $role for user: $userId');
+      
+      // Update user role in Firebase users collection
+      await FirebaseService.updateUserData(userId, {
+        'role': role,
+        'profileComplete': true,
+        'pregnancyInfoComplete': true,
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+      
+      print('BackendService: Successfully updated user role to $role for user $userId');
+      return true;
+    } catch (e) {
+      print('BackendService: Error updating user role: $e');
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getPatientPregnancyInfo(String userId) async {
+    try {
+      final patientData = await FirebaseService.getRoleData(userId, 'patient');
+      return patientData;
+    } catch (e) {
+      print('BackendService: Error getting patient pregnancy info: $e');
+      return null;
+    }
+  }
+
   // ========== MEDICAL RECORDS OPERATIONS ==========
 
   Future<List<MedicalRecord>> getMedicalRecords(String userId, {String? recordType}) async {
@@ -240,7 +339,7 @@ class BackendService {
       await prefs.setString('${medicalRecordsKey}_${record.userId}', recordsData);
       return true;
     } catch (e) {
-
+      print('BackendService: Error saving medical record: $e');
       return false;
     }
   }
@@ -259,7 +358,7 @@ class BackendService {
       await prefs.setString('${medicalRecordsKey}_${record.userId}', recordsData);
       return true;
     } catch (e) {
-
+      print('BackendService: Error updating medical record: $e');
       return false;
     }
   }
@@ -274,7 +373,7 @@ class BackendService {
       await prefs.setString('${medicalRecordsKey}_$userId', recordsData);
       return true;
     } catch (e) {
-
+      print('BackendService: Error deleting medical record: $e');
       return false;
     }
   }
@@ -327,7 +426,7 @@ class BackendService {
       await prefs.setString('${remindersKey}_${reminder.userId}', remindersData);
       return true;
     } catch (e) {
-
+      print('BackendService: Error saving reminder: $e');
       return false;
     }
   }
@@ -346,7 +445,7 @@ class BackendService {
       await prefs.setString('${remindersKey}_${reminder.userId}', remindersData);
       return true;
     } catch (e) {
-
+      print('BackendService: Error updating reminder: $e');
       return false;
     }
   }
@@ -384,7 +483,7 @@ class BackendService {
       await prefs.setString('${remindersKey}_$userId', remindersData);
       return true;
     } catch (e) {
-
+      print('BackendService: Error completing reminder: $e');
       return false;
     }
   }
@@ -423,7 +522,7 @@ class BackendService {
       await _saveAppointmentForDoctor(appointment);
       return true;
     } catch (e) {
-
+      print('BackendService: Error saving appointment: $e');
       return false;
     }
   }
@@ -487,7 +586,7 @@ class BackendService {
       }
       return true;
     } catch (e) {
-
+      print('BackendService: Error updating appointment status: $e');
       return false;
     }
   }
@@ -659,7 +758,7 @@ class BackendService {
       }
       return null;
     } catch (e) {
-
+      print('BackendService: Error getting doctor by ID: $e');
       return null;
     }
   }
@@ -671,7 +770,7 @@ class BackendService {
       
       return doctorsData.map((data) => Doctor.fromMap(data)).toList();
     } catch (e) {
-
+      print('BackendService: Error getting doctors by specialization: $e');
       return [];
     }
   }
@@ -681,7 +780,7 @@ class BackendService {
       // Get available specializations from Firebase
       return await FirebaseService.getAvailableSpecializations();
     } catch (e) {
-
+      print('BackendService: Error getting available specializations: $e');
       return [];
     }
   }
@@ -693,17 +792,15 @@ class BackendService {
 
   Future<bool> linkPatientWithDoctor(String patientId, String doctorId) async {
     try {
-
+      print('BackendService: Linking patient $patientId with doctor $doctorId');
       
       // Check if there's already a request/link for this patient-doctor pair
       final existingLink = await FirebaseService.getPatientDoctorLink(patientId, doctorId);
       
       if (existingLink != null) {
-
+        print('BackendService: Request already exists for this patient-doctor pair');
         return false; // Request already exists
       }
-      
-
       
       // Create patient-doctor link in Firebase
       final linkId = await FirebaseService.createPatientDoctorLink(
@@ -713,14 +810,14 @@ class BackendService {
       );
       
       if (linkId != null) {
-
+        print('BackendService: Successfully created patient-doctor link: $linkId');
         return true;
       } else {
-
+        print('BackendService: Failed to create patient-doctor link');
         return false;
       }
     } catch (e) {
-
+      print('BackendService: Error linking patient with doctor: $e');
       return false;
     }
   }
@@ -751,7 +848,7 @@ class BackendService {
 
       return true;
     } catch (e) {
-
+      print('BackendService: Error unlinking patient from doctor: $e');
       return false;
     }
   }
@@ -761,8 +858,7 @@ class BackendService {
   // Get all patient requests for a doctor from Firebase
   Future<List<PatientDoctorLink>> getPatientRequestsForDoctor(String doctorId) async {
     try {
-
-      
+      print('BackendService: Getting patient requests for doctor: $doctorId');
       final requestsData = await FirebaseService.getPatientRequestsForDoctor(doctorId);
       
       List<PatientDoctorLink> requests = [];
@@ -780,10 +876,10 @@ class BackendService {
         ));
       }
       
-
+      print('BackendService: Found ${requests.length} patient requests for doctor $doctorId');
       return requests;
     } catch (e) {
-
+      print('BackendService: Error getting patient requests for doctor: $e');
       return [];
     }
   }
@@ -791,8 +887,7 @@ class BackendService {
   // Get all accepted patients for a doctor from Firebase
   Future<List<PatientDoctorLink>> getAcceptedPatientsForDoctor(String doctorId) async {
     try {
-
-      
+      print('BackendService: Getting accepted patients for doctor: $doctorId');
       final patientsData = await FirebaseService.getAcceptedPatientsForDoctor(doctorId);
       
       List<PatientDoctorLink> patients = [];
@@ -810,10 +905,10 @@ class BackendService {
         ));
       }
       
-
+      print('BackendService: Found ${patients.length} accepted patients for doctor $doctorId');
       return patients;
     } catch (e) {
-
+      print('BackendService: Error getting accepted patients for doctor: $e');
       return [];
     }
   }
@@ -838,6 +933,7 @@ class BackendService {
         ));
       }
       
+      print('BackendService: Found ${doctors.length} accepted doctors for patient $patientId');
       return doctors;
     } catch (e) {
       print('BackendService: Error getting accepted doctors for patient: $e');
@@ -873,7 +969,7 @@ class BackendService {
       allPatients.sort((a, b) => b.linkedDate.compareTo(a.linkedDate));
       return allPatients;
     } catch (e) {
-
+      print('BackendService: Error getting linked patients for doctor: $e');
       return [];
     }
   }
@@ -881,19 +977,18 @@ class BackendService {
   // Accept a patient request in Firebase
   Future<bool> acceptPatientRequest(String doctorId, String patientId, String linkId) async {
     try {
-
-      
+      print('BackendService: Accepting patient request - doctor: $doctorId, patient: $patientId, link: $linkId');
       final success = await FirebaseService.acceptPatientRequest(linkId);
       
       if (success) {
-
+        print('BackendService: Successfully accepted patient request');
         return true;
       } else {
-
+        print('BackendService: Failed to accept patient request');
         return false;
       }
     } catch (e) {
-
+      print('BackendService: Error accepting patient request: $e');
       return false;
     }
   }
@@ -901,19 +996,18 @@ class BackendService {
   // Decline a patient request in Firebase
   Future<bool> declinePatientRequest(String doctorId, String patientId, String linkId) async {
     try {
-
-      
+      print('BackendService: Declining patient request - doctor: $doctorId, patient: $patientId, link: $linkId');
       final success = await FirebaseService.declinePatientRequest(linkId);
       
       if (success) {
-
+        print('BackendService: Successfully declined patient request');
         return true;
       } else {
-
+        print('BackendService: Failed to decline patient request');
         return false;
       }
     } catch (e) {
-
+      print('BackendService: Error declining patient request: $e');
       return false;
     }
   }
@@ -921,19 +1015,18 @@ class BackendService {
   // Remove an accepted patient (unlink) permanently in Firebase
   Future<bool> removePatient(String doctorId, String patientId, String linkId) async {
     try {
-
-      
+      print('BackendService: Removing patient - doctor: $doctorId, patient: $patientId, link: $linkId');
       final success = await FirebaseService.removePatientFromDoctor(linkId);
       
       if (success) {
-
+        print('BackendService: Successfully removed patient');
         return true;
       } else {
-
+        print('BackendService: Failed to remove patient');
         return false;
       }
     } catch (e) {
-
+      print('BackendService: Error removing patient: $e');
       return false;
     }
   }
@@ -945,60 +1038,8 @@ class BackendService {
     try {
       return await FirebaseService.getTotalPatientCount();
     } catch (e) {
-
+      print('BackendService: Error getting total patient count: $e');
       return 0;
-    }
-  }
-
-  // ========== PATIENT PREGNANCY INFORMATION OPERATIONS ========== 
-
-  Future<bool> updatePatientPregnancyInfo(String userId, {
-    DateTime? expectedDeliveryDate,
-    DateTime? pregnancyConfirmedDate,
-    double? weight,
-    bool? isFirstChild,
-    bool? hasPregnancyLoss,
-    String? medicalHistory,
-  }) async {
-    try {
-      // Get current patient data from Firebase
-      final patientData = await FirebaseService.getRoleData(userId, 'patient');
-      
-      if (patientData == null) {
-        print('BackendService: No patient data found for user $userId');
-        return false;
-      }
-
-      // Update pregnancy fields
-      final updatedData = {
-        ...patientData,
-        'expectedDeliveryDate': expectedDeliveryDate?.toIso8601String(),
-        'pregnancyConfirmedDate': pregnancyConfirmedDate?.toIso8601String(),
-        'weight': weight,
-        'isFirstChild': isFirstChild,
-        'hasPregnancyLoss': hasPregnancyLoss,
-        'medicalHistory': medicalHistory,
-        'updatedAt': DateTime.now().toIso8601String(),
-      };
-
-      // Save to Firebase patients collection
-      await FirebaseService.createRoleData(userId, 'patient', updatedData);
-      
-      print('BackendService: Successfully updated pregnancy info for patient $userId');
-      return true;
-    } catch (e) {
-      print('BackendService: Error updating patient pregnancy info: $e');
-      return false;
-    }
-  }
-
-  Future<Map<String, dynamic>?> getPatientPregnancyInfo(String userId) async {
-    try {
-      final patientData = await FirebaseService.getRoleData(userId, 'patient');
-      return patientData;
-    } catch (e) {
-      print('BackendService: Error getting patient pregnancy info: $e');
-      return null;
     }
   }
 
@@ -1034,14 +1075,12 @@ class BackendService {
   // Get all linked doctors for a patient (both pending and accepted)
   Future<List<Map<String, dynamic>>> getLinkedDoctorsForPatient(String patientId) async {
     try {
-
-      
+      print('BackendService: Getting linked doctors for patient: $patientId');
       final linkedDoctors = await FirebaseService.getLinkedDoctorsForPatient(patientId);
-      
-
+      print('BackendService: Found ${linkedDoctors.length} linked doctors for patient $patientId');
       return linkedDoctors;
     } catch (e) {
-
+      print('BackendService: Error getting linked doctors for patient: $e');
       return [];
     }
   }
@@ -1056,7 +1095,7 @@ class BackendService {
       return logsData.map((data) => SymptomLog.fromMap(data)).toList()
         ..sort((a, b) => b.logDate.compareTo(a.logDate));
     } catch (e) {
-
+      print('BackendService: Error getting symptom logs from Firestore: $e');
       
       // Fallback to SharedPreferences (for migration period)
       final prefs = await SharedPreferences.getInstance();
@@ -1084,7 +1123,7 @@ class BackendService {
         return null;
       }
     } catch (e) {
-
+      print('BackendService: Error saving symptom log to Firestore: $e');
       
       // Fallback to SharedPreferences
       try {
@@ -1132,7 +1171,7 @@ class BackendService {
       
       return patientLogs;
     } catch (e) {
-
+      print('BackendService: Error getting symptom logs for doctor patients: $e');
       return {};
     }
   }
@@ -1153,7 +1192,7 @@ class BackendService {
       return logsData.map((data) => SymptomLog.fromMap(data)).toList()
         ..sort((a, b) => b.logDate.compareTo(a.logDate));
     } catch (e) {
-
+      print('BackendService: Error getting symptom logs by date range: $e');
       
       // Fallback: filter existing logs
       final allLogs = await getSymptomLogs(patientId);

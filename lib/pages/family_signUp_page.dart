@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../models/family_member_model.dart';
 import '../services/family_member_service.dart';
+import 'family_logIn_page.dart';
 
 class FamilySignUpScreen extends StatefulWidget {
   const FamilySignUpScreen({super.key});
@@ -267,7 +268,10 @@ void _showSuccessDialog() {
                   const Color(0xFFE91E63),
                   () {
                     Navigator.of(context).pop(); // Close dialog
-                    Navigator.pushReplacementNamed(context, '/'); // Navigate to Login
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const FamilyLoginScreen()),
+                    );
                   },
                 ),
               ),

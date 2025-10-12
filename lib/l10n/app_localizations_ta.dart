@@ -209,7 +209,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get feelingWell => 'இன்று நீங்கள் நலமாக உணர்கிறீர்கள் என்று நம்புகிறேன்';
 
   @override
-  String get appointments => 'நியமனங்கள்';
+  String get appointments => 'சந்திப்புகள்';
 
   @override
   String get reminders => 'நினைவூட்டல்கள்';
@@ -326,7 +326,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get recentHealthLogs => 'சமீபத்திய உடல்நல பதிவுகள்';
 
   @override
-  String get noHealthLogsYet => 'இன்னும் உடல்நல பதிவுகள் இல்லை';
+  String get noHealthLogsYet => 'இன்னும் ஆரோக்கிய பதிவுகள் இல்லை';
 
   @override
   String get startLoggingHealthData => 'உங்கள் வரலாற்றைப் பார்க்க உங்கள் உடல்நலத் தரவை பதிவு செய்யத் தொடங்குங்கள்';
@@ -377,10 +377,10 @@ class AppLocalizationsTa extends AppLocalizations {
   String get energyLevel => 'ஆற்றல் மட்டம்';
 
   @override
-  String get appetiteLevel => 'உணவு விருப்ப மட்டம்';
+  String get appetiteLevel => 'உண்ணும் ஆர்வம்';
 
   @override
-  String get painLevel => 'வலி மட்டம்';
+  String get painLevel => 'வலி நிலை';
 
   @override
   String get healthIndicators => 'சுகாதார குறிகாட்டிகள்';
@@ -815,16 +815,16 @@ class AppLocalizationsTa extends AppLocalizations {
   }
 
   @override
-  String get learn => 'கற்றல்';
+  String get learn => 'கற்றுக்கொள்';
 
   @override
   String get searchArticles => 'கட்டுரைகளைத் தேடுங்கள்';
 
   @override
-  String get noArticlesFound => 'இந்த வகுப்பில் கட்டுரைகள் இல்லை';
+  String get noArticlesFound => 'கட்டுரைகள் கிடைக்கவில்லை';
 
   @override
-  String get home => 'முகப்பு';
+  String get home => 'வீடு';
 
   @override
   String get log => 'பதிவு';
@@ -845,7 +845,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get pregnancyConfirmedDate => 'Pregnancy Confirmed Date';
 
   @override
-  String get weight => 'Weight';
+  String get weight => 'எடை';
 
   @override
   String get firstChild => 'First Child';
@@ -1005,7 +1005,7 @@ class AppLocalizationsTa extends AppLocalizations {
   String get dueDateDesc => 'Your estimated due date arrives!';
 
   @override
-  String get completed => 'Completed';
+  String get completed => 'முடிந்தது';
 
   @override
   String get current => 'Current';
@@ -1015,4 +1015,278 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get thisWeeksTips => 'This Week\'s Tips';
+
+  @override
+  String get familyWelcomeMessage => 'உங்கள் அன்பானவருக்கு இந்த அழகான பயணத்தில் ஆதரவளித்தல்';
+
+  @override
+  String get caregiver => 'பராமரிப்பாளர்';
+
+  @override
+  String get healthOverview => 'உடல்நலக் கண்ணோட்டம்';
+
+  @override
+  String get viewAllHealthData => 'அனைத்து உடல்நலத் தரவையும் பார்க்கவும்';
+
+  @override
+  String get recentActivity => 'சமீபத்திய செயல்பாடு';
+
+  @override
+  String get lastHealthUpdate => 'கடைசி உடல்நலப் புதுப்பிப்பு';
+
+  @override
+  String get linkedPatient => 'இணைக்கப்பட்ட நோயாளி';
+
+  @override
+  String get patientName => 'நோயாளியின் பெயர்';
+
+  @override
+  String get relationship => 'உறவு';
+
+  @override
+  String get connectionStatus => 'இணைப்பு நிலை';
+
+  @override
+  String get privacySecurity => 'தனியுரிமை மற்றும் பாதுகாப்பு';
+
+  @override
+  String get familyMember => 'குடும்ப உறுப்பினர்';
+
+  @override
+  String get linkedTo => 'இணைக்கப்பட்டுள்ளது';
+
+  @override
+  String get edit => 'திருத்து';
+
+  @override
+  String get enterYour => 'உங்கள் உள்ளீடு செய்யவும்';
+
+  @override
+  String get update => 'புதுப்பிக்கவும்';
+
+  @override
+  String get passwordMinLength => 'கடவுச்சொல் குறைந்தது 6 எழுத்துகள் நீளமாக இருக்க வேண்டும்!';
+
+  @override
+  String get passwordUpdated => 'கடவுச்சொல் வெற்றிகரமாக புதுப்பிக்கப்பட்டது!';
+
+  @override
+  String get failedUpdatePassword => 'கடவுச்சொல்லை புதுப்பிப்பதில் தோல்வி';
+
+  @override
+  String privacyDescriptionFamily(Object patientName) {
+    return 'உங்கள் தனியுரிமை மற்றும் $patientName இன் மருத்துவத் தகவல்களின் பாதுகாப்பு எங்கள் முதன்மை முன்னுரிமை. அனைத்து தரவுகளும் குறியாக்கம் செய்யப்பட்டு பாதுகாப்பாக சேமிக்கப்படுகின்றன. குடும்ப உறுப்பினர்கள் வெளிப்படையாக பகிரப்பட்ட தகவல்களை மட்டுமே அணுக முடியும்.';
+  }
+
+  @override
+  String get updatedSuccessfully => 'வெற்றிகரமாக புதுப்பிக்கப்பட்டது!';
+
+  @override
+  String failedUpdateField(Object error, Object field) {
+    return '$field புதுப்பிப்பதில் தோல்வி: $error';
+  }
+
+  @override
+  String errorSigningOut(Object error) {
+    return 'வெளியேறுவதில் பிழை: $error';
+  }
+
+  @override
+  String get signedOutSuccessfully => 'வெற்றிகரமாக வெளியேறினார்';
+
+  @override
+  String patientHealthLogs(Object patientName) {
+    return '$patientName இன் ஆரோக்கிய பதிவுகள்';
+  }
+
+  @override
+  String get viewingRecentHealthUpdates => 'சமீபத்திய ஆரோக்கிய புதுப்பிப்புகள் மற்றும் முக்கிய அறிகுறிகளைப் பார்க்கிறது';
+
+  @override
+  String healthLogsWillAppear(Object patientName) {
+    return '$patientName கண்காணிப்பைத் தொடங்கும் போது ஆரோக்கிய பதிவுகள் இங்கே தோன்றும்';
+  }
+
+  @override
+  String get recentLogs => 'சமீபத்திய பதிவுகள்';
+
+  @override
+  String get bloodPressure => 'இரத்த அழுத்தம்';
+
+  @override
+  String get babyKicks => 'குழந்தை உதை';
+
+  @override
+  String get sleepHours => 'தூக்கம்';
+
+  @override
+  String get waterIntake => 'நீர் உட்கொள்ளல்';
+
+  @override
+  String get exerciseMinutes => 'உடற்பயிற்சி';
+
+  @override
+  String get mood => 'மனநிலை';
+
+  @override
+  String get energy => 'ஆற்றல்';
+
+  @override
+  String get symptoms => 'அறிகுறிகள்';
+
+  @override
+  String get notes => 'குறிப்புகள்';
+
+  @override
+  String get medications => 'மருந்துகள்';
+
+  @override
+  String get nauseaDetails => 'வாந்தி விவரங்கள்';
+
+  @override
+  String get contractions => 'சுருக்கங்கள்';
+
+  @override
+  String get headaches => 'தலைவலி';
+
+  @override
+  String get swelling => 'வீக்கம்';
+
+  @override
+  String get vitamins => 'விட்டமின்கள்';
+
+  @override
+  String get highRisk => 'உயர் அபாயம்';
+
+  @override
+  String get moderateRisk => 'நடுத்தர அபாயம்';
+
+  @override
+  String get lowRisk => 'குறைந்த அபாயம்';
+
+  @override
+  String get excellent => 'மிகச்சிறப்பானது';
+
+  @override
+  String get good => 'நல்லது';
+
+  @override
+  String get okay => 'சரி';
+
+  @override
+  String get low => 'குறைந்தது';
+
+  @override
+  String get anxious => 'கவலை கொண்ட';
+
+  @override
+  String get viewLog => 'பதிவைப் பார்';
+
+  @override
+  String get safeMother => 'பாதுகாப்பான தாய்';
+
+  @override
+  String patientAppointments(Object patientName) {
+    return '$patientName இன் நியமனங்கள்';
+  }
+
+  @override
+  String get trackManageAppointments => 'சுகாதார நியமனங்களை கண்காணித்து நிர்வகிக்கவும்';
+
+  @override
+  String get upcoming => 'வரவிருக்கும்';
+
+  @override
+  String get today => 'இன்று';
+
+  @override
+  String get tomorrow => 'நாளை';
+
+  @override
+  String get completedAppointments => 'முடிந்த நியமனங்கள்';
+
+  @override
+  String get noAppointments => 'நியமனங்கள் இல்லை';
+
+  @override
+  String noAppointmentsFound(Object patientName) {
+    return '$patientName க்கு நியமனங்கள் கிடைக்கவில்லை.';
+  }
+
+  @override
+  String get noAppointmentsDialog => 'நியமனங்கள் இல்லை';
+
+  @override
+  String noAppointmentsDialogMessage(Object patientName) {
+    return '$patientName க்கு நியமன அட்டவணை கிடைக்கவில்லை. நியமனம் செய்யப்படும்போது இங்கே தோன்றும்.';
+  }
+
+  @override
+  String get firestoreError => 'பயர்ஸ்டோர் பிழை';
+
+  @override
+  String get connectionError => 'இணைப்பு பிழை';
+
+  @override
+  String get unableToLoadAppointments => 'நியமனங்களை ஏற்ற முடியவில்லை. உங்கள் இணைப்பை சரிபார்த்து மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get unexpectedError => 'நியமனங்களை ஏற்றும் போது எதிர்பாராத பிழை ஏற்பட்டது.';
+
+  @override
+  String failedToLoadAppointments(Object error) {
+    return 'நியமனங்களை ஏற்றுவதில் தோல்வி: $error';
+  }
+
+  @override
+  String get videoCallAvailable => 'வீடியோ அழைப்பு கிடைக்கிறது';
+
+  @override
+  String get joinCall => 'அழைப்பில் சேரவும்';
+
+  @override
+  String get joiningVideoCall => 'வீடியோ அழைப்பில் சேர்கிறது...';
+
+  @override
+  String get appointmentsLoadingBasicSorting => 'நியமனங்கள் அடிப்படை வரிசைப்படுத்தலுடன் ஏற்றப்படுகின்றன (குறியீடு கட்டப்படுகிறது...)';
+
+  @override
+  String get appointmentsLoadingBasicSortingFull => 'நியமனங்கள் அடிப்படை வரிசைப்படுத்தலுடன் ஏற்றப்படுகின்றன. முழு வரிசைப்படுத்தல் விரைவில் கிடைக்கும்.';
+
+  @override
+  String get ok => 'சரி';
+
+  @override
+  String get pregnancyAndParentingGuide => 'கர்ப்பம் மற்றும் பெற்றோர் வழிகாட்டி';
+
+  @override
+  String latestArticlesAndResources(Object patientName) {
+    return '$patientName இன் கர்ப்பப் பயணத்திற்கான சமீபத்திய கட்டுரைகள் மற்றும் வளங்கள்';
+  }
+
+  @override
+  String get searchPregnancyArticles => 'கர்ப்பக் கட்டுரைகளைத் தேடு...';
+
+  @override
+  String get loadingArticles => 'கட்டுரைகள் ஏற்றப்படுகின்றன...';
+
+  @override
+  String get unableToLoadArticles => 'கட்டுரைகளை ஏற்ற முடியவில்லை';
+
+  @override
+  String get failedToLoadArticles => 'கட்டுரைகளை ஏற்ற முடியவில்லை. தயவுசெய்து பின்னர் மீண்டும் முயற்சிக்கவும்.';
+
+  @override
+  String get tryAgain => 'மீண்டும் முயற்சிக்கவும்';
+
+  @override
+  String get tryAdjustingSearch => 'உங்கள் தேடலை அல்லது வகை வடிப்பை சரிசெய்ய முயற்சிக்கவும்';
+
+  @override
+  String get readArticle => 'கட்டுரையைப் படிக்கவும்';
+
+  @override
+  String cannotOpenArticle(Object url) {
+    return 'கட்டுரையைத் திறக்க முடியவில்லை: $url';
+  }
 }

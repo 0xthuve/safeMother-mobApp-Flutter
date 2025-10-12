@@ -79,57 +79,62 @@ class FirebaseService {
   static Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   // Register with email and password
-  static Future<Map<String, dynamic>?> registerWithEmailPassword({
-    required String email,
-    required String password,
-    required String fullName,
-    required String role,
-    Map<String, dynamic>? additionalData,
-  }) async {
-    if (_useMockService) {
-      return await FirebaseMockService.registerWithEmailPassword(
-        email: email,
-        password: password,
-        fullName: fullName,
-        role: role,
-        additionalData: additionalData,
-      );
-    }
-
-    try {
-      UserCredential result = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      // Update user profile
-      await result.user?.updateDisplayName(fullName);
-
-      // Create user document in Firestore
-      await _firestore.collection('users').doc(result.user?.uid).set({
-        'uid': result.user?.uid,
-        'email': email,
-        'fullName': fullName,
-        'role': role,
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastLoginAt': FieldValue.serverTimestamp(),
-        'profileComplete': false,
-        ...?additionalData,
-      });
-
-      return {
-        'uid': result.user?.uid,
-        'email': email,
-        'fullName': fullName,
-        'role': role,
-      };
-    } on FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
-    } catch (e) {
-      throw Exception('Registration failed: ${e.toString()}');
-    }
+// Register with email and password
+static Future<Map<String, dynamic>?> registerWithEmailPassword({
+  required String email,
+  required String password,
+  required String fullName,
+  required String role,
+  Map<String, dynamic>? additionalData,
+}) async {
+  if (_useMockService) {
+    return await FirebaseMockService.registerWithEmailPassword(
+      email: email,
+      password: password,
+      fullName: fullName,
+      role: role,
+      additionalData: additionalData,
+    );
   }
 
+  try {
+    UserCredential result = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    // Update user profile
+    await result.user?.updateDisplayName(fullName);
+
+    // Create user document in Firestore with role
+    final userData = {
+      'uid': result.user?.uid,
+      'email': email,
+      'fullName': fullName,
+      'role': role, // Ensure role is set here
+      'createdAt': FieldValue.serverTimestamp(),
+      'lastLoginAt': FieldValue.serverTimestamp(),
+      'profileComplete': false,
+      'pregnancyInfoComplete': false, // Will be set to true after pregnancy info is added
+      ...?additionalData,
+    };
+
+    await _firestore.collection('users').doc(result.user?.uid).set(userData);
+
+    print('FirebaseService: User registered successfully with role: $role');
+    
+    return {
+      'uid': result.user?.uid,
+      'email': email,
+      'fullName': fullName,
+      'role': role,
+    };
+  } on FirebaseAuthException catch (e) {
+    throw _handleAuthException(e);
+  } catch (e) {
+    throw Exception('Registration failed: ${e.toString()}');
+  }
+}
   // Login with email and password
   static Future<Map<String, dynamic>?> loginWithEmailPassword({
     required String email,
@@ -143,22 +148,25 @@ class FirebaseService {
     }
 
     try {
-      UserCredential result = await _auth.signInWithEmailAndPassword(
+      await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
+      // Reload user to ensure the latest state
+      await reloadCurrentUser();
+
       // Update last login time
-      if (result.user != null) {
-        await _firestore.collection('users').doc(result.user!.uid).update({
+      if (_auth.currentUser != null) {
+        await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
           'lastLoginAt': FieldValue.serverTimestamp(),
         });
       }
 
       return {
-        'uid': result.user?.uid,
-        'email': result.user?.email,
-        'displayName': result.user?.displayName,
+        'uid': _auth.currentUser?.uid,
+        'email': _auth.currentUser?.email,
+        'displayName': _auth.currentUser?.displayName,
       };
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
@@ -186,32 +194,31 @@ class FirebaseService {
 
       UserCredential result = await _auth.signInWithCredential(credential);
 
+      // Reload user to ensure the latest state
+      await reloadCurrentUser();
+
       bool isNewUser = result.additionalUserInfo?.isNewUser == true;
       bool profileComplete = true;
 
-      // Check if this is a new user
       if (isNewUser) {
-        // Create user document for new Google sign-in
-        await _firestore.collection('users').doc(result.user?.uid).set({
-          'uid': result.user?.uid,
-          'email': result.user?.email,
-          'fullName': result.user?.displayName ?? 'Google User',
-          'role': 'patient', // Default role for Google sign-in
+        await _firestore.collection('users').doc(_auth.currentUser?.uid).set({
+          'uid': _auth.currentUser?.uid,
+          'email': _auth.currentUser?.email,
+          'fullName': _auth.currentUser?.displayName ?? 'Google User',
+          'role': 'patient',
           'createdAt': FieldValue.serverTimestamp(),
           'lastLoginAt': FieldValue.serverTimestamp(),
-          'profileComplete': false, // New Google users need to complete profile
+          'profileComplete': false,
           'signInMethod': 'google',
-          'pregnancyInfoComplete': false, // Need to ask pregnancy questions
+          'pregnancyInfoComplete': false,
         });
         profileComplete = false;
       } else {
-        // Update last login for existing user and check profile status
-        await _firestore.collection('users').doc(result.user!.uid).update({
+        await _firestore.collection('users').doc(_auth.currentUser!.uid).update({
           'lastLoginAt': FieldValue.serverTimestamp(),
         });
 
-        // Check if profile is complete
-        final userDoc = await _firestore.collection('users').doc(result.user!.uid).get();
+        final userDoc = await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
         if (userDoc.exists) {
           final userData = userDoc.data() as Map<String, dynamic>;
           profileComplete = userData['profileComplete'] == true && 
@@ -220,9 +227,9 @@ class FirebaseService {
       }
 
       return {
-        'uid': result.user?.uid,
-        'email': result.user?.email,
-        'displayName': result.user?.displayName,
+        'uid': _auth.currentUser?.uid,
+        'email': _auth.currentUser?.email,
+        'displayName': _auth.currentUser?.displayName,
         'isNewUser': isNewUser,
         'profileComplete': profileComplete,
         'needsPregnancyInfo': !profileComplete,
@@ -287,20 +294,42 @@ class FirebaseService {
     }
   }
 
-  // Get user data from Firestore
-  static Future<Map<String, dynamic>?> getUserData(String uid) async {
-    if (_useMockService) {
-      return await FirebaseMockService.getUserData(uid);
-    }
+// Check if patient data exists
+static Future<bool> patientDataExists(String userId) async {
+  try {
+    final doc = await _firestore.collection('patients').doc(userId).get();
+    return doc.exists;
+  } catch (e) {
+    print('FirebaseService: Error checking patient data: $e');
+    return false;
+  }
+}
 
-    try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
-      return doc.data() as Map<String, dynamic>?;
-    } catch (e) {
-      throw Exception('Failed to get user data: ${e.toString()}');
-    }
+  // Get user data from Firestore
+// Get user data from Firestore
+static Future<Map<String, dynamic>?> getUserData(String uid) async {
+  if (_useMockService) {
+    return await FirebaseMockService.getUserData(uid);
   }
 
+  try {
+    DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>?;
+      
+      // Ensure role field exists
+      if (data != null && !data.containsKey('role')) {
+        data['role'] = 'patient'; // Default role
+      }
+      
+      return data;
+    }
+    return null;
+  } catch (e) {
+    print('FirebaseService: Error getting user data: $e');
+    return null;
+  }
+}
   // Update user data
   static Future<void> updateUserData(String uid, Map<String, dynamic> data) async {
     try {
@@ -339,6 +368,41 @@ class FirebaseService {
     }
   }
 
+  // Update user role in users collection
+static Future<bool> updateUserRole(String userId, String role) async {
+  try {
+    await _firestore.collection('users').doc(userId).update({
+      'role': role,
+      'profileComplete': true,
+      'pregnancyInfoComplete': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    
+    print('FirebaseService: Successfully updated user role to $role for user $userId');
+    return true;
+  } catch (e) {
+    print('FirebaseService: Error updating user role: $e');
+    
+    // If update fails, try to set the document
+    try {
+      await _firestore.collection('users').doc(userId).set({
+        'uid': userId,
+        'role': role,
+        'profileComplete': true,
+        'pregnancyInfoComplete': true,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      
+      print('FirebaseService: Successfully set user role to $role for user $userId');
+      return true;
+    } catch (setError) {
+      print('FirebaseService: Error setting user role: $setError');
+      return false;
+    }
+  }
+}
+
   // Handle Firebase Auth exceptions
   static String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
@@ -366,63 +430,80 @@ class FirebaseService {
   }
 
   // Create collection for specific role data
-  static Future<void> createRoleData(String uid, String role, Map<String, dynamic> roleData) async {
-    try {
-      String collection = '';
-      switch (role.toLowerCase()) {
-        case 'patient':
-        case 'mother':
-          collection = 'patients';
-          break;
-        case 'doctor':
-        case 'healthcare':
-          collection = 'doctors';
-          break;
-        case 'family':
-          collection = 'family_members';
-          break;
-        default:
-          collection = 'users_data';
-      }
-
-      await _firestore.collection(collection).doc(uid).set({
-        'uid': uid,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-        ...roleData,
-      });
-    } catch (e) {
-      throw Exception('Failed to create role data: ${e.toString()}');
+// Create collection for specific role data
+static Future<bool> createRoleData(String uid, String role, Map<String, dynamic> roleData) async {
+  try {
+    String collection = '';
+    switch (role.toLowerCase()) {
+      case 'patient':
+      case 'mother':
+        collection = 'patients';
+        break;
+      case 'doctor':
+      case 'healthcare':
+        collection = 'doctors';
+        break;
+      case 'family':
+        collection = 'family_members';
+        break;
+      default:
+        collection = 'users_data';
     }
-  }
 
+    // For patients collection, ensure the document ID is the user ID
+    // and include all required fields from your sample data structure
+    final documentData = {
+      'uid': uid,
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+      ...roleData,
+    };
+
+    await _firestore.collection(collection).doc(uid).set(documentData, SetOptions(merge: true));
+    
+    print('FirebaseService: Successfully created/updated $collection data for user $uid');
+    return true;
+  } catch (e) {
+    print('FirebaseService: Error creating role data: $e');
+    return false;
+  }
+}
   // Get role-specific data
-  static Future<Map<String, dynamic>?> getRoleData(String uid, String role) async {
-    try {
-      String collection = '';
-      switch (role.toLowerCase()) {
-        case 'patient':
-        case 'mother':
-          collection = 'patients';
-          break;
-        case 'doctor':
-        case 'healthcare':
-          collection = 'doctors';
-          break;
-        case 'family':
-          collection = 'family_members';
-          break;
-        default:
-          collection = 'users_data';
-      }
-
-      DocumentSnapshot doc = await _firestore.collection(collection).doc(uid).get();
-      return doc.data() as Map<String, dynamic>?;
-    } catch (e) {
-      throw Exception('Failed to get role data: ${e.toString()}');
+// Get role-specific data
+static Future<Map<String, dynamic>?> getRoleData(String uid, String role) async {
+  try {
+    String collection = '';
+    switch (role.toLowerCase()) {
+      case 'patient':
+      case 'mother':
+        collection = 'patients';
+        break;
+      case 'doctor':
+      case 'healthcare':
+        collection = 'doctors';
+        break;
+      case 'family':
+        collection = 'family_members';
+        break;
+      default:
+        collection = 'users_data';
     }
-  }
 
+    DocumentSnapshot doc = await _firestore.collection(collection).doc(uid).get();
+    
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>?;
+      print('FirebaseService: Found $collection data for user $uid: $data');
+      return data;
+    } else {
+      print('FirebaseService: No $collection data found for user $uid');
+      return null;
+    }
+  } catch (e) {
+    print('FirebaseService: Error getting role data: $e');
+    return null;
+  }
+}
   // ========== DOCTOR MANAGEMENT METHODS ==========
 
   // Get all doctors from Firebase
@@ -1615,4 +1696,17 @@ class FirebaseService {
       return false;
     }
   }
+
+  // Add a method to reload the current user
+static Future<void> reloadCurrentUser() async {
+  if (_useMockService) {
+    return;
+  }
+  try {
+    await _auth.currentUser?.reload();
+    print('FirebaseService: User reloaded successfully.');
+  } catch (e) {
+    print('FirebaseService: Failed to reload user: $e');
+  }
+}
 }

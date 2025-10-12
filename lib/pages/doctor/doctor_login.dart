@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../pages/doctor/doctor_dashboard.dart';
-import 'doctor_registration.dart';
 import '../../services/user_management_service.dart';
 import '../../signin.dart';
+import '../../signup-roleSelection.dart';
 
 class DoctorLogin extends StatefulWidget {
   const DoctorLogin({super.key});
@@ -336,7 +336,7 @@ class _DoctorLoginState extends State<DoctorLogin> {
                               
                               // Forgot password
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
                                   TextButton(
                                     onPressed: () {
@@ -402,7 +402,7 @@ class _DoctorLoginState extends State<DoctorLogin> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Text(
-                            "Don't have an account? ",
+                            "New to Safe Mother?",
                             style: TextStyle(
                               color: Color(0xFF64B5F6),
                               fontSize: 15,
@@ -412,11 +412,11 @@ class _DoctorLoginState extends State<DoctorLogin> {
                             onPressed: () {
                               Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(builder: (context) => const DoctorRegistration()),
+                                MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
                               );
                             },
                             child: const Text(
-                              'Register Now',
+                              'Create Account',
                               style: TextStyle(
                                 color: Color(0xFF1976D2),
                                 fontWeight: FontWeight.w700,

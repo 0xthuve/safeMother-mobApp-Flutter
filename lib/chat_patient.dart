@@ -65,6 +65,44 @@ class _ChatScreenState extends State<ChatScreen> {
     NavigationHandler.navigateToScreen(context, index);
   }
 
+  // Safe method to get localized strings
+  String _getLocalizedString(String key) {
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) {
+      // Fallback English strings if localization is not available
+      final fallbackStrings = {
+        'pregnancyAssistant': 'Pregnancy Assistant',
+        'aiPoweredSupport': 'AI-Powered Support',
+        'askPregnancyQuestion': 'Ask a pregnancy question...',
+        'commonPregnancyQuestions': 'Common Pregnancy Questions',
+        'avoidFoodsQuestion': 'What foods should I avoid during pregnancy?',
+        'safeExercisesQuestion': 'What exercises are safe during pregnancy?',
+        'relieveMorningSicknessQuestion': 'How can I relieve morning sickness?',
+        'pretermLaborSignsQuestion': 'What are the signs of preterm labor?',
+        'weightGainQuestion': 'How much weight should I gain during pregnancy?',
+        'pregnancyAssistantSender': 'Pregnancy Assistant',
+        'thinking': 'Thinking...',
+      };
+      return fallbackStrings[key] ?? key;
+    }
+
+    // Use the actual localization methods
+    switch (key) {
+      case 'pregnancyAssistant': return localizations.pregnancyAssistant;
+      case 'aiPoweredSupport': return localizations.aiPoweredSupport;
+      case 'askPregnancyQuestion': return localizations.askPregnancyQuestion;
+      case 'commonPregnancyQuestions': return localizations.commonPregnancyQuestions;
+      case 'avoidFoodsQuestion': return localizations.avoidFoodsQuestion;
+      case 'safeExercisesQuestion': return localizations.safeExercisesQuestion;
+      case 'relieveMorningSicknessQuestion': return localizations.relieveMorningSicknessQuestion;
+      case 'pretermLaborSignsQuestion': return localizations.pretermLaborSignsQuestion;
+      case 'weightGainQuestion': return localizations.weightGainQuestion;
+      case 'pregnancyAssistantSender': return localizations.pregnancyAssistantSender;
+      case 'thinking': return localizations.thinking;
+      default: return key;
+    }
+  }
+
   // Function to send message to Groq API
   Future<void> _sendMessage() async {
     if (_messageController.text.isEmpty) return;
@@ -133,7 +171,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       setState(() {
         _messages.add({
-          'text': "Sorry, I'm having trouble connecting right now. Please try again later. Error: ${e.toString()}",
+          'text': "Sorry, I'm having trouble connecting right now. Please try again later.",
           'isMe': false,
           'sender': 'Pregnancy Assistant',
           'time': 'Now',
@@ -298,7 +336,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.pregnancyAssistant,
+                            _getLocalizedString('pregnancyAssistant'),
                             style: TextStyle(
                               color: Color(0xFF111611),
                               fontSize: 18,
@@ -306,7 +344,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           ),
                           Text(
-                            AppLocalizations.of(context)!.aiPoweredSupport,
+                            _getLocalizedString('aiPoweredSupport'),
                             style: TextStyle(
                               color: Color(0xFF638763),
                               fontSize: 12,
@@ -387,7 +425,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 child: TextField(
                                   controller: _messageController,
                                   decoration: InputDecoration(
-                                    hintText: AppLocalizations.of(context)!.askPregnancyQuestion,
+                                    hintText: _getLocalizedString('askPregnancyQuestion'),
                                     border: InputBorder.none,
                                     hintStyle: TextStyle(color: Color(0xFF638763)),
                                   ),
@@ -437,7 +475,7 @@ class _ChatScreenState extends State<ChatScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                AppLocalizations.of(context)!.commonPregnancyQuestions,
+                _getLocalizedString('commonPregnancyQuestions'),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -445,11 +483,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildSuggestionItem(AppLocalizations.of(context)!.avoidFoodsQuestion),
-              _buildSuggestionItem(AppLocalizations.of(context)!.safeExercisesQuestion),
-              _buildSuggestionItem(AppLocalizations.of(context)!.relieveMorningSicknessQuestion),
-              _buildSuggestionItem(AppLocalizations.of(context)!.pretermLaborSignsQuestion),
-              _buildSuggestionItem(AppLocalizations.of(context)!.weightGainQuestion),
+              _buildSuggestionItem(_getLocalizedString('avoidFoodsQuestion')),
+              _buildSuggestionItem(_getLocalizedString('safeExercisesQuestion')),
+              _buildSuggestionItem(_getLocalizedString('relieveMorningSicknessQuestion')),
+              _buildSuggestionItem(_getLocalizedString('pretermLaborSignsQuestion')),
+              _buildSuggestionItem(_getLocalizedString('weightGainQuestion')),
               const SizedBox(height: 16),
             ],
           ),
@@ -568,7 +606,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Padding(
                   padding: const EdgeInsets.only(left: 8, bottom: 4),
                   child: Text(
-                    AppLocalizations.of(context)!.pregnancyAssistantSender,
+                    _getLocalizedString('pregnancyAssistantSender'),
                     style: TextStyle(
                       color: Color(0xFF638763),
                       fontSize: 12,
@@ -597,9 +635,9 @@ class _ChatScreenState extends State<ChatScreen> {
                           valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF638763)),
                         ),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Text(
-                        AppLocalizations.of(context)!.thinking,
+                        _getLocalizedString('thinking'),
                         style: TextStyle(
                           color: Color(0xFF111611),
                           fontSize: 16,

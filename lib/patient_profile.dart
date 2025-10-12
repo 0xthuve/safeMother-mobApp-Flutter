@@ -1289,14 +1289,23 @@ void _showPrivacySettingsPopup() {
     );
   }
 
-  void _changeLocale(BuildContext context, Locale newLocale) {
+void _changeLocale(BuildContext context, Locale newLocale) {
+  try {
     // Find the nearest ancestor MaterialApp and update its locale
     final state = SafeMotherApp.of(context);
     if (state != null) {
       state.setLocale(newLocale);
+      // Force a rebuild by calling setState on the current widget
+      if (mounted) {
+        setState(() {});
+      }
+    } else {
+      print('SafeMotherApp.of(context) returned null');
     }
+  } catch (e) {
+    print('Error changing locale: $e');
   }
-
+}
   Widget _buildActionButton(String title, IconData icon, Color color, VoidCallback onTap) {
     return Container(
       decoration: BoxDecoration(
@@ -1382,9 +1391,20 @@ void _showPrivacySettingsPopup() {
     );
   }
 
-  Widget _buildLanguageSettingRow() {
-    return Material(
-      color: Colors.transparent,
+ Widget _buildLanguageSettingRow() {
+  final currentLocale = Localizations.localeOf(context);
+  String currentLanguage = 'English';
+  
+  if (currentLocale.languageCode == 'ta') {
+    currentLanguage = 'Tamil';
+  } else if (currentLocale.languageCode == 'si') {
+    currentLanguage = 'Sinhala';
+  }
+
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: _showLanguageSelectionDialog,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Row(
@@ -1408,22 +1428,77 @@ void _showPrivacySettingsPopup() {
                 ),
               ),
             ),
-            DropdownButton<Locale>(
-              value: Localizations.localeOf(context),
-              items: const [
-                DropdownMenuItem(value: Locale('en'), child: Text('English')),
-                DropdownMenuItem(value: Locale('ta'), child: Text('Tamil')),
-                DropdownMenuItem(value: Locale('si'), child: Text('Sinhala')),
-              ],
-              onChanged: (Locale? locale) {
-                if (locale != null) {
-                  _changeLocale(context, locale);
-                }
-              },
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                currentLanguage,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF5A5A5A),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xFF9CA3AF),
+              size: 20,
             ),
           ],
         ),
       ),
+    ),
+  );
+}
+  
+  void _showLanguageSelectionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text(
+            'Select Language',
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF111611),
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Text('🇺🇸', style: TextStyle(fontSize: 24)),
+                title: const Text('English'),
+                onTap: () {
+                  _changeLocale(context, const Locale('en'));
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+              ListTile(
+                leading: const Text('🇱🇰', style: TextStyle(fontSize: 24)),
+                title: const Text('தமிழ் (Tamil)'),
+                onTap: () {
+                  _changeLocale(context, const Locale('ta'));
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+              ListTile(
+                leading: const Text('🇱🇰', style: TextStyle(fontSize: 24)),
+                title: const Text('සිංහල (Sinhala)'),
+                onTap: () {
+                  _changeLocale(context, const Locale('si'));
+                  Navigator.of(dialogContext).pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

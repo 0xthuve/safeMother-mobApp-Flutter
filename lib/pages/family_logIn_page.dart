@@ -6,6 +6,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/family_member_service.dart';
+import 'family_signUp_page.dart';
+import 'family_home_screen.dart';
+import '../signin.dart';
 
 class FamilyLoginScreen extends StatefulWidget {
   const FamilyLoginScreen({super.key});
@@ -115,8 +118,10 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
         });
 
         // Navigate directly to home screen on success
-        Navigator.pushReplacementNamed(context, '/familyHome');
-        
+        Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => const FamilyHomeScreen()),
+  );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Login successful!'),
@@ -245,8 +250,11 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
   }
 
   void _navigateToSignUp() {
-    Navigator.pushNamed(context, '/signup'); // Changed from '/familySignup' to '/signup'
-  }
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => const FamilySignUpScreen()),
+  );
+}
 
   void _showForgotPasswordDialog() {
     final TextEditingController emailController = TextEditingController();
@@ -453,6 +461,33 @@ class _FamilyLoginScreenState extends State<FamilyLoginScreen> {
                   ),
                   child: Column(
                     children: [
+                      // Back Arrow Button
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.5),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: IconButton(
+                            onPressed: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SignInScreen()),
+                              );
+                            },
+                            icon: const Icon(
+                              Icons.arrow_back_ios,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
                       // App Logo
                       Container(
                         padding: const EdgeInsets.all(16),

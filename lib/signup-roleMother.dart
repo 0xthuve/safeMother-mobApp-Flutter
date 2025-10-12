@@ -67,95 +67,104 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
 
 
 
-  Future<void> _registerUser() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // Check if email is already registered
-      final isEmailRegistered = await FirebaseService.isEmailRegistered(_emailController.text.trim());
-      
-      if (isEmailRegistered) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('This email is already registered. Please use a different email or sign in.'),
-              backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
+    Future<void> _registerUser() async {
+      if (!_formKey.currentState!.validate()) {
         return;
       }
 
-      // Register user with UserManagementService
-      final success = await UserManagementService.registerUser(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-        fullName: _nameController.text.trim(),
-        role: 'patient',
-        additionalData: {
-          'username': _usernameController.text.trim(),
-          'age': int.tryParse(_ageController.text.trim()) ?? 0,
-          'location': _locationController.text.trim(),
-          'signUpStep': 1, // Indicates user needs to complete profile
-        },
-        context: context,
-      );
+      setState(() {
+        _isLoading = true;
+      });
 
-      if (success) {
+      try {
+        // Check if email is already registered
+        final isEmailRegistered =
+            await FirebaseService.isEmailRegistered(_emailController.text.trim());
+
+        if (isEmailRegistered) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                  'This email is already registered. Please use a different email or sign in.',
+                ),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+          return;
+        }
+
+        // Register user with UserManagementService
+        final success = await UserManagementService.registerUser(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          fullName: _nameController.text.trim(),
+          role: 'patient',
+          additionalData: {
+            'username': _usernameController.text.trim(),
+            'age': int.tryParse(_ageController.text.trim()) ?? 0,
+            'location': _locationController.text.trim(),
+            'signUpStep': 1, // Indicates user needs to complete profile
+          },
+          context: context,
+        );
+
+        if (success) {
+          // ✅ Wait briefly for Firebase Auth + Firestore sync
+          await Future.delayed(const Duration(seconds: 1));
+
+          // ✅ Reload Firebase user
+          await FirebaseService.reloadCurrentUser();
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Welcome to Safe Mother, ${_nameController.text.trim()}!',
+                ),
+                backgroundColor: const Color(0xFFE91E63),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+
+            // ✅ Navigate only after user is fully synced
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const RoleMotherP2()),
+            );
+          }
+        } else {
+          throw Exception('Registration failed. Please try again.');
+        }
+      } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Welcome to Safe Mother, ${_nameController.text.trim()}!'),
-              backgroundColor: const Color(0xFFE91E63),
+              content: Text('Registration failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
           );
-
-          // Continue to next step (RoleMotherP2) or complete registration
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const RoleMotherP2(),
-            ),
-          );
         }
-      } else {
-        throw Exception('Registration failed. Please try again.');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Registration failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
-  }
 
   @override
   Widget build(BuildContext context) {

@@ -3,8 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../navigation/family_navigation_handler.dart';
+import 'package:safemothermobapp/l10n/app_localizations.dart';
 import '../services/family_member_service.dart';
+import 'family_home_screen.dart';
+import 'family_log_page.dart';
+import 'family_profile_page.dart';
+import 'family_learn_page.dart';
 
 class FamilyAppointmentsScreen extends StatefulWidget {
   const FamilyAppointmentsScreen({super.key});
@@ -87,11 +91,11 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
         await _loadAppointmentsWithLocalSorting();
       } else {
         print('Firebase error: ${e.code} - ${e.message}');
-        _showErrorDialog('Firestore Error', 'Failed to load appointments: ${e.message}');
+        _showErrorDialog(AppLocalizations.of(context)!.firestoreError, AppLocalizations.of(context)!.failedToLoadAppointments(e.message ?? 'Unknown error'));
       }
     } catch (e) {
       print('Unexpected error: $e');
-      _showErrorDialog('Error', 'An unexpected error occurred while loading appointments.');
+      _showErrorDialog(AppLocalizations.of(context)!.unexpectedError, AppLocalizations.of(context)!.unexpectedError);
     }
   }
 
@@ -117,7 +121,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Appointments loading with basic sorting (index building...)',
+                      AppLocalizations.of(context)!.appointmentsLoadingBasicSorting,
                       style: TextStyle(fontSize: 14),
                     ),
                   ),
@@ -133,7 +137,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
       }
     } catch (e) {
       print('Error in fallback loading: $e');
-      _showErrorDialog('Connection Error', 'Unable to load appointments. Please check your connection and try again.');
+      _showErrorDialog(AppLocalizations.of(context)!.connectionError, AppLocalizations.of(context)!.unableToLoadAppointments);
     }
   }
 
@@ -236,12 +240,11 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
                 children: [
                   Icon(Icons.calendar_today_outlined, color: Color(0xFFE91E63)),
                   SizedBox(width: 12),
-                  Text('No Appointments', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                  Text(AppLocalizations.of(context)!.noAppointmentsDialog, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                 ],
               ),
               content: Text(
-                'No appointment schedules found for $_linkedPatientName. '
-                'Appointments will appear here when scheduled.',
+                AppLocalizations.of(context)!.noAppointmentsDialogMessage(_linkedPatientName),
                 style: GoogleFonts.inter(color: Color(0xFF757575)),
               ),
               actions: [
@@ -280,14 +283,14 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('OK', style: GoogleFonts.inter(color: Color(0xFFE91E63))),
+                  child: Text(AppLocalizations.of(context)!.ok, style: GoogleFonts.inter(color: Color(0xFFE91E63))),
                 ),
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
                     _loadAppointmentsData(); // Retry
                   },
-                  child: Text('Retry', style: GoogleFonts.inter(color: Color(0xFF2196F3))),
+                  child: Text(AppLocalizations.of(context)!.retry, style: GoogleFonts.inter(color: Color(0xFF2196F3))),
                 ),
               ],
             );
@@ -341,7 +344,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    isUpcoming ? 'UPCOMING' : 'COMPLETED',
+                    isUpcoming ? AppLocalizations.of(context)!.upcoming : AppLocalizations.of(context)!.completed,
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -352,9 +355,9 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
                 if (_usingFallback) 
                   Icon(Icons.info_outline, color: Colors.orange, size: 16),
                 if (isToday) 
-                  _buildDateBadge('TODAY', Color(0xFFFF9800))
+                  _buildDateBadge(AppLocalizations.of(context)!.today, Color(0xFFFF9800))
                 else if (isTomorrow) 
-                  _buildDateBadge('TOMORROW', Color(0xFF2196F3)),
+                  _buildDateBadge(AppLocalizations.of(context)!.tomorrow, Color(0xFF2196F3)),
               ],
             ),
             const SizedBox(height: 16),
@@ -479,7 +482,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  AppLocalizations.of(context)!.notes,
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     color: Color(0xFF757575),
@@ -516,7 +519,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Video call available',
+              AppLocalizations.of(context)!.videoCallAvailable,
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: Colors.blue,
@@ -527,7 +530,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
           TextButton(
             onPressed: () => _joinVideoCall(videoCallUrl),
             child: Text(
-              'Join Call',
+              AppLocalizations.of(context)!.joinCall,
               style: GoogleFonts.inter(
                 fontSize: 12,
                 color: Colors.blue,
@@ -543,7 +546,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
   void _joinVideoCall(String url) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Joining video call...'),
+        content: Text(AppLocalizations.of(context)!.joiningVideoCall),
         backgroundColor: Colors.blue,
       ),
     );
@@ -619,7 +622,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
                   Expanded(
                     child: Center(
                       child: Text(
-                        'Safe Mother',
+                        AppLocalizations.of(context)!.safeMother,
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
@@ -641,7 +644,12 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
                           border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
                         ),
                         child: IconButton(
-                          onPressed: () => FamilyNavigationHandler.navigateToProfile(context),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => FamilyProfileScreen()),
+                            );
+                          },
                           icon: Icon(Icons.person_outlined, color: Colors.white, size: 24),
                           padding: const EdgeInsets.all(8),
                         ),
@@ -696,7 +704,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "$_linkedPatientName's Appointments",
+                                    AppLocalizations.of(context)!.patientAppointments(_linkedPatientName),
                                     style: GoogleFonts.playfairDisplay(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w700,
@@ -705,7 +713,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
                                   ),
                                   SizedBox(height: 4),
                                   Text(
-                                    'Track and manage healthcare appointments',
+                                    AppLocalizations.of(context)!.trackManageAppointments,
                                     style: GoogleFonts.inter(
                                       fontSize: 14,
                                       color: Color(0xFF757575),
@@ -722,7 +730,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
                       else if (_appointments.isNotEmpty) ...[
                         if (upcomingAppointments.isNotEmpty) ...[
                           Text(
-                            'Upcoming Appointments (${upcomingAppointments.length})',
+                            '${AppLocalizations.of(context)!.upcomingAppointments} (${upcomingAppointments.length})',
                             style: GoogleFonts.playfairDisplay(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
@@ -735,7 +743,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
                         ],
                         if (completedAppointments.isNotEmpty) ...[
                           Text(
-                            'Completed Appointments (${completedAppointments.length})',
+                            '${AppLocalizations.of(context)!.completedAppointments} (${completedAppointments.length})',
                             style: GoogleFonts.playfairDisplay(
                               fontSize: 22,
                               fontWeight: FontWeight.w700,
@@ -774,7 +782,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Appointments loading with basic sorting. Full sorting will be available soon.',
+              AppLocalizations.of(context)!.appointmentsLoadingBasicSortingFull,
               style: GoogleFonts.inter(
                 fontSize: 12,
                 color: Colors.orange.shade800,
@@ -794,7 +802,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
           Icon(Icons.calendar_today_outlined, size: 64, color: Colors.grey.shade400),
           SizedBox(height: 16),
           Text(
-            'No Appointments', 
+            AppLocalizations.of(context)!.noAppointments, 
             style: GoogleFonts.inter(
               fontSize: 18, 
               fontWeight: FontWeight.w600, 
@@ -803,7 +811,7 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
           ),
           SizedBox(height: 8),
           Text(
-            'No appointments found for $_linkedPatientName.', 
+            AppLocalizations.of(context)!.noAppointmentsFound(_linkedPatientName), 
             style: GoogleFonts.inter(
               fontSize: 14, 
               color: Colors.grey.shade500,
@@ -833,10 +841,39 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(Icons.home_filled, 'Home', 0),
-            _buildNavItem(Icons.assignment_outlined, 'View Log', 1),
-            _buildNavItem(Icons.calendar_today_outlined, 'Appointments', 2),
-            _buildNavItem(Icons.menu_book_outlined, 'Learn', 4),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => FamilyHomeScreen()),
+                );
+              },
+              child: _buildNavItem(Icons.home_filled, AppLocalizations.of(context)!.home, 0),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => FamilyViewLogScreen()),
+                );
+              },
+              child: _buildNavItem(Icons.assignment_outlined, AppLocalizations.of(context)!.viewLog, 1),
+            ),
+            GestureDetector(
+              onTap: () {
+                // Already on Appointments, do nothing
+              },
+              child: _buildNavItem(Icons.calendar_today_outlined, AppLocalizations.of(context)!.appointments, 2),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => FamilyLearnScreen()),
+                );
+              },
+              child: _buildNavItem(Icons.menu_book_outlined, AppLocalizations.of(context)!.learn, 4),
+            ),
           ],
         ),
       ),
@@ -845,40 +882,37 @@ class _FamilyAppointmentsScreenState extends State<FamilyAppointmentsScreen> {
 
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isActive = index == 2;
-    return GestureDetector(
-      onTap: () => FamilyNavigationHandler.navigateToScreen(context, index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: isActive
-                  ? const LinearGradient(
-                      colors: [Color(0xFFE91E63), Color(0xFFF8BBD0)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    )
-                  : null,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: isActive ? Colors.white : Color(0xFFE91E63).withOpacity(0.6),
-              size: 22,
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: isActive
+                ? const LinearGradient(
+                    colors: [Color(0xFFE91E63), Color(0xFFF8BBD0)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  )
+                : null,
+            shape: BoxShape.circle,
           ),
-          SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: isActive ? Color(0xFFE91E63) : Color(0xFFE91E63).withOpacity(0.6),
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-            ),
+          child: Icon(
+            icon,
+            color: isActive ? Colors.white : Color(0xFFE91E63).withOpacity(0.6),
+            size: 22,
           ),
-        ],
-      ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            color: isActive ? Color(0xFFE91E63) : Color(0xFFE91E63).withOpacity(0.6),
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -3,7 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../navigation/family_navigation_handler.dart';
+import 'package:safemothermobapp/l10n/app_localizations.dart';
+import 'family_profile_page.dart';
+import 'family_home_screen.dart';
+import 'family_appointment_page.dart';
+import 'family_learn_page.dart';
 
 class FamilyViewLogScreen extends StatefulWidget {
   const FamilyViewLogScreen({super.key});
@@ -180,7 +184,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
 
             // Risk Alert Section
             if (log['riskLevel'] != null && (log['riskLevel'] as String).isNotEmpty) ...[
-              _buildRiskAlert(log),
+              _buildRiskAlert(context, log),
               const SizedBox(height: 16),
             ],
 
@@ -189,7 +193,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
               children: [
                 Expanded(
                   child: _buildStatItem(
-                    'Blood Pressure',
+                    AppLocalizations.of(context)!.bloodPressure,
                     log['bloodPressure'],
                     Icons.favorite,
                     const Color(0xFFE91E63),
@@ -198,7 +202,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatItem(
-                    'Weight',
+                    AppLocalizations.of(context)!.weight,
                     '${log['weight']} kg',
                     Icons.monitor_weight,
                     const Color(0xFF9C27B0),
@@ -213,7 +217,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
               children: [
                 Expanded(
                   child: _buildStatItem(
-                    'Baby Kicks',
+                    AppLocalizations.of(context)!.babyKicks,
                     log['babyKicks'],
                     Icons.child_friendly,
                     const Color(0xFFFF9800),
@@ -222,7 +226,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildStatItem(
-                    'Sleep',
+                    AppLocalizations.of(context)!.sleepHours,
                     '${log['sleepHours']} hrs',
                     Icons.bedtime,
                     const Color(0xFF2196F3),
@@ -238,7 +242,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                 if (log['waterIntake'] != null && log['waterIntake'] != '--') ...[
                   Expanded(
                     child: _buildStatItem(
-                      'Water Intake',
+                      AppLocalizations.of(context)!.waterIntake,
                       '${log['waterIntake']} glasses',
                       Icons.local_drink,
                       const Color(0xFF2196F3),
@@ -249,7 +253,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                 if (log['exerciseMinutes'] != null && log['exerciseMinutes'] != '--') ...[
                   Expanded(
                     child: _buildStatItem(
-                      'Exercise',
+                      AppLocalizations.of(context)!.exerciseMinutes,
                       '${log['exerciseMinutes']} mins',
                       Icons.fitness_center,
                       const Color(0xFF4CAF50),
@@ -266,7 +270,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                 if (log['appetiteLevel'] != null && log['appetiteLevel'] != 'Not specified') ...[
                   Expanded(
                     child: _buildStatItem(
-                      'Appetite',
+                      AppLocalizations.of(context)!.appetiteLevel,
                       log['appetiteLevel'],
                       Icons.restaurant,
                       const Color(0xFFE91E63),
@@ -277,7 +281,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                 if (log['painLevel'] != null && log['painLevel'] != 'Not specified') ...[
                   Expanded(
                     child: _buildStatItem(
-                      'Pain Level',
+                      AppLocalizations.of(context)!.painLevel,
                       log['painLevel'],
                       Icons.sick,
                       const Color(0xFFFF5722),
@@ -291,9 +295,9 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
             // Mood and Energy
             Row(
               children: [
-                Expanded(child: _buildMoodIndicator(log['mood'])),
+                Expanded(child: _buildMoodIndicator(context, log['mood'])),
                 const SizedBox(width: 12),
-                Expanded(child: _buildEnergyIndicator(log['energyLevel'])),
+                Expanded(child: _buildEnergyIndicator(context, log['energyLevel'])),
               ],
             ),
             const SizedBox(height: 16),
@@ -301,7 +305,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
             // Additional Information
             if (log['symptoms'] != null && (log['symptoms'] as String).isNotEmpty) ...[
               _buildInfoSection(
-                'Symptoms',
+                AppLocalizations.of(context)!.symptoms,
                 log['symptoms'],
                 Icons.healing,
                 const Color(0xFFFF5722),
@@ -311,7 +315,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
 
             if (log['additionalNotes'] != null && (log['additionalNotes'] as String).isNotEmpty) ...[
               _buildInfoSection(
-                'Notes',
+                AppLocalizations.of(context)!.notes,
                 log['additionalNotes'],
                 Icons.note,
                 const Color(0xFF4CAF50),
@@ -321,7 +325,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
 
             if (log['medications'] != null && (log['medications'] as String).isNotEmpty) ...[
               _buildInfoSection(
-                'Medications',
+                AppLocalizations.of(context)!.medications,
                 log['medications'],
                 Icons.medication,
                 const Color(0xFF2196F3),
@@ -331,7 +335,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
 
             if (log['nauseaDetails'] != null && (log['nauseaDetails'] as String).isNotEmpty) ...[
               _buildInfoSection(
-                'Nausea Details',
+                AppLocalizations.of(context)!.nauseaDetails,
                 log['nauseaDetails'],
                 Icons.sick,
                 const Color(0xFF9C27B0),
@@ -340,14 +344,14 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
             ],
 
             // Health Indicators
-            _buildHealthIndicators(log),
+            _buildHealthIndicators(context, log),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRiskAlert(Map<String, dynamic> log) {
+  Widget _buildRiskAlert(BuildContext context, Map<String, dynamic> log) {
     Color getRiskColor(String riskLevel) {
       switch (riskLevel.toLowerCase()) {
         case 'high risk':
@@ -374,10 +378,24 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
       }
     }
 
+    String getLocalizedRiskLevel(String riskLevel) {
+      switch (riskLevel.toLowerCase()) {
+        case 'high risk':
+          return AppLocalizations.of(context)!.highRisk;
+        case 'moderate risk':
+          return AppLocalizations.of(context)!.moderateRisk;
+        case 'low risk':
+          return AppLocalizations.of(context)!.lowRisk;
+        default:
+          return riskLevel;
+      }
+    }
+
     final riskLevel = log['riskLevel'] ?? '';
     final riskMessage = log['riskMessage'] ?? '';
     final riskColor = getRiskColor(riskLevel);
     final riskIcon = getRiskIcon(riskLevel);
+    final localizedRiskLevel = getLocalizedRiskLevel(riskLevel);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -395,7 +413,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  riskLevel,
+                  localizedRiskLevel,
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -465,18 +483,20 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
     );
   }
 
-  Widget _buildMoodIndicator(String mood) {
+  Widget _buildMoodIndicator(BuildContext context, String mood) {
     final moodData = {
       'Excellent': {
         'icon': Icons.sentiment_very_satisfied,
         'color': Colors.green,
+        'localized': AppLocalizations.of(context)!.excellent,
       },
-      'Good': {'icon': Icons.sentiment_satisfied, 'color': Colors.lightGreen},
-      'Okay': {'icon': Icons.sentiment_neutral, 'color': Colors.orange},
-      'Low': {'icon': Icons.sentiment_dissatisfied, 'color': Colors.deepOrange},
+      'Good': {'icon': Icons.sentiment_satisfied, 'color': Colors.lightGreen, 'localized': AppLocalizations.of(context)!.good},
+      'Okay': {'icon': Icons.sentiment_neutral, 'color': Colors.orange, 'localized': AppLocalizations.of(context)!.okay},
+      'Low': {'icon': Icons.sentiment_dissatisfied, 'color': Colors.deepOrange, 'localized': AppLocalizations.of(context)!.low},
       'Anxious': {
         'icon': Icons.sentiment_very_dissatisfied,
         'color': Colors.red,
+        'localized': AppLocalizations.of(context)!.anxious,
       },
     };
 
@@ -509,14 +529,14 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Mood',
+                  AppLocalizations.of(context)!.mood,
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     color: const Color(0xFF757575),
                   ),
                 ),
                 Text(
-                  mood,
+                  data['localized'] as String,
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -531,7 +551,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
     );
   }
 
-  Widget _buildEnergyIndicator(String energyLevel) {
+  Widget _buildEnergyIndicator(BuildContext context, String energyLevel) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -559,7 +579,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Energy',
+                  AppLocalizations.of(context)!.energy,
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     color: const Color(0xFF757575),
@@ -634,21 +654,21 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
     );
   }
 
-  Widget _buildHealthIndicators(Map<String, dynamic> log) {
+  Widget _buildHealthIndicators(BuildContext context, Map<String, dynamic> log) {
     final indicators = [
       {
-        'label': 'Contractions',
+        'label': AppLocalizations.of(context)!.contractions,
         'value': log['hadContractions'],
         'icon': Icons.pregnant_woman,
       },
-      {'label': 'Headaches', 'value': log['hadHeadaches'], 'icon': Icons.sick},
+      {'label': AppLocalizations.of(context)!.headaches, 'value': log['hadHeadaches'], 'icon': Icons.sick},
       {
-        'label': 'Swelling',
+        'label': AppLocalizations.of(context)!.swelling,
         'value': log['hadSwelling'],
         'icon': Icons.water_drop,
       },
       {
-        'label': 'Vitamins',
+        'label': AppLocalizations.of(context)!.vitamins,
         'value': log['tookVitamins'],
         'icon': Icons.medication,
       },
@@ -718,32 +738,39 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(Icons.home_filled, 'Home', _currentIndex == 0),
-            _buildNavItem(
-              Icons.assignment_outlined,
-              'View Log',
-              _currentIndex == 1,
-            ),
-            _buildNavItem(
-              Icons.calendar_today_outlined,
-              'Appointments',
-              _currentIndex == 2,
-            ),
-            _buildNavItem(
-              Icons.menu_book_outlined,
-              'Learn',
-              _currentIndex == 4,
-            ),
+            _buildNavItem(context, Icons.home_filled, AppLocalizations.of(context)!.home, _currentIndex == 0),
+            _buildNavItem(context, Icons.assignment_outlined, AppLocalizations.of(context)!.viewLog, _currentIndex == 1),
+            _buildNavItem(context, Icons.calendar_today_outlined, AppLocalizations.of(context)!.appointments, _currentIndex == 2),
+            _buildNavItem(context, Icons.menu_book_outlined, AppLocalizations.of(context)!.learn, _currentIndex == 4),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    final index = _getIndexForLabel(label);
+  Widget _buildNavItem(BuildContext context, IconData icon, String label, bool isActive) {
+    final index = _getIndexForLabel(context, label);
     return GestureDetector(
-      onTap: () => FamilyNavigationHandler.navigateToScreen(context, index),
+      onTap: () {
+        if (index == 0) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const FamilyHomeScreen()),
+          );
+        } else if (index == 1) {
+          // Already on View Log, do nothing
+        } else if (index == 2) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const FamilyAppointmentsScreen()),
+          );
+        } else if (index == 4) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const FamilyLearnScreen()),
+          );
+        }
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -783,7 +810,12 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
     );
   }
 
-  int _getIndexForLabel(String label) {
+  int _getIndexForLabel(BuildContext context, String label) {
+    final homeLabel = AppLocalizations.of(context)!.home;
+    final viewLogLabel = AppLocalizations.of(context)!.viewLog;
+    final appointmentsLabel = AppLocalizations.of(context)!.appointments;
+    final learnLabel = AppLocalizations.of(context)!.learn;
+    
     switch (label) {
       case 'Home':
         return 0;
@@ -796,6 +828,11 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
       case 'Learn':
         return 4;
       default:
+        // Try localized versions
+        if (label == homeLabel) return 0;
+        if (label == viewLogLabel) return 1;
+        if (label == appointmentsLabel) return 2;
+        if (label == learnLabel) return 4;
         return -1;
     }
   }
@@ -846,7 +883,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                   Expanded(
                     child: Center(
                       child: Text(
-                        'Safe Mother',
+                        AppLocalizations.of(context)!.safeMother,
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 26,
                           fontWeight: FontWeight.w700,
@@ -866,7 +903,10 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                     ),
                     child: IconButton(
                       onPressed: () {
-                        FamilyNavigationHandler.navigateToProfile(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const FamilyProfileScreen()),
+                        );
                       },
                       icon: const Icon(
                         Icons.person_outlined,
@@ -927,7 +967,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  "$_linkedPatientName's Health Logs",
+                                  AppLocalizations.of(context)!.patientHealthLogs(_linkedPatientName),
                                   style: GoogleFonts.playfairDisplay(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
@@ -936,7 +976,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Viewing recent health updates and vital signs',
+                                  AppLocalizations.of(context)!.viewingRecentHealthUpdates,
                                   style: GoogleFonts.inter(
                                     fontSize: 14,
                                     color: const Color(0xFF757575),
@@ -978,7 +1018,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No Health Logs Yet',
+                              AppLocalizations.of(context)!.noHealthLogsYet,
                               style: GoogleFonts.inter(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -987,7 +1027,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Health logs will appear here when $_linkedPatientName starts tracking',
+                              AppLocalizations.of(context)!.healthLogsWillAppear(_linkedPatientName),
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
                                 fontSize: 14,
@@ -999,7 +1039,7 @@ class _FamilyViewLogScreenState extends State<FamilyViewLogScreen> {
                       ),
                     ] else ...[
                       Text(
-                        'Recent Logs',
+                        AppLocalizations.of(context)!.recentLogs,
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,

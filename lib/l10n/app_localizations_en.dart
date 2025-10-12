@@ -377,7 +377,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get energyLevel => 'Energy Level';
 
   @override
-  String get appetiteLevel => 'Appetite Level';
+  String get appetiteLevel => 'Appetite';
 
   @override
   String get painLevel => 'Pain Level';
@@ -821,7 +821,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchArticles => 'Search articles';
 
   @override
-  String get noArticlesFound => 'No articles found in this category';
+  String get noArticlesFound => 'No Articles Found';
 
   @override
   String get home => 'Home';
@@ -1005,7 +1005,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dueDateDesc => 'Your estimated due date arrives!';
 
   @override
-  String get completed => 'Completed';
+  String get completed => 'COMPLETED';
 
   @override
   String get current => 'Current';
@@ -1015,4 +1015,278 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thisWeeksTips => 'This Week\'s Tips';
+
+  @override
+  String get familyWelcomeMessage => 'Supporting your loved one through this beautiful journey';
+
+  @override
+  String get caregiver => 'Caregiver';
+
+  @override
+  String get healthOverview => 'Health Overview';
+
+  @override
+  String get viewAllHealthData => 'View All Health Data';
+
+  @override
+  String get recentActivity => 'Recent Activity';
+
+  @override
+  String get lastHealthUpdate => 'Last Health Update';
+
+  @override
+  String get linkedPatient => 'Linked Patient';
+
+  @override
+  String get patientName => 'Patient Name';
+
+  @override
+  String get relationship => 'Relationship';
+
+  @override
+  String get connectionStatus => 'Connection Status';
+
+  @override
+  String get privacySecurity => 'Privacy & Security';
+
+  @override
+  String get familyMember => 'Family Member';
+
+  @override
+  String get linkedTo => 'Linked to';
+
+  @override
+  String get edit => 'Edit';
+
+  @override
+  String get enterYour => 'Enter your';
+
+  @override
+  String get update => 'Update';
+
+  @override
+  String get passwordMinLength => 'Password must be at least 6 characters long!';
+
+  @override
+  String get passwordUpdated => 'Password updated successfully!';
+
+  @override
+  String get failedUpdatePassword => 'Failed to update password';
+
+  @override
+  String privacyDescriptionFamily(Object patientName) {
+    return 'Your privacy and the security of $patientName\'s medical information are our top priority. All data is encrypted and stored securely. Family members can only access information that is explicitly shared with them.';
+  }
+
+  @override
+  String get updatedSuccessfully => 'updated successfully!';
+
+  @override
+  String failedUpdateField(Object error, Object field) {
+    return 'Failed to update $field: $error';
+  }
+
+  @override
+  String errorSigningOut(Object error) {
+    return 'Error signing out: $error';
+  }
+
+  @override
+  String get signedOutSuccessfully => 'Signed out successfully';
+
+  @override
+  String patientHealthLogs(Object patientName) {
+    return '$patientName\'s Health Logs';
+  }
+
+  @override
+  String get viewingRecentHealthUpdates => 'Viewing recent health updates and vital signs';
+
+  @override
+  String healthLogsWillAppear(Object patientName) {
+    return 'Health logs will appear here when $patientName starts tracking';
+  }
+
+  @override
+  String get recentLogs => 'Recent Logs';
+
+  @override
+  String get bloodPressure => 'Blood Pressure';
+
+  @override
+  String get babyKicks => 'Baby Kicks';
+
+  @override
+  String get sleepHours => 'Sleep';
+
+  @override
+  String get waterIntake => 'Water Intake';
+
+  @override
+  String get exerciseMinutes => 'Exercise';
+
+  @override
+  String get mood => 'Mood';
+
+  @override
+  String get energy => 'Energy';
+
+  @override
+  String get symptoms => 'Symptoms';
+
+  @override
+  String get notes => 'Notes';
+
+  @override
+  String get medications => 'Medications';
+
+  @override
+  String get nauseaDetails => 'Nausea Details';
+
+  @override
+  String get contractions => 'Contractions';
+
+  @override
+  String get headaches => 'Headaches';
+
+  @override
+  String get swelling => 'Swelling';
+
+  @override
+  String get vitamins => 'Vitamins';
+
+  @override
+  String get highRisk => 'High Risk';
+
+  @override
+  String get moderateRisk => 'Moderate Risk';
+
+  @override
+  String get lowRisk => 'Low Risk';
+
+  @override
+  String get excellent => 'Excellent';
+
+  @override
+  String get good => 'Good';
+
+  @override
+  String get okay => 'Okay';
+
+  @override
+  String get low => 'Low';
+
+  @override
+  String get anxious => 'Anxious';
+
+  @override
+  String get viewLog => 'View Log';
+
+  @override
+  String get safeMother => 'Safe Mother';
+
+  @override
+  String patientAppointments(Object patientName) {
+    return '$patientName\'s Appointments';
+  }
+
+  @override
+  String get trackManageAppointments => 'Track and manage healthcare appointments';
+
+  @override
+  String get upcoming => 'UPCOMING';
+
+  @override
+  String get today => 'TODAY';
+
+  @override
+  String get tomorrow => 'TOMORROW';
+
+  @override
+  String get completedAppointments => 'Completed Appointments';
+
+  @override
+  String get noAppointments => 'No Appointments';
+
+  @override
+  String noAppointmentsFound(Object patientName) {
+    return 'No appointments found for $patientName.';
+  }
+
+  @override
+  String get noAppointmentsDialog => 'No Appointments';
+
+  @override
+  String noAppointmentsDialogMessage(Object patientName) {
+    return 'No appointment schedules found for $patientName. Appointments will appear here when scheduled.';
+  }
+
+  @override
+  String get firestoreError => 'Firestore Error';
+
+  @override
+  String get connectionError => 'Connection Error';
+
+  @override
+  String get unableToLoadAppointments => 'Unable to load appointments. Please check your connection and try again.';
+
+  @override
+  String get unexpectedError => 'An unexpected error occurred while loading appointments.';
+
+  @override
+  String failedToLoadAppointments(Object error) {
+    return 'Failed to load appointments: $error';
+  }
+
+  @override
+  String get videoCallAvailable => 'Video call available';
+
+  @override
+  String get joinCall => 'Join Call';
+
+  @override
+  String get joiningVideoCall => 'Joining video call...';
+
+  @override
+  String get appointmentsLoadingBasicSorting => 'Appointments loading with basic sorting (index building...)';
+
+  @override
+  String get appointmentsLoadingBasicSortingFull => 'Appointments loading with basic sorting. Full sorting will be available soon.';
+
+  @override
+  String get ok => 'OK';
+
+  @override
+  String get pregnancyAndParentingGuide => 'Pregnancy & Parenting Guide';
+
+  @override
+  String latestArticlesAndResources(Object patientName) {
+    return 'Latest articles and resources for $patientName\'s pregnancy journey';
+  }
+
+  @override
+  String get searchPregnancyArticles => 'Search pregnancy articles...';
+
+  @override
+  String get loadingArticles => 'Loading articles...';
+
+  @override
+  String get unableToLoadArticles => 'Unable to Load Articles';
+
+  @override
+  String get failedToLoadArticles => 'Failed to load articles. Please try again later.';
+
+  @override
+  String get tryAgain => 'Try Again';
+
+  @override
+  String get tryAdjustingSearch => 'Try adjusting your search or category filter';
+
+  @override
+  String get readArticle => 'Read Article';
+
+  @override
+  String cannotOpenArticle(Object url) {
+    return 'Cannot open article: $url';
+  }
 }

@@ -5,13 +5,6 @@ import 'l10n/app_localizations.dart'; // 👈 Add this for localization support
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'pages/family_home_screen.dart';
-import 'pages/family_log_page.dart';
-import 'pages/family_appointment_page.dart';
-import 'pages/family_contact_page.dart';
-import 'pages/family_learn_page.dart';
-import 'pages/family_profile_page.dart';
-import 'pages/family_logIn_page.dart';
-import 'pages/family_signup_page.dart';
 import 'services/family_notification_service.dart';
 import 'services/session_manager.dart';
 import 'services/firebase_service.dart';
@@ -119,19 +112,6 @@ class _SafeMotherAppState extends State<SafeMotherApp> {
         ),
       ),
       home: const SplashScreen(),
-      routes: {
-        '/': (context) => const FamilyLoginScreen(),
-        '/familyHome': (context) => const FamilyHomeScreen(),
-        '/familyViewLog': (context) => const FamilyViewLogScreen(),
-        '/familyAppointments': (context) => const FamilyAppointmentsScreen(),
-        '/familyContacts': (context) => const FamilyContactsScreen(),
-        '/familyLearn': (context) => const FamilyLearnScreen(),
-        '/familyProfile': (context) => const FamilyProfileScreen(),
-        '/signup': (context) => const FamilySignUpScreen(),
-        '/signin': (context) => const SignInScreen(),
-        '/patientDashboard': (context) => const HomeScreen(),
-        '/doctorDashboard': (context) => const DoctorDashboard(),
-      },
     );
   }
 }

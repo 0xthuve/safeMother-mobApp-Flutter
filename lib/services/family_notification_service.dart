@@ -50,12 +50,8 @@ class FamilyNotificationService {
     // For Android 13+, request permission
     final androidPlugin = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     if (androidPlugin != null) {
-      // Check Android version and request permission if needed
-      final bool? granted = await androidPlugin.areNotificationsEnabled();
-      if (granted == false) {
-        // On newer Android versions, we can request permission
-        await androidPlugin.requestNotificationsPermission();
-      }
+      // For Android 13+, we need to request permission
+      await androidPlugin.requestNotificationsPermission();
     }
 
     // iOS permissions
@@ -201,17 +197,19 @@ class FamilyNotificationService {
     }
   }
 
-  // Rest of your methods remain the same...
+  // Schedule daily reminder
   Future<void> scheduleDailyReminder({
     required String title,
     required String body,
     required TimeOfDay time,
   }) async {
+    final tz.TZDateTime scheduledDate = _nextInstanceOfTime(time.hour, time.minute);
+    
     await _notificationsPlugin.zonedSchedule(
-      time.hour * 60 + time.minute,
+      time.hour * 60 + time.minute, // Unique ID based on time
       title,
       body,
-      _nextInstanceOfTime(time.hour, time.minute),
+      scheduledDate,
       const NotificationDetails(
         android: AndroidNotificationDetails(
           'daily_reminder_channel',
@@ -226,8 +224,7 @@ class FamilyNotificationService {
           presentSound: true,
         ),
       ),
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
     );
   }
@@ -316,5 +313,10 @@ class FamilyNotificationService {
       title: 'Test Notification',
       body: 'This is a test notification from Safe Mother app',
     );
+  }
+
+  // Clean up resources
+  void dispose() {
+    stopMonitoring();
   }
 }

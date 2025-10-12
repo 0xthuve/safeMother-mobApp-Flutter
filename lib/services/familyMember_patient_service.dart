@@ -103,9 +103,7 @@ class FamilyMemberPatientService {
     }
 
     return Patient(
-      id:
-          int.tryParse(patientUserId) ??
-          0, // Use patientUserId as id, convert to int if possible
+      id: patientUserId,
       name: getName(),
       email: getEmail(),
       phone: getPhone(),
@@ -125,9 +123,7 @@ class FamilyMemberPatientService {
       lastVisit: parseDateWithFallback(
         userData['lastVisit'] ?? userData['lastAppointment'],
       ),
-      assignedDoctorId:
-          int.tryParse(userData['assignedDoctorId']?.toString() ?? '') ??
-          int.tryParse(userData['doctorId']?.toString() ?? ''),
+      assignedDoctorId: userData['assignedDoctorId']?.toString() ?? userData['doctorId']?.toString(),
       createdAt: parseDateWithFallback(
         userData['createdAt'] ?? userData['created'],
       ),

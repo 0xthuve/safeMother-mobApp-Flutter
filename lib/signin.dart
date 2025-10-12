@@ -8,6 +8,11 @@ import 'patient_dashboard_tip.dart';
 import 'chat_patient.dart';
 import 'pages/doctor/doctor_login.dart';
 import 'services/user_management_service.dart';
+import './pages/family_logIn_page.dart';
+import 'pages/family_home_screen.dart';
+import 'pages/family_log_page.dart';
+import 'pages/family_appointment_page.dart';
+import 'pages/family_profile_page.dart';
 
 void main() {
   runApp(const SignInApp());
@@ -32,15 +37,110 @@ class SignInApp extends StatelessWidget {
           bodyMedium: TextStyle(color: Color(0xFF5A5A5A)), // Dark gray text
         ),
       ),
-      home: const SignInScreen(),
+      home: const AuthWrapper(),
       routes: {
         '/home': (context) => const HomeScreen(),
         '/log': (context) => PatientDashboardLog(),
         '/consultation': (context) => const ConsultationScreen(),
         '/learn': (context) => const LearnScreen(),
         '/chat': (context) => const ChatScreen(),
+  '/familyViewLog': (context) => const FamilyViewLogScreen(),
+  '/familyAppointments': (context) => const FamilyAppointmentsScreen(),
+  '/familyProfile': (context) => const FamilyProfileScreen(),
       },
     );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _isLoading = true;
+  Widget? _initialScreen;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthState();
+  }
+
+  Future<void> _checkAuthState() async {
+    try {
+      // Check if user is already logged in
+      final userData = await UserManagementService.getCurrentUserData();
+      
+      if (userData != null) {
+        final userRole = userData['role'];
+        
+        // Navigate based on user role
+        if (userRole == 'family') {
+          _initialScreen = const FamilyHomeScreen();
+        } else if (userRole == 'doctor' || userRole == 'healthcare') {
+          // Healthcare providers should use their dedicated login
+          await UserManagementService.signOutUser();
+          _initialScreen = const SignInScreen();
+        } else {
+          // Regular patient
+          _initialScreen = const HomeScreen();
+        }
+      } else {
+        // No user logged in, show sign in screen
+        _initialScreen = const SignInScreen();
+      }
+    } catch (e) {
+      // If there's an error checking auth state, show sign in screen
+      _initialScreen = const SignInScreen();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      // Show loading screen while checking authentication
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFFBE9E7), Color(0xFFF8F6F8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Checking authentication...',
+                  style: TextStyle(
+                    color: Color(0xFF7B1FA2),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return _initialScreen ?? const SignInScreen();
   }
 }
 
@@ -367,17 +467,24 @@ class SignInScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              const Color(0xFFE3F2FD).withOpacity(0.6),
-                              const Color(0xFFF1F8E9).withOpacity(0.6),
+                              const Color(0xFFE3F2FD), // Light blue
+                              const Color(0xFFBBDEFB), // Deeper blue
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: const Color(0xFF81C784).withOpacity(0.3),
+                            color: const Color(0xFF1976D2).withOpacity(0.2),
                             width: 1,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1976D2).withOpacity(0.1),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Column(
                           children: [
@@ -385,36 +492,58 @@ class SignInScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1976D2).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: const Color(0xFF1976D2).withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFF1976D2).withOpacity(0.3),
+                                      width: 1,
+                                    ),
                                   ),
                                   child: const Icon(
                                     Icons.medical_services,
                                     color: Color(0xFF1976D2),
-                                    size: 20,
+                                    size: 24,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  'Healthcare Provider?',
-                                  style: TextStyle(
+                                const SizedBox(width: 16),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Healthcare Provider',
+                                        style: TextStyle(
+                                          color: Color(0xFF1976D2),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        'Access medical dashboard & patient management',
+                                        style: TextStyle(
+                                          color: Color(0xFF64B5F6),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1976D2).withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.local_hospital,
                                     color: Color(0xFF1976D2),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                                    size: 16,
                                   ),
                                 ),
                               ],
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Access your medical dashboard and patient management tools',
-                              style: TextStyle(
-                                color: Color(0xFF64B5F6),
-                                fontSize: 13,
-                              ),
-                              textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
                             SizedBox(
@@ -436,6 +565,7 @@ class SignInScreen extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   elevation: 2,
+                                  shadowColor: const Color(0xFF1976D2).withOpacity(0.3),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -459,6 +589,157 @@ class SignInScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                    
+
+                      const SizedBox(height: 20),
+                      
+
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFFFFF3E0), // Light orange
+                              const Color(0xFFFFE0B2), // Deeper orange
+                              const Color(0xFFFFCCBC), // Light coral
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFE91E63).withOpacity(0.3),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFE91E63).withOpacity(0.15),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFFE91E63),
+                                        const Color(0xFFD81B60),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFE91E63).withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.family_restroom,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Family Member',
+                                        style: TextStyle(
+                                          color: Color(0xFFE91E63),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        'Stay connected with your loved one\'s care',
+                                        style: TextStyle(
+                                          color: Color(0xFFAD1457),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFFE91E63).withOpacity(0.2),
+                                        const Color(0xFFE91E63).withOpacity(0.1),
+                                      ],
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.favorite,
+                                    color: Color(0xFFE91E63),
+                                    size: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const FamilyLoginScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE91E63),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 3,
+                                  shadowColor: const Color(0xFFE91E63).withOpacity(0.4),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.home,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Family Access',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      
                     ],
                   ),
                 ),
@@ -523,29 +804,31 @@ class _SignInFormState extends State<SignInForm> {
               ),
             );
 
-            // Navigate to appropriate dashboard based on role
-            if (userRole == 'doctor' || userRole == 'healthcare') {
-              // Doctors should not access patient dashboard - show error
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Healthcare providers cannot access patient dashboard. Please use Healthcare Login.'),
-                  backgroundColor: Colors.orange,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-              // Sign out the user and return to login
-              await UserManagementService.signOutUser();
-              return;
-            } else {
-              // Only patients can access patient dashboard
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HomeScreen()),
-              );
-            }
+                  // Navigate to appropriate dashboard based on role
+                  if (userRole == 'doctor' || userRole == 'healthcare') {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Healthcare providers cannot access patient dashboard. Please use Healthcare Login.'),
+                        backgroundColor: Colors.orange,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+                    await UserManagementService.signOutUser();
+                    return;
+                  } else if (userRole == 'family') {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const FamilyHomeScreen()),
+                    );
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                    );
+                  }
           }
         } else {
           throw Exception('Invalid email or password');
@@ -872,7 +1155,7 @@ class _SignInFormState extends State<SignInForm> {
           
           // Forgot password
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
               TextButton(
                 onPressed: _isLoading ? null : _onForgotPassword,

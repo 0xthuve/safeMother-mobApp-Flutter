@@ -3,7 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
-import '../navigation/family_navigation_handler.dart';
+import 'package:safemothermobapp/l10n/app_localizations.dart';
+import 'family_home_screen.dart';
+import 'family_log_page.dart';
+import 'family_profile_page.dart';
+import 'family_appointment_page.dart';
 
 class FamilyLearnScreen extends StatefulWidget {
   const FamilyLearnScreen({super.key});
@@ -74,7 +78,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to load articles. Please try again later.';
+        _errorMessage = AppLocalizations.of(context)!.failedToLoadArticles;
         _isLoading = false;
       });
     }
@@ -143,7 +147,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
           Expanded(
             child: Center(
               child: Text(
-                'Safe Mother',
+                AppLocalizations.of(context)!.safeMother,
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
@@ -155,7 +159,12 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
           ),
           // FIXED: Added GestureDetector for profile navigation
           GestureDetector(
-            onTap: () => FamilyNavigationHandler.navigateToProfile(context),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => FamilyProfileScreen()),
+              );
+            },
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -196,21 +205,50 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(Icons.home_filled, 'Home', _currentIndex == 0),
-            _buildNavItem(
-              Icons.assignment_outlined,
-              'View Log',
-              _currentIndex == 1,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => FamilyHomeScreen()),
+                );
+              },
+              child: _buildNavItem(Icons.home_filled, AppLocalizations.of(context)!.home, _currentIndex == 0),
             ),
-            _buildNavItem(
-              Icons.calendar_today_outlined,
-              'Appointments',
-              _currentIndex == 2,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => FamilyViewLogScreen()),
+                );
+              },
+              child: _buildNavItem(
+                Icons.assignment_outlined,
+                AppLocalizations.of(context)!.viewLog,
+                _currentIndex == 1,
+              ),
             ),
-            _buildNavItem(
-              Icons.menu_book_outlined,
-              'Learn',
-              _currentIndex == 4,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => FamilyAppointmentsScreen()),
+                );
+              },
+              child: _buildNavItem(
+                Icons.calendar_today_outlined,
+                AppLocalizations.of(context)!.appointments,
+                _currentIndex == 2,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                // Already on Learn page, do nothing
+              },
+              child: _buildNavItem(
+                Icons.menu_book_outlined,
+                AppLocalizations.of(context)!.learn,
+                _currentIndex == 4,
+              ),
             ),
           ],
         ),
@@ -219,63 +257,42 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
   }
 
   Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    final index = _getIndexForLabel(label);
-    return GestureDetector(
-      onTap: () => FamilyNavigationHandler.navigateToScreen(context, index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              gradient: isActive
-                  ? const LinearGradient(
-                      colors: [Color(0xFFE91E63), Color(0xFFF8BBD0)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    )
-                  : null,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: isActive
-                  ? Colors.white
-                  : const Color(0xFFE91E63).withOpacity(0.6),
-              size: 22,
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: isActive
+                ? const LinearGradient(
+                    colors: [Color(0xFFE91E63), Color(0xFFF8BBD0)],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  )
+                : null,
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: isActive
-                  ? const Color(0xFFE91E63)
-                  : const Color(0xFFE91E63).withOpacity(0.6),
-              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-            ),
+          child: Icon(
+            icon,
+            color: isActive
+                ? Colors.white
+                : const Color(0xFFE91E63).withOpacity(0.6),
+            size: 22,
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            color: isActive
+                ? const Color(0xFFE91E63)
+                : const Color(0xFFE91E63).withOpacity(0.6),
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ],
     );
-  }
-
-  int _getIndexForLabel(String label) {
-    switch (label) {
-      case 'Home':
-        return 0;
-      case 'View Log':
-        return 1;
-      case 'Appointments':
-        return 2;
-      case 'Contacts':
-        return 3;
-      case 'Learn':
-        return 4;
-      default:
-        return -1;
-    }
   }
 
   Widget _buildCategoryChip(int index) {
@@ -456,7 +473,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                       Icon(Icons.article, color: Color(0xFFE91E63), size: 16),
                       const SizedBox(width: 6),
                       Text(
-                        'Read Article',
+                        AppLocalizations.of(context)!.readArticle,
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -557,7 +574,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                     children: [
                       if (article['publishedAt'] != null)
                         Text(
-                          'Published: ${_formatDate(article['publishedAt'])}',
+                          AppLocalizations.of(context)!.publishedLabel(_formatDate(article['publishedAt'])),
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: const Color(0xFF757575),
@@ -565,7 +582,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                         ),
                       if (article['source']['name'] != null)
                         Text(
-                          'Source: ${article['source']['name']}',
+                          AppLocalizations.of(context)!.sourceLabel(article['source']['name']),
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: const Color(0xFF757575),
@@ -581,7 +598,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                     children: [
                       Expanded(
                         child: _buildDetailActionButton(
-                          'Read Full Article',
+                          AppLocalizations.of(context)!.readFullArticle,
                           Icons.launch,
                           const Color(0xFFE91E63),
                           () => _launchURL(article['url']),
@@ -590,7 +607,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _buildDetailActionButton(
-                          'Close',
+                          AppLocalizations.of(context)!.close,
                           Icons.close,
                           const Color(0xFF757575),
                           () => Navigator.of(context).pop(),
@@ -654,7 +671,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Cannot open article: $url'),
+          content: Text(AppLocalizations.of(context)!.cannotOpenArticle(url)),
           backgroundColor: const Color(0xFFF44336),
         ),
       );
@@ -740,7 +757,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  "Pregnancy & Parenting Guide",
+                                  AppLocalizations.of(context)!.pregnancyAndParentingGuide,
                                   style: GoogleFonts.playfairDisplay(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
@@ -749,7 +766,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Latest articles and resources for ${_linkedPatientName}\'s pregnancy journey',
+                                  AppLocalizations.of(context)!.latestArticlesAndResources(_linkedPatientName),
                                   style: GoogleFonts.inter(
                                     fontSize: 14,
                                     color: const Color(0xFF757575),
@@ -788,7 +805,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                             child: TextField(
                               controller: _searchController,
                               decoration: InputDecoration(
-                                hintText: 'Search pregnancy articles...',
+                                hintText: AppLocalizations.of(context)!.searchPregnancyArticles,
                                 border: InputBorder.none,
                                 hintStyle: GoogleFonts.inter(
                                   color: const Color(0xFF757575),
@@ -835,7 +852,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Loading articles...',
+                              AppLocalizations.of(context)!.loadingArticles,
                               style: GoogleFonts.inter(
                                 fontSize: 16,
                                 color: const Color(0xFF757575),
@@ -864,7 +881,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Unable to Load Articles',
+                              AppLocalizations.of(context)!.unableToLoadArticles,
                               style: GoogleFonts.inter(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -900,7 +917,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                                   ),
                                 ),
                                 child: Text(
-                                  'Try Again',
+                                  AppLocalizations.of(context)!.tryAgain,
                                   style: GoogleFonts.inter(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -932,7 +949,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'No Articles Found',
+                              AppLocalizations.of(context)!.noArticlesFound,
                               style: GoogleFonts.inter(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -941,7 +958,7 @@ class _FamilyLearnScreenState extends State<FamilyLearnScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Try adjusting your search or category filter',
+                              AppLocalizations.of(context)!.tryAdjustingSearch,
                               textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
                                 fontSize: 14,

@@ -11,8 +11,6 @@ import 'models/doctor.dart';
 import 'models/appointment.dart';
 import 'l10n/app_localizations.dart';
 
-
-
 void main() {
   runApp(const PregnancyApp());
 }
@@ -78,7 +76,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       if (_userId != null) {
         // Load data in parallel for better performance
         await Future.wait([
-          _loadLinkedDoctors(),
+          _loadAllDoctors(),
           _loadUpcomingAppointments(),
         ]);
       }
@@ -92,40 +90,29 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     }
   }
 
-
-
-  Future<void> _loadLinkedDoctors() async {
+  Future<void> _loadAllDoctors() async {
     try {
-      final linkedDoctorsData = await _backendService.getLinkedDoctorsForPatient(_userId!);
+      final doctorsData = await _backendService.getLinkedDoctorsWithContact(_userId!);
       
-      // Filter and process doctors more efficiently
-      final acceptedDoctors = linkedDoctorsData.where((doctor) => doctor['status'] == 'accepted');
-      
-      // Use map instead of for-loop for better performance
-      final doctors = acceptedDoctors.map((doctorData) {
-        return Doctor(
-          id: doctorData['doctorId']?.toString(),
-          firebaseUid: doctorData['doctorFirebaseUid'],
-          name: doctorData['doctorName'] ?? 'Unknown Doctor',
-          email: doctorData['doctorEmail'] ?? '',
-          phone: doctorData['doctorPhone'] ?? '',
-          specialization: doctorData['doctorSpecialization'] ?? 'General Practice',
-          licenseNumber: doctorData['doctorLicenseNumber'] ?? '',
-          hospital: doctorData['doctorHospital'] ?? '',
-          experience: doctorData['doctorExperience'] ?? '',
-          bio: doctorData['doctorBio'] ?? '',
-          profileImage: doctorData['doctorProfileImage'] ?? '',
-          rating: (doctorData['doctorRating'] as num?)?.toDouble() ?? 4.5,
-          totalPatients: doctorData['doctorTotalPatients'] ?? 0,
-          isAvailable: doctorData['doctorIsAvailable'] ?? true,
-          createdAt: doctorData['doctorCreatedAt'] != null 
-            ? DateTime.parse(doctorData['doctorCreatedAt']) 
-            : DateTime.now(),
-          updatedAt: doctorData['doctorUpdatedAt'] != null 
-            ? DateTime.parse(doctorData['doctorUpdatedAt']) 
-            : DateTime.now(),
-        );
-      }).toList();
+      // Convert Map data to Doctor objects
+      final doctors = doctorsData.map((data) => Doctor(
+        id: data['id']?.toString(),
+        firebaseUid: data['firebaseUid'],
+        name: data['name'] ?? 'Unknown Doctor',
+        email: '', // Not provided in contact data
+        phone: data['phoneNumber'] ?? '',
+        specialization: data['specialization'] ?? 'General Practice',
+        licenseNumber: '', // Not provided
+        hospital: data['hospital'] ?? 'Unknown Hospital',
+        experience: '0 years', // Not provided
+        bio: 'Healthcare professional',
+        profileImage: '',
+        rating: 0.0, // Not provided
+        totalPatients: 0, // Not provided
+        isAvailable: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      )).toList();
       
       // Only setState if data actually changed
       if (_linkedDoctors.length != doctors.length || 
@@ -135,7 +122,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
         });
       }
       
-      print('Successfully loaded ${doctors.length} accepted doctors');
+      print('Successfully loaded ${doctors.length} linked doctors for patient $_userId');
     } catch (e) {
       print('Error loading linked doctors: $e');
       if (_linkedDoctors.isNotEmpty) {
@@ -189,6 +176,78 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   void _onItemTapped(int index) {
     if (index == _currentIndex) return;
     NavigationHandler.navigateToScreen(context, index);
+  }
+
+  // Safe method to get localized strings
+  dynamic _getLocalizedString(BuildContext context, String key) {
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) {
+      // Fallback English strings if localization is not available
+      final fallbackStrings = {
+        'loadingConsultationData': 'Loading consultation data...',
+        'consultation': 'Consultation',
+        'quickActions': 'Quick Actions',
+        'bookAppointment': 'Book Appointment',
+        'quickChat': 'Quick Chat',
+        'upcomingAppointments': 'Upcoming Appointments',
+        'noUpcomingAppointments': 'No upcoming appointments',
+        'scheduleAppointment': 'Schedule an appointment to get started',
+        'goToProfileSettings': 'Go to Profile Settings',
+        'refresh': 'Refresh',
+        'bookAppointmentButton': 'Book Appointment',
+        'selectDoctor': 'Select Doctor',
+        'chooseYourDoctor': 'Choose your doctor',
+        'selectDate': 'Select Date',
+        'chooseAppointmentDate': 'Choose appointment date',
+        'selectTime': 'Select Time',
+        'reasonForVisit': 'Reason for Visit',
+        'appointmentExample': 'e.g., Routine checkup, Specific concern',
+        'additionalNotesOptional': 'Additional Notes (Optional)',
+        'specificConcerns': 'Any specific concerns or questions',
+        'appointmentBookedSuccess': 'Appointment booked successfully!',
+        'startConversation': (name) => 'Start a conversation with Dr. $name',
+        'messagesSecure': 'Your messages are secure and private',
+        'typeMessage': 'Type a message...',
+        'now': 'now',
+        'minutesAgo': (minutes) => '$minutes min ago',
+        'hoursAgo': (hours) => '$hours h ago',
+        'failedSendMessage': 'Failed to send message',
+      };
+      return fallbackStrings[key] ?? key;
+    }
+
+    // Use the actual localization methods
+    switch (key) {
+      case 'loadingConsultationData': return localizations.loadingConsultationData;
+      case 'consultation': return localizations.consultation;
+      case 'quickActions': return localizations.quickActions;
+      case 'bookAppointment': return localizations.bookAppointment;
+      case 'quickChat': return localizations.quickChat;
+      case 'upcomingAppointments': return localizations.upcomingAppointments;
+      case 'noUpcomingAppointments': return localizations.noUpcomingAppointments;
+      case 'scheduleAppointment': return localizations.scheduleAppointment;
+      case 'goToProfileSettings': return localizations.goToProfileSettings;
+      case 'refresh': return localizations.refresh;
+      case 'bookAppointmentButton': return localizations.bookAppointmentButton;
+      case 'selectDoctor': return localizations.selectDoctor;
+      case 'chooseYourDoctor': return localizations.chooseYourDoctor;
+      case 'selectDate': return localizations.selectDate;
+      case 'chooseAppointmentDate': return localizations.chooseAppointmentDate;
+      case 'selectTime': return localizations.selectTime;
+      case 'reasonForVisit': return localizations.reasonForVisit;
+      case 'appointmentExample': return localizations.appointmentExample;
+      case 'additionalNotesOptional': return localizations.additionalNotesOptional;
+      case 'specificConcerns': return localizations.specificConcerns;
+      case 'appointmentBookedSuccess': return localizations.appointmentBookedSuccess;
+      case 'startConversation': return (name) => localizations.startConversation(name);
+      case 'messagesSecure': return localizations.messagesSecure;
+      case 'typeMessage': return localizations.typeMessage;
+      case 'now': return localizations.now;
+      case 'minutesAgo': return (minutes) => localizations.minutesAgo(minutes);
+      case 'hoursAgo': return (hours) => localizations.hoursAgo(hours);
+      case 'failedSendMessage': return localizations.failedSendMessage;
+      default: return key;
+    }
   }
 
   @override
@@ -247,7 +306,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                       ),
                       SizedBox(height: 16),
                       Text(
-                        AppLocalizations.of(context)!.loadingConsultationData,
+                        _getLocalizedString(context, 'loadingConsultationData'),
                         style: const TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 16,
@@ -272,7 +331,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                             icon: const Icon(Icons.arrow_back, color: Color(0xFF5A5A5A)),
                           ),
                           Text(
-                            AppLocalizations.of(context)!.consultation,
+                            _getLocalizedString(context, 'consultation'),
                             style: const TextStyle(
                               color: Color(0xFF7B1FA2),
                               fontSize: 20,
@@ -296,8 +355,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                       
                       const SizedBox(height: 32),
                       
-                      // Linked Doctors Section
-                      _buildSectionHeader(AppLocalizations.of(context)!.yourDoctors),
+                      // Available Doctors Section
+                      _buildSectionHeader("Linked Doctors"),
                       
                       const SizedBox(height: 16),
                       
@@ -313,7 +372,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                       const SizedBox(height: 32),
                       
                       // Upcoming Appointments Section
-                      _buildSectionHeader(AppLocalizations.of(context)!.upcomingAppointments),
+                      _buildSectionHeader(_getLocalizedString(context, 'upcomingAppointments')),
                       
                       const SizedBox(height: 16),
                       
@@ -402,7 +461,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                AppLocalizations.of(context)!.quickActions,
+                _getLocalizedString(context, 'quickActions'),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -417,7 +476,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.calendar_today,
-                  title: AppLocalizations.of(context)!.bookAppointment,
+                  title: _getLocalizedString(context, 'bookAppointment'),
                   color: const Color(0xFF4A90E2),
                   onTap: () => _showBookAppointmentBottomSheet(),
                 ),
@@ -426,7 +485,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.chat,
-                  title: AppLocalizations.of(context)!.quickChat,
+                  title: _getLocalizedString(context, 'quickChat'),
                   color: const Color(0xFFE91E63),
                   onTap: () => _showQuickChatOptions(),
                 ),
@@ -587,7 +646,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            AppLocalizations.of(context)!.noDoctorsLinked,
+            "No linked doctors found",
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -596,7 +655,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            AppLocalizations.of(context)!.noDoctorsLinkedDesc,
+            "You haven't been linked with any doctors yet. Doctors will appear here once they accept your connection request.",
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -612,7 +671,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(AppLocalizations.of(context)!.goToProfileSettings),
+                        content: Text(_getLocalizedString(context, 'goToProfileSettings')),
                         backgroundColor: Color(0xFF7B1FA2),
                       ),
                     );
@@ -629,7 +688,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                     size: 16,
                   ),
                   label: Text(
-                    AppLocalizations.of(context)!.linkDoctors,
+                    "Refresh",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -655,7 +714,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                     size: 16,
                   ),
                   label: Text(
-                    AppLocalizations.of(context)!.refresh,
+                    _getLocalizedString(context, 'refresh'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -782,7 +841,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            AppLocalizations.of(context)!.noUpcomingAppointments,
+            _getLocalizedString(context, 'noUpcomingAppointments'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
@@ -792,7 +851,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            AppLocalizations.of(context)!.scheduleAppointment,
+            _getLocalizedString(context, 'scheduleAppointment'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
@@ -803,8 +862,6 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       ),
     );
   }
-
-
 
   void _showBookAppointmentBottomSheet() {
     showModalBottomSheet(
@@ -824,7 +881,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     if (_linkedDoctors.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.linkDoctorFirstChat),
+          content: Text("No linked doctors available for chat at the moment"),
           backgroundColor: Colors.orange,
         ),
       );
@@ -835,7 +892,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          AppLocalizations.of(context)!.quickChatTitle,
+          "Quick Chat",
           style: TextStyle(
             color: Color(0xFFE91E63),
             fontWeight: FontWeight.bold,
@@ -846,7 +903,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              AppLocalizations.of(context)!.chooseDoctorChat,
+              "Choose a doctor to start chatting:",
               style: TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 16),
@@ -891,32 +948,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              AppLocalizations.of(context)!.cancel,
+              "Cancel",
               style: TextStyle(color: Color(0xFF9575CD)),
-            ),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              NavigationHandler.navigateToScreen(context, 4); // Navigate to AI Chat
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF9C27B0),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            icon: const Icon(
-              Icons.smart_toy,
-              color: Colors.white,
-              size: 16,
-            ),
-            label: Text(
-              AppLocalizations.of(context)!.aiChat,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-              ),
             ),
           ),
         ],
@@ -945,8 +978,6 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
       ),
     );
   }
-
-
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
@@ -1004,6 +1035,44 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
     _selectedDoctor = widget.selectedDoctor;
   }
 
+  // Safe method to get localized strings
+  String _getLocalizedString(BuildContext context, String key) {
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) {
+      // Fallback English strings if localization is not available
+      final fallbackStrings = {
+        'bookAppointmentButton': 'Book Appointment',
+        'selectDoctor': 'Select Doctor',
+        'chooseYourDoctor': 'Choose your doctor',
+        'selectDate': 'Select Date',
+        'chooseAppointmentDate': 'Choose appointment date',
+        'selectTime': 'Select Time',
+        'reasonForVisit': 'Reason for Visit',
+        'appointmentExample': 'e.g., Routine checkup, Specific concern',
+        'additionalNotesOptional': 'Additional Notes (Optional)',
+        'specificConcerns': 'Any specific concerns or questions',
+        'appointmentBookedSuccess': 'Appointment booked successfully!',
+      };
+      return fallbackStrings[key] ?? key;
+    }
+
+    // Use the actual localization methods
+    switch (key) {
+      case 'bookAppointmentButton': return localizations.bookAppointmentButton;
+      case 'selectDoctor': return localizations.selectDoctor;
+      case 'chooseYourDoctor': return localizations.chooseYourDoctor;
+      case 'selectDate': return localizations.selectDate;
+      case 'chooseAppointmentDate': return localizations.chooseAppointmentDate;
+      case 'selectTime': return localizations.selectTime;
+      case 'reasonForVisit': return localizations.reasonForVisit;
+      case 'appointmentExample': return localizations.appointmentExample;
+      case 'additionalNotesOptional': return localizations.additionalNotesOptional;
+      case 'specificConcerns': return localizations.specificConcerns;
+      case 'appointmentBookedSuccess': return localizations.appointmentBookedSuccess;
+      default: return key;
+    }
+  }
+
   @override  
   Widget build(BuildContext context) {
     return Container(
@@ -1031,7 +1100,7 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
             child: Row(
               children: [
                 Text(
-                  AppLocalizations.of(context)!.bookAppointmentButton,
+                  'Book Appointment',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -1054,7 +1123,7 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                 children: [
                   // Doctor Selection
                   Text(
-                    AppLocalizations.of(context)!.selectDoctor,
+                    _getLocalizedString(context, 'selectDoctor'),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -1080,14 +1149,14 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                         _availableTimeSlots = [];
                       });
                     },
-                    hint: Text(AppLocalizations.of(context)!.chooseYourDoctor),
+                    hint: Text(_getLocalizedString(context, 'chooseYourDoctor')),
                   ),
                   
                   const SizedBox(height: 16),
                   
                   // Date Selection
                   Text(
-                    AppLocalizations.of(context)!.selectDate,
+                    _getLocalizedString(context, 'selectDate'),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -1106,7 +1175,7 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                           Text(
                             _selectedDate != null
                                 ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                : AppLocalizations.of(context)!.chooseAppointmentDate,
+                                : _getLocalizedString(context, 'chooseAppointmentDate'),
                           ),
                         ],
                       ),
@@ -1118,7 +1187,7 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                   // Time Slot Selection
                   if (_availableTimeSlots.isNotEmpty) ...[
                     Text(
-                      AppLocalizations.of(context)!.selectTime,
+                      _getLocalizedString(context, 'selectTime'),
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -1143,13 +1212,13 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                   
                   // Reason
                   Text(
-                    AppLocalizations.of(context)!.reasonForVisit,
+                    _getLocalizedString(context, 'reasonForVisit'),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.appointmentExample,
+                      hintText: _getLocalizedString(context, 'appointmentExample'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -1161,14 +1230,14 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                   
                   // Notes
                   Text(
-                    AppLocalizations.of(context)!.additionalNotesOptional,
+                    _getLocalizedString(context, 'additionalNotesOptional'),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.specificConcerns,
+                      hintText: _getLocalizedString(context, 'specificConcerns'),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -1193,7 +1262,7 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
                           : Text(
-                              AppLocalizations.of(context)!.bookAppointmentButton,
+                              _getLocalizedString(context, 'bookAppointmentButton'),
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -1283,7 +1352,7 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.appointmentBookedSuccess),
+            content: Text(_getLocalizedString(context, 'appointmentBookedSuccess')),
             backgroundColor: Colors.green,
           ),
         );
@@ -1324,29 +1393,47 @@ class _ChatDialogState extends State<_ChatDialog> {
   bool _hasNewMessage = false;
   StreamSubscription? _messagesSubscription;
 
+  // Safe method to get localized strings
+  dynamic _getLocalizedString(BuildContext context, String key) {
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) {
+      // Fallback English strings if localization is not available
+      final fallbackStrings = {
+        'startConversation': (name) => 'Start a conversation with Dr. $name',
+        'messagesSecure': 'Your messages are secure and private',
+        'typeMessage': 'Type a message...',
+        'now': 'now',
+        'minutesAgo': (minutes) => '$minutes min ago',
+        'hoursAgo': (hours) => '$hours h ago',
+        'failedSendMessage': 'Failed to send message',
+      };
+      
+      return fallbackStrings[key] ?? key;
+    }
+
+    // Use the actual localization methods
+    switch (key) {
+      case 'startConversation': return (name) => localizations.startConversation(name);
+      case 'messagesSecure': return localizations.messagesSecure;
+      case 'typeMessage': return localizations.typeMessage;
+      case 'now': return localizations.now;
+      case 'minutesAgo': return (minutes) => localizations.minutesAgo(minutes);
+      case 'hoursAgo': return (hours) => localizations.hoursAgo(hours);
+      case 'failedSendMessage': return localizations.failedSendMessage;
+      default: return key;
+    }
+  }
+
   // Create standardized conversation ID for doctor-patient pair
   String _createConversationId(String patientId, Doctor doctor) {
-    // Known doctor Firebase UID mappings (workaround for backend issue)
-    final Map<String, String> doctorEmailToFirebaseUid = {
-      'tanu@gmail.com': '0AludVmmD2OXGCn1i3M5UElBMSG2',
-      'clerin@gmail.com': 'clerin_firebase_uid_placeholder', // Add other doctors as needed
-      // Add more mappings as needed
-    };
-    
     String doctorId;
     
-    // PRIORITY 1: Try the mapping for known doctors first (since firebaseUid field isn't populated)
-    if (doctorEmailToFirebaseUid.containsKey(doctor.email)) {
-      doctorId = doctorEmailToFirebaseUid[doctor.email]!;
-      print('🔍 Using mapped Firebase UID for ${doctor.email}: $doctorId');
-    } 
-    // PRIORITY 2: Use the Firebase UID if available and not empty
-    else if (doctor.firebaseUid != null && doctor.firebaseUid!.isNotEmpty) {
+    // Use the Firebase UID if available
+    if (doctor.firebaseUid != null && doctor.firebaseUid!.isNotEmpty) {
       doctorId = doctor.firebaseUid!;
       print('🔍 Using doctor Firebase UID: $doctorId');
-    } 
-    // PRIORITY 3: Fallback to sanitized email
-    else {
+    } else {
+      // Fallback to sanitized email if firebaseUid is not available
       doctorId = doctor.email
           .replaceAll('.', '_DOT_')
           .replaceAll('@', '_AT_')
@@ -1608,7 +1695,7 @@ class _ChatDialogState extends State<_ChatDialog> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            AppLocalizations.of(context)!.startConversation(widget.doctor.name),
+                            _getLocalizedString(context, 'startConversation')(widget.doctor.name),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
@@ -1618,7 +1705,7 @@ class _ChatDialogState extends State<_ChatDialog> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            AppLocalizations.of(context)!.messagesSecure,
+                            _getLocalizedString(context, 'messagesSecure'),
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
@@ -1651,7 +1738,7 @@ class _ChatDialogState extends State<_ChatDialog> {
                     child: TextField(
                       controller: _messageController,
                       decoration: InputDecoration(
-                        hintText: AppLocalizations.of(context)!.typeMessage,
+                        hintText: _getLocalizedString(context, 'typeMessage'),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -1768,11 +1855,11 @@ class _ChatDialogState extends State<_ChatDialog> {
     final difference = now.difference(time);
 
     if (difference.inMinutes < 1) {
-      return AppLocalizations.of(context)!.now;
+      return _getLocalizedString(context, 'now');
     } else if (difference.inHours < 1) {
-      return AppLocalizations.of(context)!.minutesAgo(difference.inMinutes);
+      return _getLocalizedString(context, 'minutesAgo')(difference.inMinutes);
     } else if (difference.inDays < 1) {
-      return AppLocalizations.of(context)!.hoursAgo(difference.inHours);
+      return _getLocalizedString(context, 'hoursAgo')(difference.inHours);
     } else {
       return '${time.day}/${time.month}/${time.year}';
     }
@@ -1838,7 +1925,7 @@ class _ChatDialogState extends State<_ChatDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.failedSendMessage),
+            content: Text(_getLocalizedString(context, 'failedSendMessage')),
             backgroundColor: Colors.red,
           ),
         );
