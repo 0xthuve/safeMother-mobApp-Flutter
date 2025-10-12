@@ -205,54 +205,6 @@ class _DoctorAddAppointmentPageState extends State<DoctorAddAppointmentPage> {
     }
   }
 
-  Future<void> _createAppointment() async {
-    if (!_isFormValid) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await _appointmentService.createAppointment(
-        patientId: _selectedPatient!.id!,
-        doctorId: widget.doctorId,
-        appointmentDate: _selectedDate!,
-        timeSlot: _selectedTimeSlot!,
-        reason: _reasonController.text.trim(),
-        notes: _notesController.text.trim(),
-        status: 'scheduled', // Doctor-created appointments are automatically scheduled
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Appointment created successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Call the callback to refresh the appointments list
-        widget.onAppointmentAdded();
-        
-        // Go back to the appointments page
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to create appointment: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -759,5 +711,70 @@ class _DoctorAddAppointmentPageState extends State<DoctorAddAppointmentPage> {
         contentPadding: const EdgeInsets.all(16),
       ),
     );
+  }
+
+  Future<void> _createAppointment() async {
+    if (!_isFormValid) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      print('Creating appointment for doctor: ${widget.doctorId}');
+
+      final appointmentId = await _appointmentService.createAppointment(
+        patientId: _selectedPatient!.id!,
+        doctorId: widget.doctorId, // Use the doctor's Firebase UID
+        appointmentDate: _selectedDate!,
+        timeSlot: _selectedTimeSlot!,
+        reason: _reasonController.text.trim(),
+        notes: _notesController.text.trim(),
+        status: 'confirmed', // Doctor-created appointments are confirmed by default
+      );
+
+      print('Appointment created successfully with ID: $appointmentId');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Appointment created successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Reset form
+        setState(() {
+          _selectedPatient = null;
+          _selectedDate = null;
+          _selectedTimeSlot = null;
+          _availableTimeSlots = [];
+          _reasonController.clear();
+          _notesController.clear();
+          _searchController.clear();
+          _filteredPatients = _allPatients;
+        });
+
+        // Notify parent widget
+        widget.onAppointmentAdded();
+      }
+    } catch (e) {
+      print('Error creating appointment: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create appointment: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 }

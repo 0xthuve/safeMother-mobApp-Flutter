@@ -134,15 +134,18 @@ class UserManagementService {
   static Future<Map<String, dynamic>?> getCurrentUserData() async {
     try {
       final currentUserData = FirebaseService.currentUserData;
-      if (currentUserData != null) {
-        final uid = currentUserData['uid'] as String?;
-        if (uid != null) {
-          return await FirebaseService.getUserData(uid);
-        }
+      if (currentUserData == null) {
+        // No current user, return null immediately without Firestore call
+        return null;
+      }
+      
+      final uid = currentUserData['uid'] as String?;
+      if (uid != null) {
+        return await FirebaseService.getUserData(uid);
       }
       return null;
     } catch (e) {
-
+      print('Error getting current user data: $e');
       return null;
     }
   }

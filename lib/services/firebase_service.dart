@@ -619,6 +619,7 @@ static Future<Map<String, dynamic>?> getRoleData(String uid, String role) async 
 
       return {
         'id': (data['uid'] ?? docSnapshot.id).hashCode, // Convert string to int for the Doctor model
+        'firebaseUid': data['uid'] ?? docSnapshot.id, // Store the original Firebase UID for patient-doctor links
         'name': data['fullName'] ?? 'Unknown Doctor',
         'specialization': data['specialization'] ?? 'General Practice',
         'hospital': data['hospital'] ?? 'Unknown Hospital',
@@ -666,6 +667,7 @@ static Future<Map<String, dynamic>?> getRoleData(String uid, String role) async 
         
         doctors.add({
           'id': (data['uid'] ?? doc.id).hashCode, // Convert string to int for the Doctor model
+          'firebaseUid': data['uid'] ?? doc.id, // Store the original Firebase UID for patient-doctor links
           'name': data['fullName'] ?? 'Unknown Doctor',
           'specialization': data['specialization'] ?? 'General Practice',
           'hospital': data['hospital'] ?? 'Unknown Hospital',

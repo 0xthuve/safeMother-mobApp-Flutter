@@ -34,6 +34,34 @@ class AppointmentService {
     return '$displayHour:$minuteStr $period';
   }
 
+
+  // Add this method to AppointmentService class
+// Future<List<Appointment>> getDoctorAppointmentsByLicense(String licenseNumber) async {
+//   try {
+//     print('AppointmentService: Querying appointments by license number: $licenseNumber');
+    
+//     final querySnapshot = await _firestore
+//         .collection(_collectionName)
+//         .where('doctorId', isEqualTo: licenseNumber)
+//         .get();
+
+//     print('AppointmentService: Found ${querySnapshot.docs.length} appointments with license number: $licenseNumber');
+    
+//     final appointments = querySnapshot.docs.map((doc) {
+//       final data = doc.data();
+//       data['id'] = doc.id;
+//       print('AppointmentService: Appointment ${doc.id} - doctorId: ${data['doctorId']}, patientId: ${data['patientId']}, status: ${data['status']}');
+//       return Appointment.fromMap(data);
+//     }).toList();
+
+//     print('AppointmentService: Returning ${appointments.length} appointments for license number');
+//     return appointments;
+//   } catch (e) {
+//     print('AppointmentService: Error getting appointments by license number: $e');
+//     throw Exception('Failed to get appointments by license number: $e');
+//   }
+// }
+
   // Create appointment
   Future<String> createAppointment({
     required String patientId,
@@ -80,7 +108,6 @@ class AppointmentService {
       final querySnapshot = await _firestore
           .collection(_collectionName)
           .where('patientId', isEqualTo: patientId)
-          .orderBy('appointmentDate', descending: true)
           .get();
 
       return querySnapshot.docs.map((doc) {
@@ -174,7 +201,6 @@ class AppointmentService {
       final querySnapshot = await _firestore
           .collection(_collectionName)
           .where('patientId', isEqualTo: patientId)
-          .orderBy('appointmentDate', descending: false)
           .get();
 
       final appointments = querySnapshot.docs.map((doc) {
@@ -202,21 +228,30 @@ class AppointmentService {
     }
   }
 
-  // Get doctor appointments
+  // Get doctor appointments - FIXED VERSION
   Future<List<Appointment>> getDoctorAppointments(String doctorId) async {
     try {
+      print('AppointmentService: Querying appointments for doctorId: $doctorId');
+      
+      // Query without filtering by date first to see all appointments
       final querySnapshot = await _firestore
           .collection(_collectionName)
           .where('doctorId', isEqualTo: doctorId)
-          .orderBy('appointmentDate', descending: false)
           .get();
 
-      return querySnapshot.docs.map((doc) {
+      print('AppointmentService: Found ${querySnapshot.docs.length} appointment documents');
+      
+      final appointments = querySnapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
+        print('AppointmentService: Appointment ${doc.id} - doctorId: ${data['doctorId']}, patientId: ${data['patientId']}, status: ${data['status']}, date: ${data['appointmentDate']}');
         return Appointment.fromMap(data);
       }).toList();
+
+      print('AppointmentService: Returning ${appointments.length} appointments');
+      return appointments;
     } catch (e) {
+      print('AppointmentService: Error getting doctor appointments: $e');
       throw Exception('Failed to get doctor appointments: $e');
     }
   }
@@ -282,7 +317,6 @@ class AppointmentService {
     return _firestore
         .collection(_collectionName)
         .where('patientId', isEqualTo: patientId)
-        .orderBy('appointmentDate', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -298,7 +332,6 @@ class AppointmentService {
     return _firestore
         .collection(_collectionName)
         .where('doctorId', isEqualTo: doctorId)
-        .orderBy('appointmentDate', descending: false)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {

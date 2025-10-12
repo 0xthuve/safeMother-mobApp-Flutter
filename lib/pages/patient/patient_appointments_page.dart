@@ -3,8 +3,9 @@ import 'package:intl/intl.dart';
 import 'dart:async';
 import '../../services/appointment_service.dart';
 import '../../services/session_manager.dart';
+import '../../services/backend_service.dart';
 import '../../models/appointment.dart';
-import 'appointment_booking_page.dart';
+import '../../models/doctor.dart';
 
 class PatientAppointmentsPage extends StatefulWidget {
   const PatientAppointmentsPage({super.key});
@@ -17,11 +18,13 @@ class PatientAppointmentsPage extends StatefulWidget {
 class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
     with SingleTickerProviderStateMixin {
   final AppointmentService _appointmentService = AppointmentService();
+  final BackendService _backendService = BackendService();
   late TabController _tabController;
 
   List<Appointment> _allAppointments = [];
   List<Appointment> _upcomingAppointments = [];
   List<Appointment> _pastAppointments = [];
+  List<Doctor> _linkedDoctors = [];
   bool _isLoading = true;
   StreamSubscription<List<Appointment>>? _appointmentsSubscription;
 
@@ -67,6 +70,9 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
           }
         },
       );
+
+      // Load linked doctors
+      await _loadLinkedDoctors();
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -74,6 +80,45 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
           SnackBar(content: Text('Failed to setup real-time listener: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _loadLinkedDoctors() async {
+    try {
+      final userId = await SessionManager.getUserId();
+      if (userId == null) return;
+
+      final doctorsData = await _backendService.getLinkedDoctorsWithContact(userId);
+
+      // Convert Map data to Doctor objects
+      final doctors = doctorsData.map((data) => Doctor(
+        id: data['id']?.toString(),
+        firebaseUid: data['firebaseUid'],
+        name: data['name'] ?? 'Unknown Doctor',
+        email: data['email'] ?? '',
+        phone: data['phoneNumber'] ?? '',
+        specialization: data['specialization'] ?? 'General Practice',
+        licenseNumber: '',
+        hospital: data['hospital'] ?? 'Unknown Hospital',
+        experience: '0 years',
+        bio: 'Healthcare professional',
+        profileImage: '',
+        rating: 0.0,
+        totalPatients: 0,
+        isAvailable: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      )).toList();
+
+      if (mounted) {
+        setState(() {
+          _linkedDoctors = doctors;
+        });
+      }
+
+      print('Successfully loaded ${doctors.length} linked doctors for patient $userId');
+    } catch (e) {
+      print('Error loading linked doctors: $e');
     }
   }
 
@@ -162,20 +207,83 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
   }
 
   Future<void> _bookNewAppointment() async {
-    const doctorId = "0AludVmmD2OXGCn1i3M5UElBMSG2";
-    const doctorName = "Dr. Sarah Johnson";
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const AppointmentBookingPage(
-          doctorId: doctorId,
-          doctorName: doctorName,
+    if (_linkedDoctors.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No linked doctors available. Please link with a doctor first.'),
+          backgroundColor: Colors.orange,
         ),
+      );
+      return;
+    }
+
+    // Show doctor selection dialog
+    final selectedDoctor = await showDialog<Doctor>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Doctor'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: _linkedDoctors.map((doctor) => Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.teal.withOpacity(0.1),
+                child: Text(
+                  doctor.name.split(' ').map((n) => n[0]).take(2).join(),
+                  style: const TextStyle(
+                    color: Colors.teal,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              title: Text(
+                doctor.name,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                doctor.specialization,
+                style: const TextStyle(fontSize: 12),
+              ),
+              trailing: const Icon(
+                Icons.calendar_today,
+                color: Colors.teal,
+                size: 20,
+              ),
+              onTap: () => Navigator.pop(context, doctor),
+            ),
+          )).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
 
-    // Real-time listener will automatically update when new appointment is booked
+    if (selectedDoctor != null) {
+      _showBookAppointmentBottomSheet(selectedDoctor);
+    }
+  }
+
+  void _showBookAppointmentBottomSheet(Doctor doctor) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _BookAppointmentBottomSheet(
+        linkedDoctors: [doctor],
+        selectedDoctor: doctor,
+        onAppointmentBooked: () {
+          // Real-time listener will automatically update when new appointment is booked
+        },
+      ),
+    );
   }
 
   Widget _buildAppointmentCard(Appointment appointment) {
@@ -444,5 +552,338 @@ class _PatientAppointmentsPageState extends State<PatientAppointmentsPage>
         child: const Icon(Icons.add),
       ),
     );
+  }
+}
+
+// Book Appointment Bottom Sheet
+class _BookAppointmentBottomSheet extends StatefulWidget {
+  final List<Doctor> linkedDoctors;
+  final Doctor? selectedDoctor;
+  final VoidCallback onAppointmentBooked;
+
+  const _BookAppointmentBottomSheet({
+    required this.linkedDoctors,
+    this.selectedDoctor,
+    required this.onAppointmentBooked,
+  });
+
+  @override
+  State<_BookAppointmentBottomSheet> createState() => _BookAppointmentBottomSheetState();
+}
+
+class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet> {
+  final AppointmentService _appointmentService = AppointmentService();
+  Doctor? _selectedDoctor;
+  DateTime? _selectedDate;
+  String? _selectedTimeSlot;
+  String _reason = '';
+  String _notes = '';
+  List<String> _availableTimeSlots = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDoctor = widget.selectedDoctor;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.8,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Handle
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Text(
+                  'Book Appointment',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Doctor Selection
+                  const Text(
+                    'Select Doctor',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<Doctor>(
+                    value: _selectedDoctor,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    items: widget.linkedDoctors.map((doctor) {
+                      return DropdownMenuItem(
+                        value: doctor,
+                        child: Text(doctor.name),
+                      );
+                    }).toList(),
+                    onChanged: (doctor) {
+                      setState(() {
+                        _selectedDoctor = doctor;
+                        _selectedDate = null;
+                        _selectedTimeSlot = null;
+                        _availableTimeSlots = [];
+                      });
+                    },
+                    hint: const Text('Choose your doctor'),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Date Selection
+                  const Text(
+                    'Select Date',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: _selectedDoctor != null ? _selectDate : null,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today),
+                          const SizedBox(width: 12),
+                          Text(
+                            _selectedDate != null
+                                ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                                : 'Choose appointment date',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Time Slot Selection
+                  if (_availableTimeSlots.isNotEmpty) ...[
+                    const Text(
+                      'Select Time',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _availableTimeSlots.map((slot) {
+                        final isSelected = _selectedTimeSlot == slot;
+                        return ChoiceChip(
+                          label: Text(slot),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              _selectedTimeSlot = selected ? slot : null;
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Reason
+                  const Text(
+                    'Reason for Visit',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      hintText: 'e.g., Routine checkup, Specific concern',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(8)),
+                      ),
+                    ),
+                    onChanged: (value) => _reason = value,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Notes
+                  const Text(
+                    'Additional Notes (Optional)',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      hintText: 'Any specific concerns or questions',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(8)),
+                      ),
+                    ),
+                    onChanged: (value) => _notes = value,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Book Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _canBookAppointment() ? _bookAppointment : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Book Appointment',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectDate() async {
+    final now = DateTime.now();
+    final firstDate = now;
+    final lastDate = now.add(const Duration(days: 90));
+
+    final date = await showDatePicker(
+      context: context,
+      initialDate: firstDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+    );
+
+    if (date != null) {
+      setState(() {
+        _selectedDate = date;
+        _selectedTimeSlot = null;
+      });
+      await _loadAvailableTimeSlots();
+    }
+  }
+
+  Future<void> _loadAvailableTimeSlots() async {
+    if (_selectedDoctor == null || _selectedDate == null) return;
+
+    try {
+      final slots = await _appointmentService.getAvailableTimeSlots(
+        doctorId: _selectedDoctor!.firebaseUid ?? _selectedDoctor!.id.toString(),
+        date: _selectedDate!,
+      );
+      setState(() {
+        _availableTimeSlots = slots;
+      });
+    } catch (e) {
+      print('Error loading time slots: $e');
+    }
+  }
+
+  bool _canBookAppointment() {
+    return _selectedDoctor != null &&
+           _selectedDate != null &&
+           _selectedTimeSlot != null &&
+           _reason.isNotEmpty &&
+           !_isLoading;
+  }
+
+  Future<void> _bookAppointment() async {
+    if (!_canBookAppointment()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final userId = await SessionManager.getUserId();
+      if (userId == null) throw Exception('User not logged in');
+
+      final success = await _appointmentService.bookAppointment(
+        patientId: userId,
+        doctorId: _selectedDoctor!.firebaseUid ?? _selectedDoctor!.id.toString(),
+        appointmentDate: _selectedDate!,
+        timeSlot: _selectedTimeSlot!,
+        reason: _reason,
+        notes: _notes,
+      );
+
+      if (success) {
+        widget.onAppointmentBooked();
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Appointment booked successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        throw Exception('Failed to book appointment');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 }

@@ -5,7 +5,7 @@ import '../models/symptom_log.dart';
 import 'notification_service.dart';
 
 class AIRiskAssessmentService {
-  static const String _apiKey = "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";
+  static const String _apiKey = "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";
   static const String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
   
   final NotificationService _notificationService = NotificationService();

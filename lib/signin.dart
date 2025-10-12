@@ -71,8 +71,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   Future<void> _checkAuthState() async {
     try {
-      // Check if user is already logged in
-      final userData = await UserManagementService.getCurrentUserData();
+      // Check if user is already logged in with a timeout
+      final userData = await UserManagementService.getCurrentUserData()
+          .timeout(const Duration(seconds: 5), onTimeout: () {
+        print('Auth check timed out, assuming user is not logged in');
+        return null;
+      });
       
       if (userData != null) {
         final userRole = userData['role'];
@@ -93,6 +97,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         _initialScreen = const SignInScreen();
       }
     } catch (e) {
+      print('Auth check failed: $e');
       // If there's an error checking auth state, show sign in screen
       _initialScreen = const SignInScreen();
     } finally {

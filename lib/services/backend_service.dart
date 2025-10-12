@@ -11,6 +11,8 @@ import '../models/doctor_alert.dart';
 import 'session_manager.dart';
 import 'tips_service.dart';
 import 'firebase_service.dart';
+import 'package:http/http.dart' as http;
+import 'appointment_service.dart';
 
 class BackendService {
   static const String pregnancyTrackingKey = 'pregnancy_tracking';
@@ -506,13 +508,21 @@ Future<bool> updatePatientPregnancyInfo(String userId, {
   }
 
   Future<List<Appointment>> getUpcomingAppointments(String userId) async {
-    final appointments = await getAppointments(userId: userId);
-    final now = DateTime.now();
-    
-    return appointments.where((a) => 
-      a.appointmentDate.isAfter(now) && 
-      a.status != 'cancelled'
-    ).toList();
+    try {
+      // Use AppointmentService to get appointments from Firebase
+      final appointmentService = AppointmentService();
+      return await appointmentService.getUpcomingAppointments(userId);
+    } catch (e) {
+      print('BackendService: Error getting upcoming appointments from Firebase: $e');
+      // Fallback to local storage if Firebase fails
+      final appointments = await getAppointments(userId: userId);
+      final now = DateTime.now();
+
+      return appointments.where((a) =>
+        a.appointmentDate.isAfter(now) &&
+        a.status != 'cancelled'
+      ).toList();
+    }
   }
 
   Future<bool> saveAppointment(Appointment appointment) async {
@@ -1048,16 +1058,14 @@ Future<bool> updatePatientPregnancyInfo(String userId, {
     try {
       // Get pregnancy progress
       final progress = await calculatePregnancyProgress(userId);
-      
+
       // Get recent symptom logs count
       final recentLogs = await getRecentSymptomLogs(userId, days: 7);
-      
-      // Get upcoming appointments count
-      final appointments = await getAppointments(userId: userId);
-      final upcomingAppointments = appointments.where((apt) => 
-        apt.appointmentDate.isAfter(DateTime.now())
-      ).toList();
-      
+
+      // Get upcoming appointments count using AppointmentService
+      final appointmentService = AppointmentService();
+      final upcomingAppointments = await appointmentService.getUpcomingAppointments(userId);
+
       return {
         'pregnancyProgress': progress,
         'recentSymptomLogsCount': recentLogs.length,
@@ -1338,33 +1346,32 @@ Future<bool> updatePatientPregnancyInfo(String userId, {
   }
 
   /// Get linked doctors for a patient with their contact information
-  Future<List<Map<String, dynamic>>> getLinkedDoctorsWithContact(String patientId) async {
-    try {
-      // Get accepted doctor links
-      final doctorLinks = await getAcceptedDoctorsForPatient(patientId);
-      List<Map<String, dynamic>> doctorsWithContact = [];
-      
-      for (final link in doctorLinks) {
-        final doctorInfo = await getDoctorById(link.doctorId);
-        if (doctorInfo != null) {
-          doctorsWithContact.add({
-            'id': doctorInfo.id,
-            'firebaseUid': doctorInfo.firebaseUid,
-            'name': doctorInfo.name,
-            'phoneNumber': doctorInfo.phone,
-            'specialization': doctorInfo.specialization,
-            'hospital': doctorInfo.hospital,
-          });
-        }
-      }
-      
-      return doctorsWithContact;
-    } catch (e) {
-      print('BackendService: Error getting linked doctors with contact: $e');
-      return [];
-    }
-  }
+// Updated to use Firebase instead of REST API
+Future<List<Map<String, dynamic>>> getLinkedDoctorsWithContact(String userId) async {
+  try {
+    print('BackendService: Getting linked doctors with contact for patient: $userId');
+    final linkedDoctors = await FirebaseService.getLinkedDoctorsForPatient(userId);
+    print('BackendService: Found ${linkedDoctors.length} linked doctors with contact for patient $userId');
 
+    // Ensure the data format matches what the calling code expects
+    return linkedDoctors.map((doctor) => {
+      'id': doctor['doctorId']?.toString(), // License number
+      'firebaseUid': doctor['doctorId']?.toString(), // Firebase UID from doctorId field
+      'name': doctor['doctorName'] ?? 'Unknown Doctor',
+      'email': doctor['doctorEmail'] ?? '',
+      'phoneNumber': doctor['doctorPhone'] ?? '',
+      'phone': doctor['doctorPhone'] ?? '', // Also include phone field
+      'specialization': doctor['specialization'] ?? 'General Practice',
+      'hospital': doctor['hospital'] ?? 'Unknown Hospital',
+      'status': doctor['status'] ?? 'accepted',
+      'linkedDate': doctor['linkedDate'],
+      'createdAt': doctor['createdAt'],
+    }).toList();
+  } catch (e) {
+    print('BackendService: Error getting linked doctors with contact: $e');
+    return [];
+  }
+}
   /// Get user's language preference
   Future<String> getLanguagePreference() async {
     final prefs = await SharedPreferences.getInstance();

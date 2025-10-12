@@ -11,6 +11,7 @@ import '../../services/nutrition_exercise_service.dart';
 import '../../models/patient_doctor_link.dart';
 import '../../models/meal.dart';
 import '../../models/exercise.dart';
+import '../../utils/conversation_utils.dart';
 
 
 class DoctorPatientManagement extends StatefulWidget {
@@ -3781,12 +3782,11 @@ class _DoctorChatDialogState extends State<_DoctorChatDialog> {
     super.dispose();
   }
 
-  // Create conversation ID matching patient side format
-  String _createConversationId(String patientId, String doctorId) {
-    // Use the same format as patient side: doctorId_patientId
-    final conversationId = '${doctorId}_$patientId';
+  // Create standardized conversation ID using doctor's Firebase UID
+  String _createConversationId(String patientId, String doctorUid) {
+    final conversationId = ConversationUtils.createConversationId(patientId, doctorUid);
     print('🔍 Doctor: Generated conversation ID: $conversationId');
-    print('🔍 Doctor: Patient: $patientId, Doctor: $doctorId');
+    print('🔍 Doctor: Patient: $patientId, Doctor UID: $doctorUid');
     return conversationId;
   }
 
@@ -3796,13 +3796,17 @@ class _DoctorChatDialogState extends State<_DoctorChatDialog> {
     });
 
     try {
-      _doctorId = await SessionManager.getUserId();
-      if (_doctorId == null) {
+      // Get doctor's Firebase UID - this will be used consistently
+      final doctorFirebaseUid = await SessionManager.getUserId();
+      if (doctorFirebaseUid == null) {
         print('❌ Doctor: No doctor ID found');
         return;
       }
 
-      // Create consistent conversation ID
+      // Use Firebase UID directly for consistent conversation ID generation
+      _doctorId = doctorFirebaseUid;
+      
+      // Create consistent conversation ID using utility class
       final conversationId = _createConversationId(widget.patientId, _doctorId!);
       
       // Set up real-time listener
@@ -3834,7 +3838,7 @@ class _DoctorChatDialogState extends State<_DoctorChatDialog> {
             messages.add({
               'id': key,
               'text': msgData['message'] ?? '',
-              'isDoctor': msgData['senderId'] == _doctorId,
+              'isDoctor': msgData['senderId'] == doctorFirebaseUid, // Compare with Firebase UID
               'timestamp': messageTime,
               'read': msgData['read'] ?? false,
               'senderId': msgData['senderId'],
@@ -3890,8 +3894,8 @@ class _DoctorChatDialogState extends State<_DoctorChatDialog> {
 
   Future<bool> _saveMessageToRealtimeDatabase(String patientId, String doctorId, String message, bool isFromDoctor) async {
     try {
-      // Create a conversation ID using doctorId_patientId format for consistency with patient side
-      final conversationId = '${doctorId}_$patientId';
+      // Use standardized conversation ID generation
+      final conversationId = ConversationUtils.createConversationId(patientId, doctorId);
       
       print('💬 Doctor: Sending message to conversation: $conversationId');
       print('💬 Doctor: Patient: $patientId, Doctor: $doctorId');
@@ -3904,19 +3908,21 @@ class _DoctorChatDialogState extends State<_DoctorChatDialog> {
       
       // Step 1: Write message to consultation_messages (same structure as working test)
       await db.child('consultation_messages/$conversationId/messages').push().set({
-        'senderId': isFromDoctor ? doctorId : patientId,
         'message': message,
+        'senderId': isFromDoctor ? _doctorId : patientId, // Use the stored _doctorId (Firebase UID)
         'timestamp': timestamp,
-        'read': false,
         'messageType': 'text',
+        'read': false,
       });
 
-      // Step 2: Update conversation metadata (same structure as working test)
-      await db.child('consultation_messages/$conversationId').update({
-        'patientId': patientId,
-        'doctorId': doctorId,
-        'lastMessage': message,
+      // Step 2: Update conversation metadata (same structure as patient side)
+      await db.child('consultation_messages/$conversationId/info').set({
         'lastMessageTime': timestamp,
+        'patientId': patientId,
+        'doctorId': _doctorId, // Use the stored _doctorId (Firebase UID)
+        'patientName': 'Patient', // Could be enhanced with actual patient name
+        'doctorName': 'Doctor', // Could be enhanced with actual doctor name
+        'lastActivity': timestamp,
       });
       
       return true;

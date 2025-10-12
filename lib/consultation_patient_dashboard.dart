@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import 'navigation_handler.dart';
 import 'bottom_navigation.dart';
 import 'services/backend_service.dart';
@@ -10,6 +11,7 @@ import 'services/session_manager.dart';
 import 'models/doctor.dart';
 import 'models/appointment.dart';
 import 'l10n/app_localizations.dart';
+import 'utils/conversation_utils.dart';
 
 void main() {
   runApp(const PregnancyApp());
@@ -90,49 +92,69 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     }
   }
 
-  Future<void> _loadAllDoctors() async {
-    try {
-      final doctorsData = await _backendService.getLinkedDoctorsWithContact(_userId!);
-      
-      // Convert Map data to Doctor objects
-      final doctors = doctorsData.map((data) => Doctor(
-        id: data['id']?.toString(),
-        firebaseUid: data['firebaseUid'],
-        name: data['name'] ?? 'Unknown Doctor',
-        email: '', // Not provided in contact data
-        phone: data['phoneNumber'] ?? '',
-        specialization: data['specialization'] ?? 'General Practice',
-        licenseNumber: '', // Not provided
-        hospital: data['hospital'] ?? 'Unknown Hospital',
-        experience: '0 years', // Not provided
-        bio: 'Healthcare professional',
-        profileImage: '',
-        rating: 0.0, // Not provided
-        totalPatients: 0, // Not provided
-        isAvailable: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      )).toList();
-      
-      // Only setState if data actually changed
-      if (_linkedDoctors.length != doctors.length || 
-          !_listsEqual(_linkedDoctors, doctors)) {
-        setState(() {
-          _linkedDoctors = doctors;
-        });
-      }
-      
-      print('Successfully loaded ${doctors.length} linked doctors for patient $_userId');
-    } catch (e) {
-      print('Error loading linked doctors: $e');
-      if (_linkedDoctors.isNotEmpty) {
-        setState(() {
-          _linkedDoctors = [];
-        });
-      }
+Future<void> _loadAllDoctors() async {
+  try {
+    print('🔍 _loadAllDoctors: Starting to load doctors for user: $_userId');
+    final doctorsData = await _backendService.getLinkedDoctorsForPatient(_userId!);
+    
+    // Debug: Print doctor data to verify Firebase UID
+    print('🔍 _loadAllDoctors: Received ${doctorsData.length} doctors from backend');
+    for (var doctorData in doctorsData) {
+      print('  - Doctor: ${doctorData['doctorName']}');
+      print('    License: ${doctorData['doctorId']}');
+      print('    Firebase UID: ${doctorData['doctorId']}');
+    }
+    
+    // Convert Map data to Doctor objects
+    final doctors = doctorsData.map((data) => Doctor(
+      id: data['doctorId']?.toString(),
+      firebaseUid: data['doctorId']?.toString(), // Firebase UID from doctorId field
+      name: data['doctorName'] ?? 'Unknown Doctor',
+      email: data['doctorEmail'] ?? '',
+      phone: data['doctorPhone'] ?? '',
+      specialization: data['specialization'] ?? 'General Practice',
+      licenseNumber: data['doctorId']?.toString() ?? '', // Use doctorId as license number
+      hospital: data['hospital'] ?? 'Unknown Hospital',
+      experience: '0 years',
+      bio: 'Healthcare professional',
+      profileImage: '',
+      rating: 0.0,
+      totalPatients: 0,
+      isAvailable: true,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    )).toList();
+    
+    // Debug: Print doctor data to verify Firebase UID and phone
+    print('🔍 Converting ${doctors.length} doctors to objects:');
+    for (int i = 0; i < doctors.length; i++) {
+      final doctor = doctors[i];
+      final data = doctorsData[i];
+      print('  - Doctor ${i+1}: ${doctor.name}');
+      print('    Raw data phone: ${data['doctorPhone']}');
+      print('    Object phone: ${doctor.phone}');
+      print('    Email: ${doctor.email}');
+      print('    Specialization: ${doctor.specialization}');
+    }
+    
+    // Only setState if data actually changed
+    if (_linkedDoctors.length != doctors.length || 
+        !_listsEqual(_linkedDoctors, doctors)) {
+      setState(() {
+        _linkedDoctors = doctors;
+      });
+    }
+    
+    print('✅ Successfully loaded ${doctors.length} linked doctors for patient $_userId');
+  } catch (e) {
+    print('❌ Error loading linked doctors: $e');
+    if (_linkedDoctors.isNotEmpty) {
+      setState(() {
+        _linkedDoctors = [];
+      });
     }
   }
-
+}
   // Helper method to compare doctor lists
   bool _listsEqual(List<Doctor> list1, List<Doctor> list2) {
     if (list1.length != list2.length) return false;
@@ -252,6 +274,9 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Debug logging
+    print('🔍 Build called - isLoading: $_isLoading, linkedDoctors: ${_linkedDoctors.length}, hasLoadedOnce: $_hasLoadedOnce');
+    
     return Scaffold(
       body: Stack(
         children: [
@@ -361,13 +386,19 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                       const SizedBox(height: 16),
                       
                       _linkedDoctors.isEmpty
-                        ? _buildEmptyDoctorsCard()
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _linkedDoctors.length,
-                            itemBuilder: (context, index) => _buildDoctorCard(_linkedDoctors[index]),
-                          ),
+                        ? (() {
+                            print('🔍 Showing empty doctors card - linkedDoctors is empty');
+                            return _buildEmptyDoctorsCard();
+                          })()
+                        : (() {
+                            print('🔍 Showing doctors list - linkedDoctors has ${_linkedDoctors.length} items');
+                            return ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: _linkedDoctors.length,
+                              itemBuilder: (context, index) => _buildDoctorCard(_linkedDoctors[index]),
+                            );
+                          })(),
                       
                       const SizedBox(height: 32),
                       
@@ -478,7 +509,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                   icon: Icons.calendar_today,
                   title: _getLocalizedString(context, 'bookAppointment'),
                   color: const Color(0xFF4A90E2),
-                  onTap: () => _showBookAppointmentBottomSheet(),
+                  onTap: () => _showBookAppointmentDialog(),
                 ),
               ),
               const SizedBox(width: 12),
@@ -688,7 +719,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
                     size: 16,
                   ),
                   label: Text(
-                    "Refresh",
+                    "Add Doctor",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -863,12 +894,17 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
     );
   }
 
-  void _showBookAppointmentBottomSheet() {
-    showModalBottomSheet(
+  void _showBookAppointmentDialog() {
+    print('📅 Opening appointment booking dialog');
+    print('📅 Linked doctors count: ${_linkedDoctors.length}');
+    for (var doctor in _linkedDoctors) {
+      print('  - ${doctor.name}: ${doctor.phone}');
+    }
+
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _BookAppointmentBottomSheet(
+      barrierDismissible: false,
+      builder: (context) => _BookAppointmentDialog(
         linkedDoctors: _linkedDoctors,
         onAppointmentBooked: () {
           _loadUpcomingAppointments();
@@ -965,11 +1001,10 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   }
 
   void _bookAppointmentWithDoctor(Doctor doctor) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _BookAppointmentBottomSheet(
+      barrierDismissible: false,
+      builder: (context) => _BookAppointmentDialog(
         linkedDoctors: [doctor],
         selectedDoctor: doctor,
         onAppointmentBooked: () {
@@ -1003,23 +1038,23 @@ class _ConsultationScreenState extends State<ConsultationScreen> {
   }
 }
 
-// Book Appointment Bottom Sheet
-class _BookAppointmentBottomSheet extends StatefulWidget {
+// Book Appointment Dialog
+class _BookAppointmentDialog extends StatefulWidget {
   final List<Doctor> linkedDoctors;
   final Doctor? selectedDoctor;
   final VoidCallback onAppointmentBooked;
 
-  const _BookAppointmentBottomSheet({
+  const _BookAppointmentDialog({
     required this.linkedDoctors,
     this.selectedDoctor,
     required this.onAppointmentBooked,
   });
 
   @override
-  State<_BookAppointmentBottomSheet> createState() => _BookAppointmentBottomSheetState();
+  State<_BookAppointmentDialog> createState() => _BookAppointmentDialogState();
 }
 
-class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet> {
+class _BookAppointmentDialogState extends State<_BookAppointmentDialog> {
   final AppointmentService _appointmentService = AppointmentService();
   Doctor? _selectedDoctor;
   DateTime? _selectedDate;
@@ -1028,11 +1063,15 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
   String _notes = '';
   List<String> _availableTimeSlots = [];
   bool _isLoading = false;
+  bool _isLoadingSlots = false;
 
   @override
   void initState() {
     super.initState();
     _selectedDoctor = widget.selectedDoctor;
+    if (_selectedDoctor != null) {
+      _loadAvailableTimeSlotsForToday();
+    }
   }
 
   // Safe method to get localized strings
@@ -1073,211 +1112,369 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
     }
   }
 
-  @override  
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          // Handle
-          Container(
-            margin: const EdgeInsets.only(top: 8),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Text(
-                  'Book Appointment',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-          ),
-          
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Dialog(
+      insetPadding: const EdgeInsets.all(16),
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+          maxWidth: 500,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Color(0xFF4A90E2),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(
                 children: [
-                  // Doctor Selection
-                  Text(
-                    _getLocalizedString(context, 'selectDoctor'),
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  const Icon(
+                    Icons.calendar_today,
+                    color: Colors.white,
+                    size: 28,
                   ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<Doctor>(
-                    value: _selectedDoctor,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                    items: widget.linkedDoctors.map((doctor) {
-                      return DropdownMenuItem(
-                        value: doctor,
-                        child: Text(doctor.name),
-                      );
-                    }).toList(),
-                    onChanged: (doctor) {
-                      setState(() {
-                        _selectedDoctor = doctor;
-                        _selectedDate = null;
-                        _selectedTimeSlot = null;
-                        _availableTimeSlots = [];
-                      });
-                    },
-                    hint: Text(_getLocalizedString(context, 'chooseYourDoctor')),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Date Selection
-                  Text(
-                    _getLocalizedString(context, 'selectDate'),
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: _selectedDoctor != null ? _selectDate : null,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.calendar_today),
-                          const SizedBox(width: 12),
-                          Text(
-                            _selectedDate != null
-                                ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                                : _getLocalizedString(context, 'chooseAppointmentDate'),
-                          ),
-                        ],
-                      ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Book Appointment',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Time Slot Selection
-                  if (_availableTimeSlots.isNotEmpty) ...[
-                    Text(
-                      _getLocalizedString(context, 'selectTime'),
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _availableTimeSlots.map((slot) {
-                        final isSelected = _selectedTimeSlot == slot;
-                        return ChoiceChip(
-                          label: Text(slot),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedTimeSlot = selected ? slot : null;
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  
-                  // Reason
-                  Text(
-                    _getLocalizedString(context, 'reasonForVisit'),
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.white),
                   ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    decoration: InputDecoration(
-                      hintText: _getLocalizedString(context, 'appointmentExample'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onChanged: (value) => _reason = value,
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Notes
-                  Text(
-                    _getLocalizedString(context, 'additionalNotesOptional'),
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: _getLocalizedString(context, 'specificConcerns'),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onChanged: (value) => _notes = value,
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Book Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _canBookAppointment() ? _bookAppointment : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4A90E2),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(
-                              _getLocalizedString(context, 'bookAppointmentButton'),
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
-          ),
-        ],
+
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Doctor Selection
+                    _buildSectionTitle(_getLocalizedString(context, 'selectDoctor')),
+                    const SizedBox(height: 8),
+                    if (widget.linkedDoctors.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.warning, color: Colors.orange.shade700),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'No linked doctors found. Please contact support or refresh the page.',
+                                style: TextStyle(color: Colors.orange.shade700),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<Doctor>(
+                            value: _selectedDoctor,
+                            isExpanded: true,
+                            hint: Text(_getLocalizedString(context, 'chooseYourDoctor')),
+                            items: widget.linkedDoctors.map((doctor) {
+                              return DropdownMenuItem(
+                                value: doctor,
+                                child: Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: const Color(0xFF4A90E2).withOpacity(0.1),
+                                      child: Text(
+                                        doctor.name.split(' ').map((n) => n[0]).take(2).join(),
+                                        style: const TextStyle(
+                                          color: Color(0xFF4A90E2),
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            doctor.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          Text(
+                                            doctor.specialization,
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (doctor) {
+                              setState(() {
+                                _selectedDoctor = doctor;
+                                _selectedDate = null;
+                                _selectedTimeSlot = null;
+                                _availableTimeSlots = [];
+                              });
+                              if (doctor != null) {
+                                _loadAvailableTimeSlotsForToday();
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    // Date Selection
+                    _buildSectionTitle(_getLocalizedString(context, 'selectDate')),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: _selectedDoctor != null ? _selectDate : null,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                          color: _selectedDoctor == null ? Colors.grey.shade50 : Colors.white,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              color: _selectedDoctor == null ? Colors.grey : const Color(0xFF4A90E2),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _selectedDate != null
+                                    ? DateFormat('EEEE, MMMM dd, yyyy').format(_selectedDate!)
+                                    : _getLocalizedString(context, 'chooseAppointmentDate'),
+                                style: TextStyle(
+                                  color: _selectedDate != null ? Colors.black : Colors.grey,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                            if (_selectedDate != null)
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedDate = null;
+                                    _selectedTimeSlot = null;
+                                    _availableTimeSlots = [];
+                                  });
+                                },
+                                icon: const Icon(Icons.clear, color: Colors.grey),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Time Slot Selection
+                    if (_selectedDate != null) ...[
+                      _buildSectionTitle(_getLocalizedString(context, 'selectTime')),
+                      const SizedBox(height: 8),
+                      if (_isLoadingSlots)
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: CircularProgressIndicator(),
+                          ),
+                        )
+                      else if (_availableTimeSlots.isEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.orange.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.warning, color: Colors.orange.shade700),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'No available time slots for this date. Please select a different date.',
+                                  style: TextStyle(color: Colors.orange.shade700),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              childAspectRatio: 2.5,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                            itemCount: _availableTimeSlots.length,
+                            itemBuilder: (context, index) {
+                              final slot = _availableTimeSlots[index];
+                              final isSelected = _selectedTimeSlot == slot;
+                              return InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedTimeSlot = slot; // Always select the clicked slot
+                                  });
+                                },
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? const Color(0xFF4A90E2) : Colors.white,
+                                    border: Border.all(
+                                      color: isSelected ? const Color(0xFF4A90E2) : Colors.grey.shade300,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    slot,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : Colors.black,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // Reason
+                    _buildSectionTitle(_getLocalizedString(context, 'reasonForVisit')),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        hintText: _getLocalizedString(context, 'appointmentExample'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _reason = value;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Notes
+                    _buildSectionTitle(_getLocalizedString(context, 'additionalNotesOptional')),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: _getLocalizedString(context, 'specificConcerns'),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          _notes = value;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Book Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _canBookAppointment() ? _bookAppointment : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4A90E2),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : Text(
+                                _getLocalizedString(context, 'bookAppointmentButton'),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF2D3748),
       ),
     );
   }
@@ -1289,9 +1486,22 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
 
     final date = await showDatePicker(
       context: context,
-      initialDate: firstDate,
+      initialDate: _selectedDate ?? firstDate,
       firstDate: firstDate,
       lastDate: lastDate,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF4A90E2),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (date != null) {
@@ -1303,19 +1513,57 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
     }
   }
 
-  Future<void> _loadAvailableTimeSlots() async {
-    if (_selectedDoctor == null || _selectedDate == null) return;
+  Future<void> _loadAvailableTimeSlotsForToday() async {
+    if (_selectedDoctor == null) return;
+
+    final today = DateTime.now();
+    final todayOnly = DateTime(today.year, today.month, today.day);
+
+    setState(() {
+      _selectedDate = todayOnly;
+      _isLoadingSlots = true;
+    });
 
     try {
       final slots = await _appointmentService.getAvailableTimeSlots(
-        doctorId: _selectedDoctor!.id.toString(),
+        doctorId: _selectedDoctor!.firebaseUid ?? _selectedDoctor!.id.toString(),
+        date: todayOnly,
+      );
+      setState(() {
+        _availableTimeSlots = slots;
+        _isLoadingSlots = false;
+      });
+    } catch (e) {
+      print('Error loading time slots: $e');
+      setState(() {
+        _availableTimeSlots = [];
+        _isLoadingSlots = false;
+      });
+    }
+  }
+
+  Future<void> _loadAvailableTimeSlots() async {
+    if (_selectedDoctor == null || _selectedDate == null) return;
+
+    setState(() {
+      _isLoadingSlots = true;
+    });
+
+    try {
+      final slots = await _appointmentService.getAvailableTimeSlots(
+        doctorId: _selectedDoctor!.firebaseUid ?? _selectedDoctor!.id.toString(),
         date: _selectedDate!,
       );
       setState(() {
         _availableTimeSlots = slots;
+        _isLoadingSlots = false;
       });
     } catch (e) {
       print('Error loading time slots: $e');
+      setState(() {
+        _availableTimeSlots = [];
+        _isLoadingSlots = false;
+      });
     }
   }
 
@@ -1323,8 +1571,8 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
     return _selectedDoctor != null &&
            _selectedDate != null &&
            _selectedTimeSlot != null &&
-           _reason.isNotEmpty &&
-           !_isLoading;
+           !_isLoading &&
+           !_isLoadingSlots;
   }
 
   Future<void> _bookAppointment() async {
@@ -1338,12 +1586,28 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
       final userId = await SessionManager.getUserId();
       if (userId == null) throw Exception('User not logged in');
 
+      // CRITICAL FIX: Use firebaseUid instead of id (license number)
+      final doctorFirebaseUid = _selectedDoctor!.firebaseUid;
+      if (doctorFirebaseUid == null || doctorFirebaseUid.isEmpty) {
+        throw Exception('Doctor Firebase UID not available. Please contact support.');
+      }
+
+      // Debug information
+      print('📅 Booking appointment details:');
+      print('  - Patient ID: $userId');
+      print('  - Doctor Name: ${_selectedDoctor!.name}');
+      print('  - Doctor License: ${_selectedDoctor!.id}');
+      print('  - Doctor Firebase UID: $doctorFirebaseUid');
+      print('  - Date: $_selectedDate');
+      print('  - Time: $_selectedTimeSlot');
+      print('  - Reason: $_reason');
+
       final success = await _appointmentService.bookAppointment(
         patientId: userId,
-        doctorId: _selectedDoctor!.id.toString(),
+        doctorId: doctorFirebaseUid, // Use Firebase UID, NOT license number
         appointmentDate: _selectedDate!,
         timeSlot: _selectedTimeSlot!,
-        reason: _reason,
+        reason: _reason.isNotEmpty ? _reason : 'General consultation', // Provide default if empty
         notes: _notes,
       );
 
@@ -1360,6 +1624,7 @@ class _BookAppointmentBottomSheetState extends State<_BookAppointmentBottomSheet
         throw Exception('Failed to book appointment');
       }
     } catch (e) {
+      print('❌ Appointment booking error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
@@ -1424,30 +1689,13 @@ class _ChatDialogState extends State<_ChatDialog> {
     }
   }
 
-  // Create standardized conversation ID for doctor-patient pair
+  // Create standardized conversation ID using doctor's Firebase UID
   String _createConversationId(String patientId, Doctor doctor) {
-    String doctorId;
-    
-    // Use the Firebase UID if available
-    if (doctor.firebaseUid != null && doctor.firebaseUid!.isNotEmpty) {
-      doctorId = doctor.firebaseUid!;
-      print('🔍 Using doctor Firebase UID: $doctorId');
-    } else {
-      // Fallback to sanitized email if firebaseUid is not available
-      doctorId = doctor.email
-          .replaceAll('.', '_DOT_')
-          .replaceAll('@', '_AT_')
-          .replaceAll('#', '_HASH_')
-          .replaceAll('\$', '_DOLLAR_')
-          .replaceAll('[', '_LBRACKET_')
-          .replaceAll(']', '_RBRACKET_');
-      print('🔍 Using sanitized email as doctorId: $doctorId');
-    }
-    
-    // Always use format: doctorId_patientId for consistency
-    final conversationId = '${doctorId}_$patientId';
+    // Use doctor's Firebase UID for consistent conversation ID generation
+    final doctorUid = doctor.firebaseUid ?? ConversationUtils.sanitizeEmail(doctor.email); // Fallback to sanitized email if UID not available
+    final conversationId = ConversationUtils.createConversationId(patientId, doctorUid);
     print('🔍 Generated conversation ID: $conversationId');
-    print('🔍 Doctor: ${doctor.name} (${doctor.email})');
+    print('🔍 Doctor: ${doctor.name} (UID: $doctorUid)');
     print('🔍 Patient: $patientId');
     return conversationId;
   }
@@ -1576,11 +1824,14 @@ class _ChatDialogState extends State<_ChatDialog> {
     try {
       final DatabaseReference db = FirebaseDatabase.instance.ref();
       
+      // Use doctor's Firebase UID for consistent metadata
+      final doctorId = doctor.firebaseUid ?? ConversationUtils.sanitizeEmail(doctor.email); // Fallback to sanitized email if UID not available
+      
       // Update conversation metadata to help doctor-side find this conversation
       final conversationMeta = {
         'lastMessageTime': DateTime.now().millisecondsSinceEpoch,
         'patientId': patientId,
-        'doctorId': doctor.firebaseUid ?? doctor.email,
+        'doctorId': doctorId,
         'patientName': 'Patient', // Could be passed from patient data
         'doctorName': doctor.name,
         'doctorEmail': doctor.email,
@@ -1784,68 +2035,81 @@ class _ChatDialogState extends State<_ChatDialog> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: isDoctor ? MainAxisAlignment.start : MainAxisAlignment.end,
-        children: [
-          if (isDoctor) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: const Color(0xFF4A90E2),
-              child: Text(
-                widget.doctor.name.split(' ').map((n) => n[0]).take(2).join(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+      child: Align(
+        alignment: isDoctor ? Alignment.centerLeft : Alignment.centerRight,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isDoctor) ...[
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: const Color(0xFF4A90E2),
+                child: Text(
+                  widget.doctor.name.split(' ').map((n) => n[0]).take(2).join(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.7,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDoctor
+                        ? Colors.grey[200]
+                        : const Color(0xFF4A90E2),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(20),
+                      topRight: const Radius.circular(20),
+                      bottomLeft: isDoctor ? Radius.zero : const Radius.circular(20),
+                      bottomRight: isDoctor ? const Radius.circular(20) : Radius.zero,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        text,
+                        style: TextStyle(
+                          color: isDoctor ? Colors.black87 : Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatTime(timestamp),
+                        style: TextStyle(
+                          color: isDoctor ? Colors.grey[600] : Colors.white70,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            if (!isDoctor) ...[
+              const SizedBox(width: 8),
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: const Color(0xFFE91E63),
+                child: const Icon(
+                  Icons.person,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ),
+            ],
           ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDoctor 
-                    ? Colors.grey[200] 
-                    : const Color(0xFF4A90E2),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    text,
-                    style: TextStyle(
-                      color: isDoctor ? Colors.black87 : Colors.white,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatTime(timestamp),
-                    style: TextStyle(
-                      color: isDoctor ? Colors.grey[600] : Colors.white70,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (!isDoctor) ...[
-            const SizedBox(width: 8),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: const Color(0xFFE91E63),
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
-                size: 16,
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }

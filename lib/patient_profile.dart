@@ -675,11 +675,11 @@ void _showPrivacySettingsPopup() {
         ),
       );
 
-      // Clear session data
+      // Clear session data first
       await SessionManager.clearSession();
 
-      // Small delay for UX
-      await Future.delayed(const Duration(milliseconds: 500));
+      // Small delay to ensure Firebase auth state is cleared
+      await Future.delayed(const Duration(milliseconds: 800));
 
       if (mounted) {
         // Remove loading indicator
@@ -691,17 +691,21 @@ void _showPrivacySettingsPopup() {
           (route) => false,
         );
 
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(AppLocalizations.of(context)?.signOutSuccess ?? 'Successfully signed out'),
-            backgroundColor: const Color(0xFFE91E63),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
+        // Show success message after navigation
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(AppLocalizations.of(context)?.signOutSuccess ?? 'Successfully signed out'),
+                backgroundColor: const Color(0xFFE91E63),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
