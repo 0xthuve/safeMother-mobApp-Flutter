@@ -1,0 +1,26 @@
+{
+  "name": "safemother-mobapp-flutter",
+  "version": "1.0.0",
+  "description": "The Safe Mother App is a comprehensive Flutter application designed to support mothers during pregnancy and childbirth. This project includes complete Firebase integration for authentication and data management.",
+  "main": "check_db.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xthuve/safeMother-mobApp-Flutter.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/0xthuve/safeMother-mobApp-Flutter/issues"
+  },
+  "homepage": "https://github.com/0xthuve/safeMother-mobApp-Flutter#readme",
+  "dependencies": {
+    "firebase-admin": "^13.5.0"
+  }
+}

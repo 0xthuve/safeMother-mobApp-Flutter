@@ -11,6 +11,7 @@ import '../../services/nutrition_exercise_service.dart';
 import '../../models/patient_doctor_link.dart';
 import '../../models/meal.dart';
 import '../../models/exercise.dart';
+import '../../utils/conversation_utils.dart';
 
 
 class DoctorPatientManagement extends StatefulWidget {
@@ -61,6 +62,10 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         try {
           // ...existing code...
           final patientData = await FirebaseService.getUserData(patientLink.patientId);
+          
+          // Also fetch pregnancy information from patient collection
+          final pregnancyData = await _backendService.getPatientPregnancyInfo(patientLink.patientId);
+          
           if (patientData != null) {
             // Ensure safe type handling for dynamic data
             final safePatientData = <String, dynamic>{};
@@ -72,6 +77,11 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
                 safePatientData[key] = value;
               }
             });
+            
+            // Merge pregnancy data with user data
+            if (pregnancyData != null) {
+              safePatientData.addAll(pregnancyData);
+            }
             
             patientsWithData.add({
               'link': patientLink,
@@ -120,6 +130,10 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
         try {
           // ...existing code...
           final patientData = await FirebaseService.getUserData(request.patientId);
+          
+          // Also fetch pregnancy information from patient collection
+          final pregnancyData = await _backendService.getPatientPregnancyInfo(request.patientId);
+          
           if (patientData != null) {
             // Ensure safe type handling for dynamic data
             final safePatientData = <String, dynamic>{};
@@ -131,6 +145,11 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
                 safePatientData[key] = value;
               }
             });
+            
+            // Merge pregnancy data with user data
+            if (pregnancyData != null) {
+              safePatientData.addAll(pregnancyData);
+            }
             
             requestsWithData.add({
               'link': request,
@@ -1086,6 +1105,25 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
+  String _formatDateTime(dynamic dateValue) {
+    if (dateValue == null) return 'Not provided';
+    
+    try {
+      DateTime date;
+      if (dateValue is String) {
+        date = DateTime.parse(dateValue);
+      } else if (dateValue is DateTime) {
+        date = dateValue;
+      } else {
+        return 'Invalid date format';
+      }
+      
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return 'Invalid date';
+    }
+  }
+
   void _viewPatientDetails(Map<String, dynamic> patientWithData) {
     final patientData = patientWithData['data'] as Map<String, dynamic>;
     final name = patientData['fullName'] ?? 'Unknown Patient';
@@ -1099,24 +1137,127 @@ class _DoctorPatientManagementState extends State<DoctorPatientManagement> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailRow('Email', patientData['email']?.toString() ?? 'No email'),
-              _buildDetailRow('Phone', patientData['phone']?.toString() ?? patientData['contact']?.toString() ?? 'No phone'),
-              if (patientData['bloodType'] != null && patientData['bloodType'].toString().isNotEmpty)
-                _buildDetailRow('Blood Type', patientData['bloodType'].toString()),
-              if (patientData['allergies'] != null) ...[
-                if (patientData['allergies'] is List)
-                  _buildDetailRow('Allergies', (patientData['allergies'] as List).map((item) => item.toString()).join(', '))
-                else if (patientData['allergies'].toString().isNotEmpty && patientData['allergies'].toString() != 'None')
-                  _buildDetailRow('Allergies', patientData['allergies'].toString()),
-              ],
-              if (patientData['medicalHistory'] != null && patientData['medicalHistory'].toString().isNotEmpty)
-                _buildDetailRow('Medical History', patientData['medicalHistory'].toString()),
-              if (patientData['currentMedications'] != null) ...[
-                if (patientData['currentMedications'] is List)
-                  _buildDetailRow('Current Medications', (patientData['currentMedications'] as List).map((item) => item.toString()).join(', '))
-                else if (patientData['currentMedications'].toString().isNotEmpty)
-                  _buildDetailRow('Current Medications', patientData['currentMedications'].toString()),
-              ],
+              // Basic Information Section
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.person, color: Colors.blue[700], size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Basic Information',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDetailRow('Email', patientData['email']?.toString() ?? 'No email'),
+                    _buildDetailRow('Phone', patientData['phone']?.toString() ?? patientData['contact']?.toString() ?? 'No phone'),
+                    if (patientData['bloodType'] != null && patientData['bloodType'].toString().isNotEmpty)
+                      _buildDetailRow('Blood Type', patientData['bloodType'].toString()),
+                    if (patientData['allergies'] != null) ...[
+                      if (patientData['allergies'] is List)
+                        _buildDetailRow('Allergies', (patientData['allergies'] as List).map((item) => item.toString()).join(', '))
+                      else if (patientData['allergies'].toString().isNotEmpty && patientData['allergies'].toString() != 'None')
+                        _buildDetailRow('Allergies', patientData['allergies'].toString()),
+                    ],
+                    if (patientData['medicalHistory'] != null && patientData['medicalHistory'].toString().isNotEmpty)
+                      _buildDetailRow('Medical History', patientData['medicalHistory'].toString()),
+                    if (patientData['currentMedications'] != null) ...[
+                      if (patientData['currentMedications'] is List)
+                        _buildDetailRow('Current Medications', (patientData['currentMedications'] as List).map((item) => item.toString()).join(', '))
+                      else if (patientData['currentMedications'].toString().isNotEmpty)
+                        _buildDetailRow('Current Medications', patientData['currentMedications'].toString()),
+                    ],
+                  ],
+                ),
+              ),
+
+              // Pregnancy Information Section
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.pink[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.pink[200]!),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.pregnant_woman, color: Colors.pink[700], size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Pregnancy Information',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.pink[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (patientData['expectedDeliveryDate'] != null)
+                      _buildDetailRow('Expected Delivery Date', _formatDateTime(patientData['expectedDeliveryDate']))
+                    else
+                      _buildDetailRow('Expected Delivery Date', 'Not provided'),
+                    
+                    if (patientData['pregnancyConfirmedDate'] != null)
+                      _buildDetailRow('Pregnancy Confirmed Date', _formatDateTime(patientData['pregnancyConfirmedDate']))
+                    else
+                      _buildDetailRow('Pregnancy Confirmed Date', 'Not provided'),
+                    
+                    if (patientData['weight'] != null)
+                      _buildDetailRow('Weight', '${patientData['weight']} kg')
+                    else
+                      _buildDetailRow('Weight', 'Not provided'),
+                    
+                    if (patientData['isFirstChild'] != null)
+                      _buildDetailRow('First Child', patientData['isFirstChild'] ? 'Yes' : 'No')
+                    else
+                      _buildDetailRow('First Child', 'Not specified'),
+                    
+                    if (patientData['hasPregnancyLoss'] != null)
+                      _buildDetailRow('Previous Pregnancy Loss', patientData['hasPregnancyLoss'] ? 'Yes' : 'No')
+                    else
+                      _buildDetailRow('Previous Pregnancy Loss', 'Not specified'),
+                    
+                    // Calculate and show current pregnancy week
+                    Builder(
+                      builder: (context) {
+                        if (patientData['pregnancyConfirmedDate'] != null) {
+                          try {
+                            final confirmedDate = DateTime.parse(patientData['pregnancyConfirmedDate']);
+                            final now = DateTime.now();
+                            final difference = now.difference(confirmedDate).inDays;
+                            final weeks = (difference / 7).floor();
+                            return _buildDetailRow('Current Pregnancy Week', 'Week ${weeks + 1}');
+                          } catch (e) {
+                            return _buildDetailRow('Current Pregnancy Week', 'Unable to calculate');
+                          }
+                        }
+                        return _buildDetailRow('Current Pregnancy Week', 'Date not available');
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -3641,12 +3782,11 @@ class _DoctorChatDialogState extends State<_DoctorChatDialog> {
     super.dispose();
   }
 
-  // Create conversation ID matching patient side format
-  String _createConversationId(String patientId, String doctorId) {
-    // Use the same format as patient side: doctorId_patientId
-    final conversationId = '${doctorId}_$patientId';
+  // Create standardized conversation ID using doctor's Firebase UID
+  String _createConversationId(String patientId, String doctorUid) {
+    final conversationId = ConversationUtils.createConversationId(patientId, doctorUid);
     print('🔍 Doctor: Generated conversation ID: $conversationId');
-    print('🔍 Doctor: Patient: $patientId, Doctor: $doctorId');
+    print('🔍 Doctor: Patient: $patientId, Doctor UID: $doctorUid');
     return conversationId;
   }
 
@@ -3656,13 +3796,17 @@ class _DoctorChatDialogState extends State<_DoctorChatDialog> {
     });
 
     try {
-      _doctorId = await SessionManager.getUserId();
-      if (_doctorId == null) {
+      // Get doctor's Firebase UID - this will be used consistently
+      final doctorFirebaseUid = await SessionManager.getUserId();
+      if (doctorFirebaseUid == null) {
         print('❌ Doctor: No doctor ID found');
         return;
       }
 
-      // Create consistent conversation ID
+      // Use Firebase UID directly for consistent conversation ID generation
+      _doctorId = doctorFirebaseUid;
+      
+      // Create consistent conversation ID using utility class
       final conversationId = _createConversationId(widget.patientId, _doctorId!);
       
       // Set up real-time listener
@@ -3694,7 +3838,7 @@ class _DoctorChatDialogState extends State<_DoctorChatDialog> {
             messages.add({
               'id': key,
               'text': msgData['message'] ?? '',
-              'isDoctor': msgData['senderId'] == _doctorId,
+              'isDoctor': msgData['senderId'] == doctorFirebaseUid, // Compare with Firebase UID
               'timestamp': messageTime,
               'read': msgData['read'] ?? false,
               'senderId': msgData['senderId'],
@@ -3750,8 +3894,8 @@ class _DoctorChatDialogState extends State<_DoctorChatDialog> {
 
   Future<bool> _saveMessageToRealtimeDatabase(String patientId, String doctorId, String message, bool isFromDoctor) async {
     try {
-      // Create a conversation ID using doctorId_patientId format for consistency with patient side
-      final conversationId = '${doctorId}_$patientId';
+      // Use standardized conversation ID generation
+      final conversationId = ConversationUtils.createConversationId(patientId, doctorId);
       
       print('💬 Doctor: Sending message to conversation: $conversationId');
       print('💬 Doctor: Patient: $patientId, Doctor: $doctorId');
@@ -3764,19 +3908,21 @@ class _DoctorChatDialogState extends State<_DoctorChatDialog> {
       
       // Step 1: Write message to consultation_messages (same structure as working test)
       await db.child('consultation_messages/$conversationId/messages').push().set({
-        'senderId': isFromDoctor ? doctorId : patientId,
         'message': message,
+        'senderId': isFromDoctor ? _doctorId : patientId, // Use the stored _doctorId (Firebase UID)
         'timestamp': timestamp,
-        'read': false,
         'messageType': 'text',
+        'read': false,
       });
 
-      // Step 2: Update conversation metadata (same structure as working test)
-      await db.child('consultation_messages/$conversationId').update({
-        'patientId': patientId,
-        'doctorId': doctorId,
-        'lastMessage': message,
+      // Step 2: Update conversation metadata (same structure as patient side)
+      await db.child('consultation_messages/$conversationId/info').set({
         'lastMessageTime': timestamp,
+        'patientId': patientId,
+        'doctorId': _doctorId, // Use the stored _doctorId (Firebase UID)
+        'patientName': 'Patient', // Could be enhanced with actual patient name
+        'doctorName': 'Doctor', // Could be enhanced with actual doctor name
+        'lastActivity': timestamp,
       });
       
       return true;

@@ -30,241 +30,237 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
     super.initState();
     _loadAppointments();
   }
+Future<void> _loadAppointments() async {
+  try {
+    setState(() {
+      _isLoading = true;
+    });
 
-  Future<void> _loadAppointments() async {
-    try {
+    // Get current doctor ID from session
+    _currentDoctorId = await SessionManager.getUserId();
+    
+    if (_currentDoctorId == null) {
+      print('Doctor Appointments: No doctor ID found in session');
       setState(() {
-        _isLoading = true;
+        _isLoading = false;
       });
+      return;
+    }
 
-      // Get current doctor ID from session
-      _currentDoctorId = await SessionManager.getUserId();
-      
-      if (_currentDoctorId == null) {
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
+    print('Doctor Appointments: Current doctor ID: $_currentDoctorId');
 
-      // Load current doctor's name
-      try {
-        final FirebaseFirestore firestore = FirebaseFirestore.instance;
-        final doctorDoc = await firestore
-            .collection('users')
-            .doc(_currentDoctorId!)
-            .get();
-        
-        if (doctorDoc.exists && doctorDoc.data() != null) {
-          final doctorData = doctorDoc.data()!;
-          print('Doctor data fields: ${doctorData.keys.toList()}');
-          
-          String doctorName = doctorData['name']?.toString() ?? 
-                            doctorData['fullName']?.toString() ?? 
-                            doctorData['firstName']?.toString() ?? 
-                            'Unknown Doctor';
-          
-          if (doctorData['firstName'] != null && doctorData['lastName'] != null) {
-            doctorName = '${doctorData['firstName']} ${doctorData['lastName']}';
-          }
-          
-          _currentDoctorName = 'Dr. $doctorName';
-          print('Loaded doctor name: $_currentDoctorName');
-        }
-      } catch (e) {
-        print('Error loading doctor name: $e');
-        _currentDoctorName = 'Dr. Unknown';
-      }
-
-      // Load appointments for the current doctor
-      final appointments = await _appointmentService.getDoctorAppointments(_currentDoctorId!);
-      
-      // Debug: Print all appointment details
-      print('Found ${appointments.length} appointments for doctor $_currentDoctorId');
-      for (final appointment in appointments) {
-        print('Appointment: ${appointment.id}, Patient: ${appointment.patientId}, Date: ${appointment.appointmentDate}, Status: ${appointment.status}');
-      }
-      
-      // Load patient data for each appointment
+    // Load current doctor's name
+    try {
       final FirebaseFirestore firestore = FirebaseFirestore.instance;
-      _patientsMap.clear();
+      final doctorDoc = await firestore
+          .collection('users')
+          .doc(_currentDoctorId!)
+          .get();
       
-      for (final appointment in appointments) {
-        if (!_patientsMap.containsKey(appointment.patientId)) {
-          try {
-            // First try to get basic user info from users collection
-            final userDoc = await firestore
-                .collection('users')
-                .doc(appointment.patientId)
-                .get();
+      if (doctorDoc.exists && doctorDoc.data() != null) {
+        final doctorData = doctorDoc.data()!;
+        
+        String doctorName = doctorData['name']?.toString() ?? 
+                          doctorData['fullName']?.toString() ?? 
+                          doctorData['firstName']?.toString() ?? 
+                          'Unknown Doctor';
+        
+        if (doctorData['firstName'] != null && doctorData['lastName'] != null) {
+          doctorName = '${doctorData['firstName']} ${doctorData['lastName']}';
+        }
+        
+        _currentDoctorName = 'Dr. $doctorName';
+        print('Loaded doctor name: $_currentDoctorName');
+      }
+    } catch (e) {
+      print('Error loading doctor name: $e');
+      _currentDoctorName = 'Dr. Unknown';
+    }
+
+    // Load appointments for the current doctor by UID only
+    print('Searching appointments with UID: $_currentDoctorId');
+    final appointments = await _appointmentService.getDoctorAppointments(_currentDoctorId!);
+    print('Found ${appointments.length} appointments by UID');
+
+    // Debug: Print all appointment details
+    print('=== APPOINTMENTS DEBUG INFO ===');
+    print('Found ${appointments.length} total appointments for doctor');
+    print('Doctor UID: $_currentDoctorId');
+    
+    for (final appointment in appointments) {
+      final patient = await _loadPatientData(appointment.patientId);
+      print('Appointment: ${appointment.id}');
+      print('  - Patient ID: ${appointment.patientId}');
+      print('  - Patient Name: ${patient?.name ?? "Unknown"}');
+      print('  - Doctor ID in appointment: ${appointment.doctorId}');
+      print('  - Date: ${appointment.appointmentDate}');
+      print('  - Time: ${appointment.timeSlot}');
+      print('  - Status: ${appointment.status}');
+      print('  - Reason: ${appointment.reason}');
+    }
+    print('=== END DEBUG INFO ===');
+    
+    // Load patient data for each appointment (keep your existing patient loading code)
+    final FirebaseFirestore firestore = FirebaseFirestore.instance;
+    _patientsMap.clear();
+    
+    for (final appointment in appointments) {
+      if (!_patientsMap.containsKey(appointment.patientId)) {
+        try {
+          // First try to get basic user info from users collection
+          final userDoc = await firestore
+              .collection('users')
+              .doc(appointment.patientId)
+              .get();
+          
+          if (userDoc.exists && userDoc.data() != null) {
+            final userData = userDoc.data()!;
+            print('Found user data for ${appointment.patientId}: ${userData['name'] ?? userData['fullName'] ?? 'No name field'}');
             
-            if (userDoc.exists && userDoc.data() != null) {
-              final userData = userDoc.data()!;
-              print('Found user data for ${appointment.patientId}: ${userData['name'] ?? userData['fullName'] ?? 'No name field'}');
-              print('User data fields: ${userData.keys.toList()}');
+            try {
+              // Try to get additional patient-specific data from patients collection
+              final patientDoc = await firestore
+                  .collection('patients')
+                  .doc(appointment.patientId)
+                  .get();
               
-              try {
-                // Try to get additional patient-specific data from patients collection
-                final patientDoc = await firestore
-                    .collection('patients')
-                    .doc(appointment.patientId)
-                    .get();
+              // Helper function to safely parse dates
+              String safeDate(dynamic dateValue, DateTime defaultDate) {
+                if (dateValue == null) return defaultDate.toIso8601String();
+                if (dateValue is String) {
+                  try {
+                    DateTime.parse(dateValue); // Validate the string
+                    return dateValue;
+                  } catch (e) {
+                    return defaultDate.toIso8601String();
+                  }
+                }
+                if (dateValue is DateTime) return dateValue.toIso8601String();
+                return defaultDate.toIso8601String();
+              }
+              
+              // Start with user data
+              final now = DateTime.now();
+              final defaultBirthDate = now.subtract(const Duration(days: 365 * 25));
+              
+              // Get patient name from various possible fields
+              String patientName = userData['name']?.toString() ?? 
+                                 userData['fullName']?.toString() ?? 
+                                 userData['firstName']?.toString() ?? 
+                                 'Unknown Patient';
+              
+              // If we have both first and last name, combine them
+              if (userData['firstName'] != null && userData['lastName'] != null) {
+                patientName = '${userData['firstName']} ${userData['lastName']}';
+              }
+              
+              // Combine user and patient data safely
+              final combinedData = <String, dynamic>{
+                'id': appointment.patientId,
+                'name': patientName,
+                'email': userData['email']?.toString() ?? '',
+                'phone': userData['phone']?.toString() ?? '',
+                'dateOfBirth': safeDate(userData['dateOfBirth'], defaultBirthDate),
+                'bloodType': userData['bloodType']?.toString() ?? 'Unknown',
+                'emergencyContact': userData['emergencyContact']?.toString() ?? '',
+                'emergencyPhone': userData['emergencyPhone']?.toString() ?? '',
+                'medicalHistory': userData['medicalHistory']?.toString() ?? '',
+                'allergies': userData['allergies']?.toString() ?? '',
+                'currentMedications': userData['currentMedications']?.toString() ?? '',
+                'lastVisit': safeDate(userData['lastVisit'], now),
+                'assignedDoctorId': _currentDoctorId,
+                'createdAt': safeDate(userData['createdAt'], now),
+                'updatedAt': safeDate(userData['updatedAt'], now),
+              };
+              
+              // Override with patient-specific data if available
+              if (patientDoc.exists) {
+                final patientData = patientDoc.data()!;
+                print('Found additional patient data for ${appointment.patientId}');
                 
-                // Helper function to safely parse dates
-                String safeDate(dynamic dateValue, DateTime defaultDate) {
-                  if (dateValue == null) return defaultDate.toIso8601String();
-                  if (dateValue is String) {
-                    try {
-                      DateTime.parse(dateValue); // Validate the string
-                      return dateValue;
-                    } catch (e) {
-                      return defaultDate.toIso8601String();
+                // Safely merge patient data
+                patientData.forEach((key, value) {
+                  if (value != null) {
+                    if (key.contains('Date') || key == 'lastVisit' || key == 'createdAt' || key == 'updatedAt') {
+                      combinedData[key] = safeDate(value, now);
+                    } else {
+                      combinedData[key] = value.toString();
                     }
                   }
-                  if (dateValue is DateTime) return dateValue.toIso8601String();
-                  return defaultDate.toIso8601String();
-                }
-                
-                // Start with user data
-                final now = DateTime.now();
-                final defaultBirthDate = now.subtract(const Duration(days: 365 * 25));
-                
-                // Get patient name from various possible fields
-                String patientName = userData['name']?.toString() ?? 
+                });
+              }
+              
+              _patientsMap[appointment.patientId] = Patient.fromMap(combinedData);
+              print('Successfully loaded patient: ${combinedData['name']}');
+            } catch (e) {
+              print('Error processing patient data for ${appointment.patientId}: $e');
+              // Get patient name from various possible fields
+              String fallbackName = userData['name']?.toString() ?? 
                                    userData['fullName']?.toString() ?? 
                                    userData['firstName']?.toString() ?? 
                                    'Unknown Patient';
+              
+              if (userData['firstName'] != null && userData['lastName'] != null) {
+                fallbackName = '${userData['firstName']} ${userData['lastName']}';
+              }
+              
+              // Create a simple patient with basic user data only
+              _patientsMap[appointment.patientId] = Patient(
+                id: appointment.patientId,
+                name: fallbackName,
+                email: userData['email']?.toString() ?? '',
+                phone: userData['phone']?.toString() ?? '',
+                dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
+                bloodType: 'Unknown',
+                emergencyContact: '',
+                emergencyPhone: '',
+                lastVisit: DateTime.now(),
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              );
+            }
+          } else {
+            print('No user data found for patient ID: ${appointment.patientId}');
+            
+            // Try to get patient data directly from patients collection
+            try {
+              final patientDoc = await firestore
+                  .collection('patients')
+                  .doc(appointment.patientId)
+                  .get();
+              
+              if (patientDoc.exists && patientDoc.data() != null) {
+                final patientData = patientDoc.data()!;
+                print('Found direct patient data: ${patientData.keys.toList()}');
                 
-                // If we have both first and last name, combine them
-                if (userData['firstName'] != null && userData['lastName'] != null) {
-                  patientName = '${userData['firstName']} ${userData['lastName']}';
+                String patientName = patientData['name']?.toString() ?? 
+                                   patientData['fullName']?.toString() ?? 
+                                   patientData['firstName']?.toString() ?? 
+                                   'Patient ${appointment.patientId.substring(0, 8)}...';
+                
+                if (patientData['firstName'] != null && patientData['lastName'] != null) {
+                  patientName = '${patientData['firstName']} ${patientData['lastName']}';
                 }
                 
-                // Combine user and patient data safely
-                final combinedData = <String, dynamic>{
-                  'id': appointment.patientId,
-                  'name': patientName,
-                  'email': userData['email']?.toString() ?? '',
-                  'phone': userData['phone']?.toString() ?? '',
-                  'dateOfBirth': safeDate(userData['dateOfBirth'], defaultBirthDate),
-                  'bloodType': userData['bloodType']?.toString() ?? 'Unknown',
-                  'emergencyContact': userData['emergencyContact']?.toString() ?? '',
-                  'emergencyPhone': userData['emergencyPhone']?.toString() ?? '',
-                  'medicalHistory': userData['medicalHistory']?.toString() ?? '',
-                  'allergies': userData['allergies']?.toString() ?? '',
-                  'currentMedications': userData['currentMedications']?.toString() ?? '',
-                  'lastVisit': safeDate(userData['lastVisit'], now),
-                  'assignedDoctorId': _currentDoctorId,
-                  'createdAt': safeDate(userData['createdAt'], now),
-                  'updatedAt': safeDate(userData['updatedAt'], now),
-                };
-                
-                // Override with patient-specific data if available
-                if (patientDoc.exists) {
-                  final patientData = patientDoc.data()!;
-                  print('Found additional patient data for ${appointment.patientId}');
-                  
-                  // Safely merge patient data
-                  patientData.forEach((key, value) {
-                    if (value != null) {
-                      if (key.contains('Date') || key == 'lastVisit' || key == 'createdAt' || key == 'updatedAt') {
-                        combinedData[key] = safeDate(value, now);
-                      } else {
-                        combinedData[key] = value.toString();
-                      }
-                    }
-                  });
-                }
-                
-                _patientsMap[appointment.patientId] = Patient.fromMap(combinedData);
-                print('Successfully loaded patient: ${combinedData['name']}');
-              } catch (e) {
-                print('Error processing patient data for ${appointment.patientId}: $e');
-                // Get patient name from various possible fields
-                String fallbackName = userData['name']?.toString() ?? 
-                                     userData['fullName']?.toString() ?? 
-                                     userData['firstName']?.toString() ?? 
-                                     'Unknown Patient';
-                
-                if (userData['firstName'] != null && userData['lastName'] != null) {
-                  fallbackName = '${userData['firstName']} ${userData['lastName']}';
-                }
-                
-                // Create a simple patient with basic user data only
                 _patientsMap[appointment.patientId] = Patient(
                   id: appointment.patientId,
-                  name: fallbackName,
-                  email: userData['email']?.toString() ?? '',
-                  phone: userData['phone']?.toString() ?? '',
+                  name: patientName,
+                  email: patientData['email']?.toString() ?? '',
+                  phone: patientData['phone']?.toString() ?? '',
                   dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
-                  bloodType: 'Unknown',
-                  emergencyContact: '',
-                  emergencyPhone: '',
+                  bloodType: patientData['bloodType']?.toString() ?? 'Unknown',
+                  emergencyContact: patientData['emergencyContact']?.toString() ?? '',
+                  emergencyPhone: patientData['emergencyPhone']?.toString() ?? '',
                   lastVisit: DateTime.now(),
                   createdAt: DateTime.now(),
                   updatedAt: DateTime.now(),
                 );
-              }
-            } else {
-              print('No user data found for patient ID: ${appointment.patientId}');
-              print('User document exists: ${userDoc.exists}, Data: ${userDoc.data()}');
-              
-              // Try to get patient data directly from patients collection
-              try {
-                final patientDoc = await firestore
-                    .collection('patients')
-                    .doc(appointment.patientId)
-                    .get();
-                
-                if (patientDoc.exists && patientDoc.data() != null) {
-                  final patientData = patientDoc.data()!;
-                  print('Found direct patient data: ${patientData.keys.toList()}');
-                  
-                  String patientName = patientData['name']?.toString() ?? 
-                                     patientData['fullName']?.toString() ?? 
-                                     patientData['firstName']?.toString() ?? 
-                                     'Patient ${appointment.patientId.substring(0, 8)}...';
-                  
-                  if (patientData['firstName'] != null && patientData['lastName'] != null) {
-                    patientName = '${patientData['firstName']} ${patientData['lastName']}';
-                  }
-                  
-                  _patientsMap[appointment.patientId] = Patient(
-                    id: appointment.patientId,
-                    name: patientName,
-                    email: patientData['email']?.toString() ?? '',
-                    phone: patientData['phone']?.toString() ?? '',
-                    dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
-                    bloodType: patientData['bloodType']?.toString() ?? 'Unknown',
-                    emergencyContact: patientData['emergencyContact']?.toString() ?? '',
-                    emergencyPhone: patientData['emergencyPhone']?.toString() ?? '',
-                    lastVisit: DateTime.now(),
-                    createdAt: DateTime.now(),
-                    updatedAt: DateTime.now(),
-                  );
-                } else {
-                  print('No patient data found either');
-                  // Create a placeholder patient
-                  _patientsMap[appointment.patientId] = Patient(
-                    id: appointment.patientId,
-                    name: 'Patient ${appointment.patientId.substring(0, 8)}...',
-                    email: '',
-                    phone: '',
-                    dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
-                    bloodType: 'Unknown',
-                    emergencyContact: '',
-                    emergencyPhone: '',
-                    lastVisit: DateTime.now(),
-                    createdAt: DateTime.now(),
-                    updatedAt: DateTime.now(),
-                  );
-                }
-              } catch (e) {
-                print('Error loading direct patient data: $e');
+              } else {
+                print('No patient data found either');
                 // Create a placeholder patient
                 _patientsMap[appointment.patientId] = Patient(
                   id: appointment.patientId,
-                  name: 'Unknown Patient',
+                  name: 'Patient ${appointment.patientId.substring(0, 8)}...',
                   email: '',
                   phone: '',
                   dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
@@ -276,47 +272,101 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
                   updatedAt: DateTime.now(),
                 );
               }
+            } catch (e) {
+              print('Error loading direct patient data: $e');
+              // Create a placeholder patient
+              _patientsMap[appointment.patientId] = Patient(
+                id: appointment.patientId,
+                name: 'Unknown Patient',
+                email: '',
+                phone: '',
+                dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
+                bloodType: 'Unknown',
+                emergencyContact: '',
+                emergencyPhone: '',
+                lastVisit: DateTime.now(),
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              );
             }
-          } catch (e, stackTrace) {
-            print('Error loading patient ${appointment.patientId}: $e');
-            print('Stack trace: $stackTrace');
-            // Create a placeholder patient on error
-            _patientsMap[appointment.patientId] = Patient(
-              id: appointment.patientId,
-              name: 'Patient ${appointment.patientId.substring(0, 8)}...',
-              email: '',
-              phone: '',
-              dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
-              bloodType: 'Unknown',
-              emergencyContact: '',
-              emergencyPhone: '',
-              lastVisit: DateTime.now(),
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            );
           }
+        } catch (e, stackTrace) {
+          print('Error loading patient ${appointment.patientId}: $e');
+          print('Stack trace: $stackTrace');
+          // Create a placeholder patient on error
+          _patientsMap[appointment.patientId] = Patient(
+            id: appointment.patientId,
+            name: 'Patient ${appointment.patientId.substring(0, 8)}...',
+            email: '',
+            phone: '',
+            dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
+            bloodType: 'Unknown',
+            emergencyContact: '',
+            emergencyPhone: '',
+            lastVisit: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
         }
       }
+    }
 
-      setState(() {
-        _appointments = appointments;
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('Error loading appointments: $e');
-      setState(() {
-        _isLoading = false;
-      });
+    setState(() {
+      _appointments = appointments;
+      _isLoading = false;
+    });
+  } catch (e) {
+    print('Error loading appointments: $e');
+    setState(() {
+      _isLoading = false;
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load appointments: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+  
+  // Helper method to load patient data for debugging
+  Future<Patient?> _loadPatientData(String patientId) async {
+    try {
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      final userDoc = await firestore.collection('users').doc(patientId).get();
       
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load appointments: $e'),
-            backgroundColor: Colors.red,
-          ),
+      if (userDoc.exists && userDoc.data() != null) {
+        final userData = userDoc.data()!;
+        String patientName = userData['name']?.toString() ?? 
+                            userData['fullName']?.toString() ?? 
+                            userData['firstName']?.toString() ?? 
+                            'Unknown Patient';
+        
+        if (userData['firstName'] != null && userData['lastName'] != null) {
+          patientName = '${userData['firstName']} ${userData['lastName']}';
+        }
+        
+        return Patient(
+          id: patientId,
+          name: patientName,
+          email: userData['email']?.toString() ?? '',
+          phone: userData['phone']?.toString() ?? '',
+          dateOfBirth: DateTime.now().subtract(const Duration(days: 365 * 25)),
+          bloodType: 'Unknown',
+          emergencyContact: '',
+          emergencyPhone: '',
+          lastVisit: DateTime.now(),
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
       }
+    } catch (e) {
+      print('Error loading patient data for $patientId: $e');
     }
+    return null;
   }
 
   void _onItemTapped(int index) {
@@ -358,142 +408,130 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
               // Custom Header
               Container(
                 padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Appointments',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1976D2),
-                        letterSpacing: -1.5,
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            const Color(0xFF1976D2).withOpacity(0.15),
-                            const Color(0xFF1976D2).withOpacity(0.08),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF1976D2).withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.add_rounded, color: Color(0xFF1976D2), size: 24),
-                        onPressed: () {
-                          _showAddAppointmentDialog();
-                        },
-                      ),
-                    ),
-                  ],
+                child: const Text(
+                  'Appointments',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1976D2),
+                    letterSpacing: -1.5,
+                  ),
                 ),
               ),
+
+              // Debug Info Card
+           
               Expanded(
                 child: Column(
                   children: [
                     // Enhanced Filter Section
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color(0xFF1E40AF).withOpacity(0.1),
-                  Colors.white,
-                ],
-              ),
-            ),
-            child: Column(
-              children: [
-                // Stats Summary
-                Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white,
-                        const Color(0xFFF8FAFC),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF1E293B).withOpacity(0.06),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatCard('Total', _appointments.length.toString(), const Color(0xFF3B82F6)),
-                      _buildStatCard('Today', _appointments.where((a) => _isToday(a.appointmentDate)).length.toString(), const Color(0xFF10B981)),
-                      _buildStatCard('Pending', _appointments.where((a) => a.status == 'pending').length.toString(), const Color(0xFFF59E0B)),
-                    ],
-                  ),
-                ),
-                
-                // Filter Tabs
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildFilterChip('All', 'all'),
-                        const SizedBox(width: 12),
-                        _buildFilterChip('Scheduled', 'scheduled'),
-                        const SizedBox(width: 12),
-                        _buildFilterChip('Completed', 'completed'),
-                        const SizedBox(width: 12),
-                        _buildFilterChip('Cancelled', 'cancelled'),
-                        const SizedBox(width: 12),
-                        _buildFilterChip('Rescheduled', 'rescheduled'),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Appointments List
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredAppointments.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No appointments found',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            const Color(0xFF1E40AF).withOpacity(0.1),
+                            Colors.white,
+                          ],
                         ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _filteredAppointments.length,
-                        itemBuilder: (context, index) {
-                          final appointment = _filteredAppointments[index];
-                          return _buildAppointmentCard(appointment);
-                        },
                       ),
+                      child: Column(
+                        children: [
+                          // Stats Summary
+                          Container(
+                            margin: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white,
+                                  const Color(0xFFF8FAFC),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF1E293B).withOpacity(0.06),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildStatCard('Total', _appointments.length.toString(), const Color(0xFF3B82F6)),
+                                _buildStatCard('Today', _appointments.where((a) => _isToday(a.appointmentDate)).length.toString(), const Color(0xFF10B981)),
+                                _buildStatCard('Pending', _appointments.where((a) => a.status == 'pending').length.toString(), const Color(0xFFF59E0B)),
+                              ],
+                            ),
+                          ),
+                          
+                          // Filter Tabs
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _buildFilterChip('All', 'all'),
+                                  const SizedBox(width: 12),
+                                  _buildFilterChip('Scheduled', 'scheduled'),
+                                  const SizedBox(width: 12),
+                                  _buildFilterChip('Completed', 'completed'),
+                                  const SizedBox(width: 12),
+                                  _buildFilterChip('Cancelled', 'cancelled'),
+                                  const SizedBox(width: 12),
+                                  _buildFilterChip('Rescheduled', 'rescheduled'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Appointments List
+                    Expanded(
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _filteredAppointments.isEmpty
+                              ? const Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.calendar_today, size: 64, color: Colors.grey),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'No appointments found',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8),
+                                      Text(
+                                        'Check if the doctor ID matches your session',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : ListView.builder(
+                                  padding: const EdgeInsets.all(16),
+                                  itemCount: _filteredAppointments.length,
+                                  itemBuilder: (context, index) {
+                                    final appointment = _filteredAppointments[index];
+                                    return _buildAppointmentCard(appointment);
+                                  },
+                                ),
                     ),
                   ],
                 ),
@@ -950,21 +988,7 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  void _showAddAppointmentDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add New Appointment'),
-        content: const Text('This feature will be implemented in the next phase.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   void _viewAppointmentDetails(Appointment appointment) {
     final patient = _getPatientById(appointment.patientId);
@@ -1169,7 +1193,7 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
           .collection('appointments')
           .doc(appointment.id)
           .update({
-        'appointmentDate': Timestamp.fromDate(selectedDate),
+        'appointmentDate': selectedDate.toIso8601String(), // Store as string
         'timeSlot': selectedTimeSlot,
         'status': 'rescheduled',
         'updatedAt': FieldValue.serverTimestamp(),
@@ -1180,8 +1204,8 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
         final idx = _appointments.indexWhere((a) => a.id == appointment.id);
         if (idx != -1) {
           _appointments[idx] = _appointments[idx].copyWith(
-            appointmentDate: selectedDate,
-            timeSlot: selectedTimeSlot,
+            appointmentDate: selectedDate!,
+            timeSlot: selectedTimeSlot!,
             status: 'rescheduled',
           );
         }
@@ -1208,4 +1232,3 @@ class _DoctorAppointmentsState extends State<DoctorAppointments> {
     }
   }
 }
-

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../l10n/app_localizations.dart';
 import 'navigation_handler.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(const PregnancyApp());
 }
 
@@ -44,9 +48,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
   
-  // Groq API credentials
-  final String _apiKey = "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";
-  final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
+  // Groq API credentials from environment
+  late final String _apiKey;
+  late final String _apiUrl;
   
   // Sample chat messages
   final List<Map<String, dynamic>> _messages = [
@@ -59,9 +63,54 @@ class _ChatScreenState extends State<ChatScreen> {
     },
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
+    _apiUrl = dotenv.env['GROQ_API_URL'] ?? '';
+  }
+
   void _onItemTapped(int index) {
     if (index == _currentIndex) return;
     NavigationHandler.navigateToScreen(context, index);
+  }
+
+  // Safe method to get localized strings
+  String _getLocalizedString(String key) {
+    final localizations = AppLocalizations.of(context);
+    if (localizations == null) {
+      // Fallback English strings if localization is not available
+      final fallbackStrings = {
+        'pregnancyAssistant': 'Pregnancy Assistant',
+        'aiPoweredSupport': 'AI-Powered Support',
+        'askPregnancyQuestion': 'Ask a pregnancy question...',
+        'commonPregnancyQuestions': 'Common Pregnancy Questions',
+        'avoidFoodsQuestion': 'What foods should I avoid during pregnancy?',
+        'safeExercisesQuestion': 'What exercises are safe during pregnancy?',
+        'relieveMorningSicknessQuestion': 'How can I relieve morning sickness?',
+        'pretermLaborSignsQuestion': 'What are the signs of preterm labor?',
+        'weightGainQuestion': 'How much weight should I gain during pregnancy?',
+        'pregnancyAssistantSender': 'Pregnancy Assistant',
+        'thinking': 'Thinking...',
+      };
+      return fallbackStrings[key] ?? key;
+    }
+
+    // Use the actual localization methods
+    switch (key) {
+      case 'pregnancyAssistant': return localizations.pregnancyAssistant;
+      case 'aiPoweredSupport': return localizations.aiPoweredSupport;
+      case 'askPregnancyQuestion': return localizations.askPregnancyQuestion;
+      case 'commonPregnancyQuestions': return localizations.commonPregnancyQuestions;
+      case 'avoidFoodsQuestion': return localizations.avoidFoodsQuestion;
+      case 'safeExercisesQuestion': return localizations.safeExercisesQuestion;
+      case 'relieveMorningSicknessQuestion': return localizations.relieveMorningSicknessQuestion;
+      case 'pretermLaborSignsQuestion': return localizations.pretermLaborSignsQuestion;
+      case 'weightGainQuestion': return localizations.weightGainQuestion;
+      case 'pregnancyAssistantSender': return localizations.pregnancyAssistantSender;
+      case 'thinking': return localizations.thinking;
+      default: return key;
+    }
   }
 
   // Function to send message to Groq API
@@ -132,7 +181,7 @@ class _ChatScreenState extends State<ChatScreen> {
     } catch (e) {
       setState(() {
         _messages.add({
-          'text': "Sorry, I'm having trouble connecting right now. Please try again later. Error: ${e.toString()}",
+          'text': "Sorry, I'm having trouble connecting right now. Please try again later.",
           'isMe': false,
           'sender': 'Pregnancy Assistant',
           'time': 'Now',
@@ -293,11 +342,11 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Icon(Icons.pregnant_woman, color: Colors.white),
                       ),
                       const SizedBox(width: 12),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Pregnancy Assistant',
+                            _getLocalizedString('pregnancyAssistant'),
                             style: TextStyle(
                               color: Color(0xFF111611),
                               fontSize: 18,
@@ -305,7 +354,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           ),
                           Text(
-                            'AI-powered support',
+                            _getLocalizedString('aiPoweredSupport'),
                             style: TextStyle(
                               color: Color(0xFF638763),
                               fontSize: 12,
@@ -385,8 +434,8 @@ class _ChatScreenState extends State<ChatScreen> {
                               Expanded(
                                 child: TextField(
                                   controller: _messageController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Ask a pregnancy-related question...',
+                                  decoration: InputDecoration(
+                                    hintText: _getLocalizedString('askPregnancyQuestion'),
                                     border: InputBorder.none,
                                     hintStyle: TextStyle(color: Color(0xFF638763)),
                                   ),
@@ -435,8 +484,8 @@ class _ChatScreenState extends State<ChatScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Common Pregnancy Questions',
+              Text(
+                _getLocalizedString('commonPregnancyQuestions'),
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -444,11 +493,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildSuggestionItem('What foods should I avoid during pregnancy?'),
-              _buildSuggestionItem('What are safe exercises for the third trimester?'),
-              _buildSuggestionItem('How can I relieve morning sickness?'),
-              _buildSuggestionItem('What are the signs of preterm labor?'),
-              _buildSuggestionItem('How much weight should I gain during pregnancy?'),
+              _buildSuggestionItem(_getLocalizedString('avoidFoodsQuestion')),
+              _buildSuggestionItem(_getLocalizedString('safeExercisesQuestion')),
+              _buildSuggestionItem(_getLocalizedString('relieveMorningSicknessQuestion')),
+              _buildSuggestionItem(_getLocalizedString('pretermLaborSignsQuestion')),
+              _buildSuggestionItem(_getLocalizedString('weightGainQuestion')),
               const SizedBox(height: 16),
             ],
           ),
@@ -564,10 +613,10 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(left: 8, bottom: 4),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8, bottom: 4),
                   child: Text(
-                    'Pregnancy Assistant',
+                    _getLocalizedString('pregnancyAssistantSender'),
                     style: TextStyle(
                       color: Color(0xFF638763),
                       fontSize: 12,
@@ -585,7 +634,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       bottomRight: const Radius.circular(12),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       SizedBox(
@@ -596,9 +645,9 @@ class _ChatScreenState extends State<ChatScreen> {
                           valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF638763)),
                         ),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Text(
-                        'Thinking...',
+                        _getLocalizedString('thinking'),
                         style: TextStyle(
                           color: Color(0xFF111611),
                           fontSize: 16,

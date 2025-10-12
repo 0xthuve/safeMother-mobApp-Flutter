@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/backend_service.dart';
 import '../services/session_manager.dart';
+import '../l10n/app_localizations.dart';
 
 class PregnancyJourneyDetailPage extends StatefulWidget {
   const PregnancyJourneyDetailPage({super.key});
@@ -57,9 +58,9 @@ class _PregnancyJourneyDetailPageState extends State<PregnancyJourneyDetailPage>
           icon: const Icon(Icons.arrow_back, color: Color(0xFF7B1FA2)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Pregnancy Journey',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)?.pregnancyJourney ?? 'Pregnancy Journey',
+          style: const TextStyle(
             color: Color(0xFF7B1FA2),
             fontSize: 20,
             fontWeight: FontWeight.w700,
@@ -85,30 +86,30 @@ class _PregnancyJourneyDetailPageState extends State<PregnancyJourneyDetailPage>
   }
 
   Widget _buildSetupView() {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.favorite,
               color: Color(0xFFE91E63),
               size: 80,
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             Text(
-              'Setup Your Pregnancy Journey',
-              style: TextStyle(
+              AppLocalizations.of(context)?.setupYourPregnancyJourney ?? 'Setup Your Pregnancy Journey',
+              style: const TextStyle(
                 color: Color(0xFF7B1FA2),
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              'Complete your pregnancy details in your profile to start tracking your journey.',
-              style: TextStyle(
+              AppLocalizations.of(context)?.completePregnancyDetails ?? 'Complete your pregnancy details in your profile to start tracking your journey.',
+              style: const TextStyle(
                 color: Colors.grey,
                 fontSize: 16,
               ),

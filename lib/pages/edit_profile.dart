@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/user_management_service.dart';
 import '../services/session_manager.dart';
+import '../l10n/app_localizations.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -99,7 +100,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         if (success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Profile updated successfully!'),
+              content: Text(AppLocalizations.of(context)?.profileUpdatedSuccessfully ?? 'Profile updated successfully!'),
               backgroundColor: const Color(0xFFE91E63),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -115,7 +116,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to update profile: ${e.toString()}'),
+              content: Text(AppLocalizations.of(context)?.failedToUpdateProfile(e.toString()) ?? 'Failed to update profile: ${e.toString()}'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -139,9 +140,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F6F8),
       appBar: AppBar(
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)?.editProfile ?? 'Edit Profile',
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
@@ -164,16 +165,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Personal Information Section
-                    _buildSectionTitle('Personal Information'),
+                    _buildSectionTitle(AppLocalizations.of(context)?.personalInformation ?? 'Personal Information'),
                     const SizedBox(height: 16),
                     
                     _buildTextField(
                       controller: _nameController,
-                      label: 'Full Name',
+                      label: AppLocalizations.of(context)?.fullName ?? 'Full Name',
                       icon: Icons.person_outline,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your full name';
+                          return AppLocalizations.of(context)?.pleaseEnterFullName ?? 'Please enter your full name';
                         }
                         return null;
                       },
@@ -183,16 +184,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     
                     _buildTextField(
                       controller: _emailController,
-                      label: 'Email Address',
+                      label: AppLocalizations.of(context)?.emailAddress ?? 'Email Address',
                       icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       enabled: false, // Email should not be editable
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your email';
+                          return AppLocalizations.of(context)?.pleaseEnterEmail ?? 'Please enter your email';
                         }
                         if (!value.contains('@')) {
-                          return 'Please enter a valid email';
+                          return AppLocalizations.of(context)?.pleaseEnterValidEmail ?? 'Please enter a valid email';
                         }
                         return null;
                       },
@@ -205,14 +206,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         Expanded(
                           child: _buildTextField(
                             controller: _ageController,
-                            label: 'Age',
+                            label: AppLocalizations.of(context)?.age ?? 'Age',
                             icon: Icons.cake_outlined,
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (value != null && value.isNotEmpty) {
                                 final age = int.tryParse(value);
                                 if (age == null || age < 1 || age > 120) {
-                                  return 'Enter valid age';
+                                  return AppLocalizations.of(context)?.enterValidAge ?? 'Enter valid age';
                                 }
                               }
                               return null;
@@ -223,7 +224,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         Expanded(
                           child: _buildTextField(
                             controller: _bloodTypeController,
-                            label: 'Blood Type',
+                            label: AppLocalizations.of(context)?.bloodType ?? 'Blood Type',
                             icon: Icons.bloodtype,
                           ),
                         ),
@@ -234,13 +235,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     
                     _buildTextField(
                       controller: _phoneController,
-                      label: 'Phone Number',
+                      label: AppLocalizations.of(context)?.phoneNumber ?? 'Phone Number',
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
                       validator: (value) {
                         if (value != null && value.trim().isNotEmpty) {
                           if (value.trim().length < 10) {
-                            return 'Please enter a valid phone number';
+                            return AppLocalizations.of(context)?.pleaseEnterValidPhoneNumber ?? 'Please enter a valid phone number';
                           }
                         }
                         return null;
@@ -250,26 +251,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     const SizedBox(height: 24),
                     
                     // Medical Information Section
-                    _buildSectionTitle('Medical Information'),
+                    _buildSectionTitle(AppLocalizations.of(context)?.medicalInformation ?? 'Medical Information'),
                     const SizedBox(height: 16),
                     
                     _buildTextField(
                       controller: _allergiesController,
-                      label: 'Allergies (comma separated)',
+                      label: AppLocalizations.of(context)?.allergiesCommaSeparated ?? 'Allergies (comma separated)',
                       icon: Icons.warning_outlined,
                       maxLines: 2,
-                      hintText: 'e.g., Penicillin, Peanuts, Shellfish',
+                      hintText: AppLocalizations.of(context)?.allergiesExample ?? 'e.g., Penicillin, Peanuts, Shellfish',
                     ),
                     
                     const SizedBox(height: 24),
                     
                     // Emergency Contact Section
-                    _buildSectionTitle('Emergency Contact'),
+                    _buildSectionTitle(AppLocalizations.of(context)?.emergencyContact ?? 'Emergency Contact'),
                     const SizedBox(height: 16),
                     
                     _buildTextField(
                       controller: _emergencyContactController,
-                      label: 'Emergency Contact Name',
+                      label: AppLocalizations.of(context)?.emergencyContactName ?? 'Emergency Contact Name',
                       icon: Icons.contact_emergency_outlined,
                     ),
                     
@@ -277,7 +278,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     
                     _buildTextField(
                       controller: _emergencyPhoneController,
-                      label: 'Emergency Contact Phone',
+                      label: AppLocalizations.of(context)?.emergencyContactPhone ?? 'Emergency Contact Phone',
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
                     ),
@@ -306,9 +307,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
-                            : const Text(
-                                'Save Changes',
-                                style: TextStyle(
+                            : Text(
+                                AppLocalizations.of(context)?.saveChanges ?? 'Save Changes',
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: Colors.white,

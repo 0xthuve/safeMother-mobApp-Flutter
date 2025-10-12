@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../l10n/app_localizations.dart';
 import 'bottom_navigation.dart'; // Import the separate navigation bar
 import 'navigation_handler.dart';
 import 'patient_profile.dart';
@@ -6,13 +8,13 @@ import 'services/session_manager.dart';
 import 'services/route_guard.dart';
 import 'services/backend_service.dart';
 import 'services/nutrition_exercise_service.dart';
-import 'widgets/pregnancy_progress_widget.dart';
-import 'widgets/dynamic_tip_widget.dart';
 import 'widgets/ambulance_button.dart';
-import 'pages/learn_page.dart';
 import 'models/meal.dart';
 import 'models/exercise.dart';
 import 'dart:async';
+import 'widgets/pregnancy_progress_widget.dart';
+import 'widgets/dynamic_tip_widget.dart';
+import 'patient_dashboard_tip.dart';
 
 void main() {
   runApp(const PregnancyApp());
@@ -97,38 +99,43 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadUserData() async {
+  // Added null checks and default values for user data
+Future<void> _loadUserData() async {
     try {
-      // Get user data from session
-      final userName = await SessionManager.getUserName();
-      final userId = await SessionManager.getUserId();
-      print('Loading data for user: $userName (ID: $userId)');
+        // Get user data from session
+        final userName = await SessionManager.getUserName() ?? 'User';
+        final userId = await SessionManager.getUserId();
+        if (userId == null) {
+            print('Error: User ID is null');
+            return;
+        }
 
-      // Initialize demo data if needed
-      await _backendService.initializeDemoData();
+        print('Loading data for user: $userName (ID: $userId)');
 
-      // Load dynamic meals and exercises
-      final meals = await _nutritionService.getTodaysMeals();
-      final exercises = await _nutritionService.getTodaysExercises();
+        // Initialize demo data if needed
+        await _backendService.initializeDemoData();
 
-      print('Loaded ${meals.length} meals and ${exercises.length} exercises');
-      print('Meals: ${meals.map((m) => m.name).toList()}');
-      print('Exercises: ${exercises.map((e) => e.name).toList()}');
+        // Load dynamic meals and exercises
+        final meals = await _nutritionService.getTodaysMeals();
+        final exercises = await _nutritionService.getTodaysExercises();
 
-      setState(() {
-        _userName = userName ?? 'User';
-        _todaysMeals = meals;
-        _todaysExercises = exercises;
-        _isLoading = false;
-      });
+        print('Loaded ${meals.length} meals and ${exercises.length} exercises');
+        print('Meals: ${meals.map((m) => m.name).toList()}');
+        print('Exercises: ${exercises.map((e) => e.name).toList()}');
+
+        setState(() {
+            _userName = userName;
+            _todaysMeals = meals;
+            _todaysExercises = exercises;
+            _isLoading = false;
+        });
     } catch (e) {
-      print('Error loading user data: $e');
-      setState(() {
-        _isLoading = false;
-      });
+        print('Error loading user data: $e');
+        setState(() {
+            _isLoading = false;
+        });
     }
-  }
-
+}
   String _getGreetingTime() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
@@ -216,80 +223,98 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                  // Header with profile - Fixed responsive layout
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileScreen(),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: const Color(0xFFFFCDD2).withOpacity(0.5),
-                              width: 1.5,
-                            ),
-                            image: const DecorationImage(
-                              image: AssetImage('assets/profile.png'),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                  // Header with profile and greeting - Refactored layout
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
                         ),
-                      ),
-                      Expanded(
-                        child: Center(
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Left side: Icon and greeting in Column
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // User icon
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ProfileScreen(),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3E5F5),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.woman,
+                                  color: Color(0xFFE91E63),
+                                  size: 32,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Greeting text
+                            _isLoading
+                                ? const CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B1FA2)),
+                                  )
+                                : RichText(
+                                    text: TextSpan(
+                                      style: GoogleFonts.poppins(),
+                                      children: [
+                                        TextSpan(
+                                          text: '${_getGreetingTime()},\n',
+                                          style: GoogleFonts.poppins(
+                                            color: const Color(0xFF7B1FA2),
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: _userName,
+                                          style: GoogleFonts.poppins(
+                                            color: const Color(0xFF7B1FA2),
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                          ],
+                        ),
+                        
+                        // Right side: App title
+                        Flexible(
                           child: Text(
                             'Safe Mother',
-                            style: const TextStyle(
-                              color: Color(0xFF7B1FA2),
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF7B1FA2),
                               fontSize: 20,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.bold,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 48), // Balance the profile image width
-                    ],
+                      ],
+                    ),
                   ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Greeting
-                  _isLoading
-                      ? const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B1FA2)),
-                        )
-                      : RichText(
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: '${_getGreetingTime()},\n',
-                                style: const TextStyle(
-                                  color: Color(0xFF7B1FA2),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              TextSpan(
-                                text: _userName,
-                                style: const TextStyle(
-                                  color: Color(0xFF7B1FA2),
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                   
                   const SizedBox(height: 24),
                   
@@ -300,15 +325,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   const SizedBox(height: 24),
                   
-                  // Today's tip card - Dynamic implementation
-                  DynamicTipWidget(
-                    onLearnMorePressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const LearnPage()),
-                      );
-                    },
-                  ),
+                  // Today's tip card - Dynamic implementation with null safety
+                  _buildDynamicTipWidget(),
                   
                   const SizedBox(height: 24),
                   
@@ -316,9 +334,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Today Meal Preference',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)?.todayMealPreference ?? 'Today\'s Meal Preference',
+                        style: const TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -331,9 +349,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: const Color(0xFF4CAF50).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'Doctor Recommended',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context)?.doctorRecommended ?? 'Doctor Recommended',
+                            style: const TextStyle(
                               color: Color(0xFF4CAF50),
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -362,28 +380,30 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.grey.shade200),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.restaurant_menu,
                                         color: Colors.grey,
                                         size: 48,
                                       ),
-                                      SizedBox(height: 12),
+                                      const SizedBox(height: 12),
                                       Text(
-                                        'No Meal Prescribed',
-                                        style: TextStyle(
+                                        AppLocalizations.of(context)?.noMealPrescribed ?? 'No meals prescribed today',
+                                        style: const TextStyle(
                                           color: Colors.grey,
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
                                         ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
                                       ),
-                                      SizedBox(height: 4),
+                                      const SizedBox(height: 4),
                                       Text(
-                                        'Your doctor hasn\'t prescribed any specific meals yet.',
-                                        style: TextStyle(
+                                        AppLocalizations.of(context)?.noMealPrescribedDesc ?? 'Your doctor will prescribe meals based on your needs',
+                                        style: const TextStyle(
                                           color: Colors.grey,
                                           fontSize: 12,
                                         ),
@@ -410,9 +430,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Today Exercise Preference',
-                        style: TextStyle(
+                      Text(
+                        AppLocalizations.of(context)?.todayExercisePreference ?? 'Today\'s Exercise Preference',
+                        style: const TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -425,9 +445,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: const Color(0xFF4CAF50).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            'Doctor Recommended',
-                            style: TextStyle(
+                          child: Text(
+                            AppLocalizations.of(context)?.doctorRecommended ?? 'Doctor Recommended',
+                            style: const TextStyle(
                               color: Color(0xFF4CAF50),
                               fontSize: 10,
                               fontWeight: FontWeight.w600,
@@ -453,28 +473,28 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: Colors.grey.shade200),
                                 ),
-                                child: const Center(
+                                child: Center(
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(
+                                      const Icon(
                                         Icons.fitness_center,
                                         color: Colors.grey,
                                         size: 32,
                                       ),
-                                      SizedBox(height: 8),
+                                      const SizedBox(height: 8),
                                       Text(
-                                        'No Exercise Prescribed',
-                                        style: TextStyle(
+                                        AppLocalizations.of(context)?.noExercisePrescribed ?? 'No exercises prescribed today',
+                                        style: const TextStyle(
                                           color: Colors.grey,
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                      SizedBox(height: 4),
+                                      const SizedBox(height: 4),
                                       Text(
-                                        'Your doctor hasn\'t prescribed any exercises yet.',
-                                        style: TextStyle(
+                                        AppLocalizations.of(context)?.noExercisePrescribedDesc ?? 'Your doctor will prescribe exercises based on your trimester',
+                                        style: const TextStyle(
                                           color: Colors.grey,
                                           fontSize: 11,
                                         ),
@@ -515,9 +535,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Quick Actions',
-                          style: TextStyle(
+                        Text(
+                          AppLocalizations.of(context)?.quickActions ?? 'Quick Actions',
+                          style: const TextStyle(
                             color: Color(0xFF7B1FA2),
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -555,9 +575,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: Colors.white,
                                     size: 18,
                                   ),
-                                  label: const Text(
-                                    'Log Symptoms',
-                                    style: TextStyle(
+                                  label: Text(
+                                    AppLocalizations.of(context)?.logSymptoms ?? 'Log Symptoms',
+                                    style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
@@ -645,7 +665,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(12),
                   color: Colors.grey.shade100,
                 ),
-                child: meal.imageUrl.isNotEmpty
+                child: (meal.imageUrl.isNotEmpty)
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: meal.imageUrl.startsWith('http')
@@ -832,8 +852,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
-
   void _showMealDetails(Meal meal) {
     showDialog(
       context: context,
@@ -844,9 +862,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           title: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.restaurant_menu,
-                color: const Color(0xFF4CAF50),
+                color: Color(0xFF4CAF50),
                 size: 24,
               ),
               const SizedBox(width: 8),
@@ -1162,7 +1180,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Icon(Icons.timer, color: Colors.blue, size: 16),
+                    const Icon(Icons.timer, color: Colors.blue, size: 16),
                     const SizedBox(width: 4),
                     Text('${exercise.duration} minutes', style: const TextStyle(fontWeight: FontWeight.w600)),
                   ],
@@ -1170,7 +1188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.fitness_center, color: Colors.red, size: 16),
+                    const Icon(Icons.fitness_center, color: Colors.red, size: 16),
                     const SizedBox(width: 4),
                     Text('Difficulty: ${exercise.difficulty}', style: const TextStyle(fontWeight: FontWeight.w600)),
                   ],
@@ -1218,5 +1236,60 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  // Fixed _buildDynamicTipWidget with proper null safety
+  Widget _buildDynamicTipWidget() {
+    try {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 0),
+        child: DynamicTipWidget(
+          onLearnMorePressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const PregnancyTip()),
+            );
+          },
+        ),
+      );
+    } catch (e) {
+      print('Error loading DynamicTipWidget: $e');
+      // Return a fallback widget instead of empty SizedBox
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Daily Tip',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF7B1FA2),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Stay hydrated and get plenty of rest during your pregnancy journey.',
+              style: TextStyle(
+                color: Color(0xFF5A5A5A),
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }

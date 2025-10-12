@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'firebase_service.dart';
 class SessionManager {
   static const String _keyIsLoggedIn = 'isLoggedIn';
   static const String _keyUserType = 'userType';
@@ -85,16 +85,27 @@ class SessionManager {
 
   // Clear login session (logout)
   static Future<void> clearSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    await prefs.remove(_keyIsLoggedIn);
-    await prefs.remove(_keyUserType);
-    await prefs.remove(_keyUserId);
-    await prefs.remove(_keyUserName);
-    await prefs.remove(_keyUserEmail);
-    await prefs.remove(_keyLoginTime);
+    try {
+      print('DEBUG: Clearing session started...');
+      final prefs = await SharedPreferences.getInstance();
+      // Clear all session data using correct keys
+      await prefs.remove(_keyIsLoggedIn);
+      await prefs.remove(_keyUserType);
+      await prefs.remove(_keyUserId);
+      await prefs.remove(_keyUserName);
+      await prefs.remove(_keyUserEmail);
+      await prefs.remove(_keyLoginTime);
+      // Also clear Firebase auth
+      try {
+        await FirebaseService.signOut();
+      } catch (e) {
+        print('DEBUG: Error during Firebase signout: $e');
+      }
+      print('DEBUG: Session cleared successfully');
+    } catch (e) {
+      print('DEBUG: Error clearing session: $e');
+    }
   }
-
   // Update user profile information
   static Future<void> updateUserProfile({
     String? userName,

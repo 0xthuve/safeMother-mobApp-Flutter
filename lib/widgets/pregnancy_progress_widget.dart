@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/backend_service.dart';
 import '../services/session_manager.dart';
 import '../pages/pregnancy_journey_detail.dart';
+import '../l10n/app_localizations.dart';
 
 class PregnancyProgressWidget extends StatefulWidget {
   final VoidCallback? onTap;
@@ -112,7 +113,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Complete your pregnancy details to start tracking',
+              'Complete your pregnancy details to track your progress',
               style: TextStyle(
                 color: Colors.grey,
                 fontSize: 14,
@@ -123,7 +124,6 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
             ElevatedButton(
               onPressed: () {
                 // Navigate to pregnancy setup
-                // This would typically navigate to a pregnancy setup form
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE91E63),
@@ -148,7 +148,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
     final weeksRemaining = _progressData!['weeksRemaining'] as int;
     final daysRemaining = _progressData!['daysRemaining'] as int? ?? 0;
     final totalDays = _progressData!['totalDays'] as int? ?? 0;
-    final babyName = _progressData!['babyName'] as String;
+    final babyName = _progressData!['babyName'] as String? ?? 'Your Baby';
     final expectedDeliveryDateStr = _progressData!['expectedDeliveryDate'] as String?;
 
     // Parse expected delivery date for better display
@@ -191,237 +191,223 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with refresh and trimester badge - Responsive
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth > 280;
-                
-                if (isWide) {
-                  return Row(
+            // Header with refresh and trimester badge
+            Row(
+              children: [
+                Expanded(
+                  child: const Text(
+                    'Your Pregnancy Journey',
+                    style: TextStyle(
+                      color: Color(0xFF7B1FA2),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (widget.showRefreshButton) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: _loadPregnancyProgress,
+                    icon: const Icon(
+                      Icons.refresh,
+                      color: Color(0xFF7B1FA2),
+                      size: 20,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ],
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE91E63).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '$trimester Trimester',
+                    style: const TextStyle(
+                      color: Color(0xFFE91E63),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Main progress section
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Progress circle
+                SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Your Pregnancy Journey',
-                          style: const TextStyle(
-                            color: Color(0xFF7B1FA2),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: CircularProgressIndicator(
+                          value: percentage / 100,
+                          strokeWidth: 6,
+                          backgroundColor: const Color(0xFFF3E5F5),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
                         ),
                       ),
-                      if (widget.showRefreshButton) ...[
-                        const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: _loadPregnancyProgress,
-                          icon: const Icon(
-                            Icons.refresh,
-                            color: Color(0xFF7B1FA2),
-                            size: 20,
-                          ),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ],
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE91E63).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '$trimester Trimester',
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$weeks',
                             style: const TextStyle(
-                              color: Color(0xFFE91E63),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF7B1FA2),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
                             ),
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
+                          const Text(
+                            'Weeks',
+                            style: TextStyle(
+                              color: Color(0xFF7B1FA2),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
-                  );
-                } else {
-                  // Narrow layout - stack vertically
-                  return Column(
+                  ),
+                ),
+                
+                const SizedBox(width: 16),
+                
+                // Content
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        '$babyName is growing!',
+                        style: const TextStyle(
+                          color: Color(0xFF111611),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Pregnancy details
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF638763).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'Day $totalDays',
+                              style: const TextStyle(
+                                color: Color(0xFF638763),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE91E63).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '$weeks weeks, $days days',
+                              style: const TextStyle(
+                                color: Color(0xFFE91E63),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Time remaining
                       Row(
                         children: [
+                          const Icon(
+                            Icons.access_time,
+                            color: Color(0xFFE91E63),
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              'Your Pregnancy Journey',
+                              '$weeksRemaining weeks, ${daysRemaining % 7} days remaining',
                               style: const TextStyle(
-                                color: Color(0xFF7B1FA2),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFE91E63),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (widget.showRefreshButton)
-                            IconButton(
-                              onPressed: _loadPregnancyProgress,
-                              icon: const Icon(
-                                Icons.refresh,
-                                color: Color(0xFF7B1FA2),
-                                size: 20,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
                         ],
                       ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Progress bar
+                      Container(
+                        width: double.infinity,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3E5F5),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: percentage / 100,
+                            backgroundColor: Colors.transparent,
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
+                            minHeight: 6,
+                          ),
+                        ),
+                      ),
+                      
                       const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE91E63).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '$trimester Trimester',
-                            style: const TextStyle(
-                              color: Color(0xFFE91E63),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                      
+                      // Progress percentage
+                      Text(
+                        '${percentage.toStringAsFixed(1)}% complete - Day $totalDays',
+                        style: const TextStyle(
+                          color: Color(0xFFE91E63),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
-                  );
-                }
-              },
+                  ),
+                ),
+              ],
             ),
             
             const SizedBox(height: 20),
             
-            // Main progress section - Fixed responsive layout
-            LayoutBuilder(
-              builder: (context, constraints) {
-                // Determine if we should use vertical or horizontal layout
-                final isWide = constraints.maxWidth > 320;
-                
-                if (isWide) {
-                  // Wide layout - use Row for larger screens
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Progress circle - fixed size
-                      SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 80,
-                              height: 80,
-                              child: CircularProgressIndicator(
-                                value: percentage / 100,
-                                strokeWidth: 6,
-                                backgroundColor: const Color(0xFFF3E5F5),
-                                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
-                              ),
-                            ),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '$weeks',
-                                  style: const TextStyle(
-                                    color: Color(0xFF7B1FA2),
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const Text(
-                                  'weeks',
-                                  style: TextStyle(
-                                    color: Color(0xFF7B1FA2),
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(width: 16),
-                      
-                      // Content - flexible
-                      Expanded(
-                        child: _buildProgressContent(babyName, weeks, days, totalDays, weeksRemaining, daysRemaining, percentage),
-                      ),
-                    ],
-                  );
-                } else {
-                  // Narrow layout - use Column for smaller screens
-                  return Column(
-                    children: [
-                      // Progress circle centered
-                      SizedBox(
-                        width: 100,
-                        height: 100,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            SizedBox(
-                              width: 100,
-                              height: 100,
-                              child: CircularProgressIndicator(
-                                value: percentage / 100,
-                                strokeWidth: 8,
-                                backgroundColor: const Color(0xFFF3E5F5),
-                                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
-                              ),
-                            ),
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '$weeks',
-                                  style: const TextStyle(
-                                    color: Color(0xFF7B1FA2),
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const Text(
-                                  'weeks',
-                                  style: TextStyle(
-                                    color: Color(0xFF7B1FA2),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Content - full width
-                      _buildProgressContent(babyName, weeks, days, totalDays, weeksRemaining, daysRemaining, percentage),
-                    ],
-                  );
-                }
-              },
-            ),
-            
-            const SizedBox(height: 20),
-            
-            // Due date display with enhanced styling
+            // Due date display
             if (expectedDeliveryDate != null)
               Container(
                 width: double.infinity,
@@ -486,7 +472,7 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
             
             const SizedBox(height: 16),
             
-            // Baby development info with enhanced styling
+            // Baby development info
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -540,8 +526,8 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
             
             const SizedBox(height: 16),
             
-            // Milestone timeline indicator
-            _buildMilestoneTimeline(weeks, trimester),
+            // Milestone timeline indicator - SIMPLIFIED VERSION
+            _buildSimpleMilestoneTimeline(weeks),
             
             const SizedBox(height: 16),
             
@@ -575,17 +561,18 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
     );
   }
 
-  Widget _buildMilestoneTimeline(int weeks, String trimester) {
+  // SIMPLIFIED milestone timeline without localization
+  Widget _buildSimpleMilestoneTimeline(int weeks) {
     List<Map<String, dynamic>> milestones = [
-      {'week': 4, 'title': 'Heart Begins', 'icon': Icons.favorite, 'completed': weeks >= 4},
-      {'week': 8, 'title': 'All Organs', 'icon': Icons.psychology, 'completed': weeks >= 8},
-      {'week': 12, 'title': 'End 1st Trimester', 'icon': Icons.celebration, 'completed': weeks >= 12},
-      {'week': 20, 'title': 'Halfway Point', 'icon': Icons.star, 'completed': weeks >= 20},
-      {'week': 24, 'title': 'Viability', 'icon': Icons.security, 'completed': weeks >= 24},
-      {'week': 28, 'title': 'Eyes Open', 'icon': Icons.visibility, 'completed': weeks >= 28},
-      {'week': 32, 'title': 'Rapid Growth', 'icon': Icons.trending_up, 'completed': weeks >= 32},
-      {'week': 36, 'title': 'Full Term Soon', 'icon': Icons.baby_changing_station, 'completed': weeks >= 36},
-      {'week': 40, 'title': 'Due Date', 'icon': Icons.cake, 'completed': weeks >= 40},
+      {'week': 4, 'icon': Icons.favorite, 'completed': weeks >= 4},
+      {'week': 8, 'icon': Icons.psychology, 'completed': weeks >= 8},
+      {'week': 12, 'icon': Icons.celebration, 'completed': weeks >= 12},
+      {'week': 20, 'icon': Icons.star, 'completed': weeks >= 20},
+      {'week': 24, 'icon': Icons.security, 'completed': weeks >= 24},
+      {'week': 28, 'icon': Icons.visibility, 'completed': weeks >= 28},
+      {'week': 32, 'icon': Icons.trending_up, 'completed': weeks >= 32},
+      {'week': 36, 'icon': Icons.baby_changing_station, 'completed': weeks >= 36},
+      {'week': 40, 'icon': Icons.cake, 'completed': weeks >= 40},
     ];
 
     return Container(
@@ -679,142 +666,27 @@ class _PregnancyProgressWidgetState extends State<PregnancyProgressWidget> {
     return '${date.day} ${months[date.month - 1]}, ${date.year}';
   }
 
-  Widget _buildProgressContent(String babyName, int weeks, int days, int totalDays, int weeksRemaining, int daysRemaining, double percentage) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '$babyName is growing!',
-          style: const TextStyle(
-            color: Color(0xFF111611),
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
-        const SizedBox(height: 8),
-        
-        // Pregnancy details with better wrapping
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF638763).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Day $totalDays',
-                style: const TextStyle(
-                  color: Color(0xFF638763),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE91E63).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '$weeks weeks, $days days',
-                style: const TextStyle(
-                  color: Color(0xFFE91E63),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 12),
-        
-        // Time remaining - compact display
-        Row(
-          children: [
-            const Icon(
-              Icons.access_time,
-              color: Color(0xFFE91E63),
-              size: 14,
-            ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                '$weeksRemaining weeks, ${daysRemaining % 7} days to go',
-                style: const TextStyle(
-                  color: Color(0xFFE91E63),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 12),
-        
-        // Progress bar
-        Container(
-          width: double.infinity,
-          height: 6,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF3E5F5),
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: percentage / 100,
-              backgroundColor: Colors.transparent,
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
-              minHeight: 6,
-            ),
-          ),
-        ),
-        
-        const SizedBox(height: 8),
-        
-        // Progress percentage - simplified
-        Text(
-          '${percentage.toStringAsFixed(1)}% complete (${totalDays}/280 days)',
-          style: const TextStyle(
-            color: Color(0xFFE91E63),
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
   String _getBabyDevelopmentText(int weeks) {
     if (weeks < 4) {
-      return 'Your baby is just beginning to develop. The fertilized egg is implanting in your uterus.';
+      return 'Baby\'s neural tube is forming, which will become the brain and spinal cord.';
     } else if (weeks < 8) {
-      return 'Your baby\'s heart is starting to beat and major organs are beginning to form.';
+      return 'Baby\'s major organs begin to form, and the heart starts beating.';
     } else if (weeks < 12) {
-      return 'Your baby is now about the size of a lime and all major organs are formed.';
+      return 'Baby\'s fingers and toes are fully formed, and facial features continue to develop.';
     } else if (weeks < 16) {
-      return 'Your baby can now make facial expressions and may even be sucking their thumb.';
+      return 'Baby can make facial expressions and may start sucking thumb.';
     } else if (weeks < 20) {
-      return 'Your baby is about the size of a banana and you might start feeling movement soon.';
+      return 'Baby is more active and you may feel movements. Hair begins to grow.';
     } else if (weeks < 24) {
-      return 'Your baby\'s hearing is developing and they can hear your voice and heartbeat.';
+      return 'Baby\'s senses are developing rapidly. They can hear sounds from outside.';
     } else if (weeks < 28) {
-      return 'Your baby\'s eyes can now open and close, and they may have hiccups.';
+      return 'Baby\'s eyes begin to open and close. Brain development accelerates.';
     } else if (weeks < 32) {
-      return 'Your baby is gaining weight rapidly and their bones are hardening.';
+      return 'Baby is gaining weight rapidly. Bones are fully developed but still soft.';
     } else if (weeks < 36) {
-      return 'Your baby\'s lungs are maturing and they\'re getting ready for life outside the womb.';
+      return 'Baby is getting into birth position. Lungs are nearly fully mature.';
     } else {
-      return 'Your baby is full-term and ready to meet you! They could arrive any day now.';
+      return 'Baby is fully developed and ready for birth. Any day now!';
     }
   }
 }
