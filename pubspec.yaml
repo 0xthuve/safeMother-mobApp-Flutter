@@ -65,6 +65,7 @@ flutter:
         - asset: assets/fonts/Roboto-Regular.ttf
 
   assets:
+    - .env
     - assets/signup_image.png
     - assets/logo.png
     - assets/facebook_icon.png

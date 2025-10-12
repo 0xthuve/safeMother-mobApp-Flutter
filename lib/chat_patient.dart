@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../l10n/app_localizations.dart';
 import 'navigation_handler.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(const PregnancyApp());
 }
 
@@ -45,9 +48,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
   
-  // Groq API credentials
-  final String _apiKey = "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";
-  final String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
+  // Groq API credentials from environment
+  late final String _apiKey;
+  late final String _apiUrl;
   
   // Sample chat messages
   final List<Map<String, dynamic>> _messages = [
@@ -59,6 +62,13 @@ class _ChatScreenState extends State<ChatScreen> {
       'hasAttachment': false,
     },
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
+    _apiUrl = dotenv.env['GROQ_API_URL'] ?? '';
+  }
 
   void _onItemTapped(int index) {
     if (index == _currentIndex) return;

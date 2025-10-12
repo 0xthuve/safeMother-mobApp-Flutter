@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/symptom_log.dart';
 import 'notification_service.dart';
 
 class AIRiskAssessmentService {
-  static const String _apiKey = "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";
+  static String get _apiKey => dotenv.env['AI_RISK_API_KEY'] ?? '';
   static const String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
   
   final NotificationService _notificationService = NotificationService();
