@@ -9,7 +9,8 @@ void main() {
     '140/90',   // Moderate risk
     '130/85',   // Normal-high
     '120/80',   // Normal  
-    '110/70',   // Normal
+    '110/70',// Normal
+    '110/80',// Normal
   ];
   
   for (String bp in testCases) {
