@@ -202,9 +202,9 @@ dependencies:
    - Ensure all dependencies are compatible
 
 ### Demo Mode Limitations:
-- Data is stored locally only
-- No real email sending for password reset
-- Google Sign-In is simulated
+- Data is stored locally only.
+- No real email sending for password reset.
+- Google Sign-In is simulated.
 
 ## 🎯 Key Achievements
 
