@@ -473,5 +473,21 @@
   "noArticlesFound": "ලිපි හමු නොවීය",
   "tryAdjustingSearch": "ඔබගේ සෙවීම හෝ කාණ්ඩ පෙරහන සකස් කර උත්සාහ කරන්න",
   "readArticle": "ලිපිය කියවන්න",
-  "cannotOpenArticle": "ලිපිය විවෘත කළ නොහැක: {url}"
+  "cannotOpenArticle": "ලිපිය විවෘත කළ නොහැක: {url}",
+   "todayTip": "අද දීමනවය",
+  "noTipsAvailable": "දීමනව නැත",
+  "checkBackLater": "ගර්භණී සමයේ ප්‍රයෝජනවත් ඉඟි සඳහා පසුව පරීක්ෂා කරන්න",
+  "exploreLearnPage": "ඉගෙනුම් පිටුව ගවේෂණය කරන්න", 
+  "readMore": "තවත් කියවන්න",
+  "learnMore": "තවත් ඉගෙන ගන්න",
+  "keyPoints": "ප්‍රධාන කරුණු",
+  "detailedInformation": "විස්තරාත්මක තොරතුරු",
+  "week": "සති {weekNumber}",
+  
+  "categoryHealth": "සෞඛ්‍ය",
+  "categoryNutrition": "පෝෂණය",
+  "categoryFitness": "ශාරීරික සුදුසුකම්",
+  "categoryMedical": "වෛද්‍ය",
+  "categoryPreparation": "සූදානම",
+  "categoryDevelopment": "වර්ධනය"
 }

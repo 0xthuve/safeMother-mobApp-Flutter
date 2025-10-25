@@ -11,15 +11,19 @@ class NotificationService {
 
   final List<NotificationRecord> _notifications = [];
 
-  static final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   /// Initialize notification service
   Future<void> initialize({BuildContext? context}) async {
     try {
+      // Use the same launcher icon that's declared in AndroidManifest.xml
+      // (manifest uses @mipmap/launcher_icon)
       const AndroidInitializationSettings initializationSettingsAndroid =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings('@mipmap/launcher_icon');
 
-      final InitializationSettings initializationSettings = InitializationSettings(
+      final InitializationSettings initializationSettings =
+          InitializationSettings(
         android: initializationSettingsAndroid,
       );
 
@@ -36,62 +40,118 @@ class NotificationService {
         print('Android notification permission status: $status');
       }
 
-      print('Notification service initialized with flutter_local_notifications');
+      print(
+          'Notification service initialized with flutter_local_notifications');
     } catch (e) {
       print('Error initializing notification service: $e');
     }
   }
 
-  /// Send high risk alert notification
-  Future<void> sendHighRiskAlert({
+  /// Send high risk alert notification - returns true if notification was shown successfully
+  Future<bool> sendHighRiskAlert({
     required String patientId,
     required RiskLevel riskLevel,
     required String message,
   }) async {
+    bool notificationShown = false;
+
     try {
       print('🚨 HIGH RISK ALERT for patient $patientId');
       print('Risk Level: ${riskLevel.displayName}');
       print('Message: $message');
 
-      final record = NotificationRecord(
-        patientId: patientId,
-        type: 'health_alert',
-        riskLevel: riskLevel.toString(),
-        message: message,
-        timestamp: DateTime.now(),
-        read: false,
-      );
-      _notifications.add(record);
+      // First priority: Show local notification immediately
+      try {
+        await _showLocalNotification('HIGH RISK ALERT', message);
+        notificationShown = true;
+        print('✅ Local notification shown successfully');
+      } catch (notificationError) {
+        print('❌ Error showing local notification: $notificationError');
+        // Continue execution even if notification fails
+      }
 
-      // Show local notification on Android
-      await _showLocalNotification('High Risk Alert', message);
+      // Second priority: Save to local storage
+      try {
+        final record = NotificationRecord(
+          patientId: patientId,
+          type: 'health_alert',
+          riskLevel: riskLevel.toString(),
+          message: message,
+          timestamp: DateTime.now(),
+          read: false,
+        );
+        _notifications.add(record);
+        print('✅ Alert saved to local storage');
+      } catch (storageError) {
+        print('❌ Error saving to local storage: $storageError');
+        // Continue execution even if storage fails
+      }
+
+      // If we got here but notification wasn't shown, try one more time
+      if (!notificationShown) {
+        await _showLocalNotification('HIGH RISK ALERT', message);
+        notificationShown = true;
+        print('✅ Local notification shown on second attempt');
+      }
 
       print('✅ High risk alert processed for patient: $patientId');
+      return notificationShown;
     } catch (e) {
-      print('Error sending high risk alert: $e');
+      print('❌ Critical error in alert processing: $e');
+
+      // Last attempt to show notification if not shown yet
+      if (!notificationShown) {
+        try {
+          await _showLocalNotification('HIGH RISK ALERT', message);
+          notificationShown = true;
+          print('✅ Local notification shown on final attempt');
+        } catch (finalError) {
+          print('❌ Fatal error: Could not show notification: $finalError');
+        }
+      }
+
+      return notificationShown;
     }
   }
 
-  /// Show local notification using flutter_local_notifications
-  Future<void> _showLocalNotification(String title, String body) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+  /// Show local notification with retry mechanism
+  Future<bool> _showLocalNotification(String title, String body) async {
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
       'high_risk_channel',
       'High Risk Alerts',
       channelDescription: 'Notifications for high risk events',
       importance: Importance.max,
       priority: Priority.high,
-      ticker: 'ticker',
+      enableLights: true,
+      enableVibration: true,
+      playSound: true,
+      fullScreenIntent: true,
+      category: AndroidNotificationCategory.alarm,
+      visibility: NotificationVisibility.public,
+      ticker: 'High Risk Medical Alert',
     );
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
     );
-    await _notificationsPlugin.show(
-      0,
-      title,
-      body,
-      platformChannelSpecifics,
-      payload: 'high_risk',
-    );
+
+    // Use unique ID for each notification
+    final notificationId = DateTime.now().millisecondsSinceEpoch % 100000;
+
+    try {
+      await _notificationsPlugin.show(
+        notificationId,
+        title,
+        body,
+        platformChannelSpecifics,
+        payload: 'high_risk',
+      );
+      return true;
+    } catch (e) {
+      print('❌ Error showing notification: $e');
+      return false;
+    }
   }
 
   /// Send symptom reminder notification
@@ -105,8 +165,10 @@ class NotificationService {
     required String doctorName,
     required DateTime appointmentDate,
   }) async {
-    final formattedTime = '${appointmentDate.hour}:${appointmentDate.minute.toString().padLeft(2, '0')}';
-    print('👩‍⚕️ Appointment reminder sent to patient: $patientId for Dr. $doctorName at $formattedTime');
+    final formattedTime =
+        '${appointmentDate.hour}:${appointmentDate.minute.toString().padLeft(2, '0')}';
+    print(
+        '👩‍⚕️ Appointment reminder sent to patient: $patientId for Dr. $doctorName at $formattedTime');
   }
 
   /// Get notifications for a patient

@@ -5,40 +5,42 @@ publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
+  google_mlkit_image_labeling: ^0.11.0
+  image_picker: ^1.0.4
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  
+
   # HTTP & Storage
   http: ^1.2.0
   sqflite: ^2.3.0
   path: ^1.8.3
   shared_preferences: ^2.2.2
-  
+
   # Environment
   flutter_dotenv: ^6.0.0
-  
+
   # Location & Permissions
   geolocator: ^14.0.2
   permission_handler: ^12.0.1
   flutter_contacts: ^1.1.7
-  
+
   # Firebase (compatible versions)
   firebase_core: ^3.1.1
   firebase_auth: ^5.1.0
   cloud_firestore: ^5.0.2
   firebase_database: ^11.0.2
   google_sign_in: ^6.2.1
-  
+
   # Fonts
   google_fonts: ^6.3.2
-  
+
   # Toast messages
   fluttertoast: ^8.2.6
-  
+
   # Localization & Notifications
   url_launcher: ^6.1.11
   intl: ^0.20.2
@@ -46,6 +48,9 @@ dependencies:
   timezone: ^0.10.1
   flutter_localizations:
     sdk: flutter
+  connectivity_plus: ^7.0.0
+  tflite_flutter: ^0.11.0
+  googleapis_auth: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -78,6 +83,8 @@ flutter:
     - assets/banana.png
     - assets/avocado.png
     - assets/yogurt.png
+    - assets/food_safety.json
+    - assets/still-cipher-468306-p2-aae0a6034688.json
 
 flutter_launcher_icons:
   android: "launcher_icon"

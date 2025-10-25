@@ -168,31 +168,31 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
       print('🤖 Starting AI risk assessment...');
       print('📊 Blood Pressure: ${symptomLog.bloodPressure}');
       print('💡 Symptoms: ${symptomLog.symptoms}');
-      print('🚨 Critical flags: Contractions=${symptomLog.hadContractions}, Headaches=${symptomLog.hadHeadaches}, Swelling=${symptomLog.hadSwelling}');
-      
+      print(
+          '🚨 Critical flags: Contractions=${symptomLog.hadContractions}, Headaches=${symptomLog.hadHeadaches}, Swelling=${symptomLog.hadSwelling}');
+
       final riskAssessment = await _aiService.analyzeSymptoms(symptomLog);
-      
+
       print('🎯 AI Assessment Result: ${riskAssessment.riskLevel.displayName}');
-      print('📈 Confidence: ${(riskAssessment.confidence * 100).toStringAsFixed(1)}%');
+      print(
+          '📈 Confidence: ${(riskAssessment.confidence * 100).toStringAsFixed(1)}%');
       print('💬 Message: ${riskAssessment.message}');
-      
+
       // Update symptom log with risk assessment
       if (symptomLog.id != null) {
-        await _backendService.updateSymptomLogWithRiskAssessment(
-          symptomLog.id!,
-          {
-            'riskLevel': riskAssessment.riskLevel.displayName,
-            'riskMessage': riskAssessment.message,
-            'riskRecommendations': riskAssessment.recommendations,
-            'riskConfidence': riskAssessment.confidence,
-            'riskAnalysisDate': DateTime.now().toIso8601String(),
-          }
-        );
+        await _backendService
+            .updateSymptomLogWithRiskAssessment(symptomLog.id!, {
+          'riskLevel': riskAssessment.riskLevel.displayName,
+          'riskMessage': riskAssessment.message,
+          'riskRecommendations': riskAssessment.recommendations,
+          'riskConfidence': riskAssessment.confidence,
+          'riskAnalysisDate': DateTime.now().toIso8601String(),
+        });
       }
-      
+
       // Create doctor alerts for high-risk cases
       await _handleHighRiskAlert(symptomLog, riskAssessment);
-      
+
       // Show result to user
       _showRiskAssessmentDialog(riskAssessment);
 
@@ -212,7 +212,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${_getLocalizedString(context, 'errorSavingHealthInfo')}: $e'),
+          content: Text(
+              '${_getLocalizedString(context, 'errorSavingHealthInfo')}: $e'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -294,7 +295,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
               children: [
                 // Risk Level Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: assessment.riskLevel.color,
                     borderRadius: BorderRadius.circular(20),
@@ -308,9 +310,9 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // AI Message
                 Text(
                   _getLocalizedString(context, 'assessmentResults'),
@@ -324,9 +326,9 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                   assessment.message,
                   style: const TextStyle(fontSize: 14, height: 1.4),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Recommendations
                 if (assessment.recommendations.isNotEmpty) ...[
                   Text(
@@ -338,24 +340,25 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                   ),
                   const SizedBox(height: 8),
                   ...assessment.recommendations.map((rec) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('• ', style: TextStyle(fontSize: 16)),
-                        Expanded(
-                          child: Text(
-                            rec,
-                            style: const TextStyle(fontSize: 14, height: 1.3),
-                          ),
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('• ', style: TextStyle(fontSize: 16)),
+                            Expanded(
+                              child: Text(
+                                rec,
+                                style:
+                                    const TextStyle(fontSize: 14, height: 1.3),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )),
+                      )),
                 ],
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Confidence and timestamp
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -365,7 +368,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
+                      Icon(Icons.info_outline,
+                          size: 16, color: Colors.grey.shade600),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -379,7 +383,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                     ],
                   ),
                 ),
-                
+
                 if (assessment.riskLevel == RiskLevel.high) ...[
                   const SizedBox(height: 16),
                   Container(
@@ -391,7 +395,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.warning, color: Colors.red.shade600, size: 20),
+                        Icon(Icons.warning,
+                            color: Colors.red.shade600, size: 20),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -420,7 +425,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                 icon: const Icon(Icons.phone, color: Colors.red),
                 label: Text(
                   _getLocalizedString(context, 'contactDoctor'),
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                  style:
+                      TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                 ),
               ),
             TextButton(
@@ -445,27 +451,30 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
   }
 
   /// Handle high-risk alerts by creating doctor notifications
-  Future<void> _handleHighRiskAlert(SymptomLog symptomLog, RiskAssessment riskAssessment) async {
+  Future<void> _handleHighRiskAlert(
+      SymptomLog symptomLog, RiskAssessment riskAssessment) async {
     if (riskAssessment.riskLevel != RiskLevel.high) return;
 
     try {
       print('🚨 Creating doctor alerts for high-risk case...');
-      
+
       // Get patient name
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
-      
+
       final patientName = user.displayName ?? 'Unknown Patient';
-      
+
       // Get linked doctors
-      final linkedDoctors = await _backendService.getLinkedDoctorsWithContact(symptomLog.patientId);
+      final linkedDoctors = await _backendService
+          .getLinkedDoctorsWithContact(symptomLog.patientId);
       print('🔍 Found ${linkedDoctors.length} linked doctors');
-      
+
       for (final doctor in linkedDoctors) {
         // Use firebaseUid if available, otherwise fall back to id
         final doctorId = doctor['firebaseUid'] ?? doctor['id'];
-        print('🔍 Creating alert for doctor: ${doctor['name']} (ID: $doctorId, firebaseUid: ${doctor['firebaseUid']})');
-        
+        print(
+            '🔍 Creating alert for doctor: ${doctor['name']} (ID: $doctorId, firebaseUid: ${doctor['firebaseUid']})');
+
         final alert = DoctorAlert(
           patientId: symptomLog.patientId,
           patientName: patientName,
@@ -478,11 +487,12 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
           alertDate: DateTime.now(),
           symptomLogId: symptomLog.id,
         );
-        
+
         await _backendService.saveDoctorAlert(alert);
-        print('✅ Created alert for doctor: ${doctor['name']} with doctorId: $doctorId');
+        print(
+            '✅ Created alert for doctor: ${doctor['name']} with doctorId: $doctorId');
       }
-      
+
       // TEMPORARY: Also create test alert for current doctor (Firebase UID: 0AludVmmD2OXGCn1i3M5UElBMSG2)
       // This ensures at least one alert appears in the dashboard for testing
       final testAlert = DoctorAlert(
@@ -497,10 +507,11 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
         alertDate: DateTime.now(),
         symptomLogId: symptomLog.id,
       );
-      
+
       await _backendService.saveDoctorAlert(testAlert);
-      print('✅ Created TEST alert for current doctor with Firebase UID: 0AludVmmD2OXGCn1i3M5UElBMSG2');
-      
+      print(
+          '✅ Created TEST alert for current doctor with Firebase UID: 0AludVmmD2OXGCn1i3M5UElBMSG2');
+
       print('🏥 Created ${linkedDoctors.length} doctor alerts');
     } catch (e) {
       print('❌ Error creating doctor alerts: $e');
@@ -540,7 +551,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                     child: CircularProgressIndicator(),
                   );
                 }
-                
+
                 if (snapshot.hasError) {
                   return Center(
                     child: Text(
@@ -549,9 +560,9 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                     ),
                   );
                 }
-                
+
                 final doctors = snapshot.data ?? [];
-                
+
                 if (doctors.isEmpty) {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
@@ -582,7 +593,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                     ],
                   );
                 }
-                
+
                 return ListView.separated(
                   shrinkWrap: true,
                   itemCount: doctors.length,
@@ -647,7 +658,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return [];
-      
+
       return await _backendService.getLinkedDoctorsWithContact(user.uid);
     } catch (e) {
       print('Error getting linked doctors: $e');
@@ -660,7 +671,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
     if (phoneNumber == null || phoneNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_getLocalizedString(context, 'phoneNumberNotAvailable')),
+          content:
+              Text(_getLocalizedString(context, 'phoneNumberNotAvailable')),
           backgroundColor: Colors.red.shade600,
         ),
       );
@@ -669,7 +681,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
 
     try {
       final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
-      
+
       // For web, we'll show the number so user can call manually
       if (kIsWeb) {
         showDialog(
@@ -778,7 +790,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                
+
                 // Content
                 Expanded(
                   child: _recentLogs.isEmpty
@@ -789,7 +801,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                               Container(
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF7B1FA2).withOpacity(0.1),
+                                  color:
+                                      const Color(0xFF7B1FA2).withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Icon(
@@ -809,7 +822,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                _getLocalizedString(context, 'startLoggingHealthData'),
+                                _getLocalizedString(
+                                    context, 'startLoggingHealthData'),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 14,
@@ -821,7 +835,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                         )
                       : ListView.separated(
                           itemCount: _recentLogs.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (context, index) {
                             final log = _recentLogs[index];
                             return Container(
@@ -849,8 +864,10 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       Container(
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF7B1FA2).withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: const Color(0xFF7B1FA2)
+                                              .withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                         child: const Icon(
                                           Icons.calendar_today,
@@ -869,10 +886,13 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       ),
                                       const Spacer(),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF4CAF50).withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(12),
+                                          color: const Color(0xFF4CAF50)
+                                              .withOpacity(0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
                                         ),
                                         child: Text(
                                           log.mood,
@@ -886,14 +906,15 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  
+
                                   // Health metrics
                                   Row(
                                     children: [
                                       Expanded(
                                         child: _buildPopupLogInfoItem(
                                           Icons.favorite,
-                                          _getLocalizedString(context, 'bpLabel'),
+                                          _getLocalizedString(
+                                              context, 'bpLabel'),
                                           log.bloodPressure,
                                           const Color(0xFF7B1FA2),
                                         ),
@@ -902,7 +923,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       Expanded(
                                         child: _buildPopupLogInfoItem(
                                           Icons.monitor_weight,
-                                          _getLocalizedString(context, 'weightLabel'),
+                                          _getLocalizedString(
+                                              context, 'weightLabel'),
                                           '${log.weight}kg',
                                           const Color(0xFF9C27B0),
                                         ),
@@ -915,7 +937,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       Expanded(
                                         child: _buildPopupLogInfoItem(
                                           Icons.child_friendly,
-                                          _getLocalizedString(context, 'kicksLabel'),
+                                          _getLocalizedString(
+                                              context, 'kicksLabel'),
                                           log.babyKicks,
                                           const Color(0xFFFF9800),
                                         ),
@@ -924,21 +947,23 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       Expanded(
                                         child: _buildPopupLogInfoItem(
                                           Icons.bedtime,
-                                          _getLocalizedString(context, 'sleepLabel'),
+                                          _getLocalizedString(
+                                              context, 'sleepLabel'),
                                           '${log.sleepHours}h',
                                           const Color(0xFF3F51B5),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  
+
                                   if (log.symptoms.isNotEmpty) ...[
                                     const SizedBox(height: 12),
                                     Container(
                                       width: double.infinity,
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFFF5722).withOpacity(0.1),
+                                        color: const Color(0xFFFF5722)
+                                            .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
@@ -962,14 +987,16 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                       ),
                                     ),
                                   ],
-                                  
-                                  if (log.additionalNotes?.isNotEmpty == true) ...[
+
+                                  if (log.additionalNotes?.isNotEmpty ==
+                                      true) ...[
                                     const SizedBox(height: 8),
                                     Container(
                                       width: double.infinity,
                                       padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF4CAF50).withOpacity(0.1),
+                                        color: const Color(0xFF4CAF50)
+                                            .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
@@ -999,7 +1026,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                           },
                         ),
                 ),
-                
+
                 // Close button
                 const SizedBox(height: 16),
                 Container(
@@ -1287,9 +1314,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                         mood,
                         style: TextStyle(
                           color: isSelected ? Colors.white : Color(0xFF2D1B69),
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
                     ],
@@ -1344,7 +1370,6 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
             ],
           ),
           SizedBox(height: 12),
-
           DropdownButtonFormField<String>(
             value: selectedValue,
             decoration: InputDecoration(
@@ -1409,7 +1434,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
       'saveHealthLog': 'Save Health Log',
       'recentHealthLogs': 'Recent Health Logs',
       'noHealthLogsYet': 'No health logs yet',
-      'startLoggingHealthData': 'Start logging your health data to see your history here.',
+      'startLoggingHealthData':
+          'Start logging your health data to see your history here.',
       'close': 'Close',
       'bpLabel': 'BP',
       'weightLabel': 'Weight',
@@ -1422,7 +1448,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
       'recommendations': 'Recommendations',
       'highRiskDetected': 'High risk detected - Please contact your doctor',
       'contactDoctor': 'Contact Doctor',
-      'healthInformationSaved': 'Health information saved and analyzed successfully!',
+      'healthInformationSaved':
+          'Health information saved and analyzed successfully!',
       'errorSavingHealthInfo': 'Error saving health information',
       'contactYourDoctors': 'Contact Your Doctors',
       'errorLoadingDoctors': 'Error loading doctors',
@@ -1439,59 +1466,112 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
 
     // Use the actual localization methods
     switch (key) {
-      case 'healthLog': return localizations.healthLog;
-      case 'todaysHealthCheck': return localizations.todaysHealthCheck;
-      case 'bloodPressureExample': return localizations.bloodPressureExample;
-      case 'enterBloodPressure': return localizations.enterBloodPressure;
-      case 'weightKg': return localizations.weightKg;
-      case 'enterWeight': return localizations.enterWeight;
-      case 'babyKicksCounter': return localizations.babyKicksCounter;
-      case 'howAreYouFeeling': return localizations.howAreYouFeeling;
-      case 'symptomsIfAny': return localizations.symptomsIfAny;
-      case 'sleepHoursExample': return localizations.sleepHoursExample;
-      case 'enterSleepHours': return localizations.enterSleepHours;
-      case 'waterIntakeGlasses': return localizations.waterIntakeGlasses;
-      case 'enterWaterIntake': return localizations.enterWaterIntake;
-      case 'exerciseMinutesDaily': return localizations.exerciseMinutesDaily;
-      case 'enterExerciseMinutes': return localizations.enterExerciseMinutes;
-      case 'energyLevel': return localizations.energyLevel;
-      case 'appetiteLevel': return localizations.appetiteLevel;
-      case 'painLevel': return localizations.painLevel;
-      case 'healthIndicators': return localizations.healthIndicators;
-      case 'hadContractions': return localizations.hadContractions;
-      case 'hadHeadaches': return localizations.hadHeadaches;
-      case 'hadSwelling': return localizations.hadSwelling;
-      case 'tookVitamins': return localizations.tookVitamins;
-      case 'nauseaDetailsIfAny': return localizations.nauseaDetailsIfAny;
-      case 'currentMedications': return localizations.currentMedications;
-      case 'additionalNotes': return localizations.additionalNotes;
-      case 'saveHealthLog': return localizations.saveHealthLog;
-      case 'recentHealthLogs': return localizations.recentHealthLogs;
-      case 'noHealthLogsYet': return localizations.noHealthLogsYet;
-      case 'startLoggingHealthData': return localizations.startLoggingHealthData;
-      case 'close': return localizations.close;
-      case 'bpLabel': return localizations.bpLabel;
-      case 'weightLabel': return localizations.weightLabel;
-      case 'kicksLabel': return localizations.kicksLabel;
-      case 'sleepLabel': return localizations.sleepLabel;
-      case 'symptomsLabel': return fallbackStrings['symptomsLabel']!;
-      case 'notesLabel': return fallbackStrings['notesLabel']!;
-      case 'healthAssessment': return localizations.healthAssessment;
-      case 'assessmentResults': return localizations.assessmentResults;
-      case 'recommendations': return localizations.recommendations;
-      case 'highRiskDetected': return localizations.highRiskDetected;
-      case 'contactDoctor': return localizations.contactDoctor;
-      case 'healthInformationSaved': return 'Health information saved and analyzed successfully!';
-      case 'errorSavingHealthInfo': return 'Error saving health information';
-      case 'contactYourDoctors': return localizations.contactYourDoctors;
-      case 'errorLoadingDoctors': return 'Error loading doctors';
-      case 'noDoctorsLinked': return localizations.noDoctorsLinked;
-      case 'linkDoctorFirst': return localizations.linkDoctorFirst;
-      case 'phoneNumberNotAvailable': return localizations.phoneNumberNotAvailable;
-      case 'callDoctor': return localizations.callDoctor;
-      case 'pleaseCallNumber': return localizations.pleaseCallNumber;
-      case 'unableToMakeCall': return 'Unable to make call';
-      default: return key;
+      case 'healthLog':
+        return localizations.healthLog;
+      case 'todaysHealthCheck':
+        return localizations.todaysHealthCheck;
+      case 'bloodPressureExample':
+        return localizations.bloodPressureExample;
+      case 'enterBloodPressure':
+        return localizations.enterBloodPressure;
+      case 'weightKg':
+        return localizations.weightKg;
+      case 'enterWeight':
+        return localizations.enterWeight;
+      case 'babyKicksCounter':
+        return localizations.babyKicksCounter;
+      case 'howAreYouFeeling':
+        return localizations.howAreYouFeeling;
+      case 'symptomsIfAny':
+        return localizations.symptomsIfAny;
+      case 'sleepHoursExample':
+        return localizations.sleepHoursExample;
+      case 'enterSleepHours':
+        return localizations.enterSleepHours;
+      case 'waterIntakeGlasses':
+        return localizations.waterIntakeGlasses;
+      case 'enterWaterIntake':
+        return localizations.enterWaterIntake;
+      case 'exerciseMinutesDaily':
+        return localizations.exerciseMinutesDaily;
+      case 'enterExerciseMinutes':
+        return localizations.enterExerciseMinutes;
+      case 'energyLevel':
+        return localizations.energyLevel;
+      case 'appetiteLevel':
+        return localizations.appetiteLevel;
+      case 'painLevel':
+        return localizations.painLevel;
+      case 'healthIndicators':
+        return localizations.healthIndicators;
+      case 'hadContractions':
+        return localizations.hadContractions;
+      case 'hadHeadaches':
+        return localizations.hadHeadaches;
+      case 'hadSwelling':
+        return localizations.hadSwelling;
+      case 'tookVitamins':
+        return localizations.tookVitamins;
+      case 'nauseaDetailsIfAny':
+        return localizations.nauseaDetailsIfAny;
+      case 'currentMedications':
+        return localizations.currentMedications;
+      case 'additionalNotes':
+        return localizations.additionalNotes;
+      case 'saveHealthLog':
+        return localizations.saveHealthLog;
+      case 'recentHealthLogs':
+        return localizations.recentHealthLogs;
+      case 'noHealthLogsYet':
+        return localizations.noHealthLogsYet;
+      case 'startLoggingHealthData':
+        return localizations.startLoggingHealthData;
+      case 'close':
+        return localizations.close;
+      case 'bpLabel':
+        return localizations.bpLabel;
+      case 'weightLabel':
+        return localizations.weightLabel;
+      case 'kicksLabel':
+        return localizations.kicksLabel;
+      case 'sleepLabel':
+        return localizations.sleepLabel;
+      case 'symptomsLabel':
+        return fallbackStrings['symptomsLabel']!;
+      case 'notesLabel':
+        return fallbackStrings['notesLabel']!;
+      case 'healthAssessment':
+        return localizations.healthAssessment;
+      case 'assessmentResults':
+        return localizations.assessmentResults;
+      case 'recommendations':
+        return localizations.recommendations;
+      case 'highRiskDetected':
+        return localizations.highRiskDetected;
+      case 'contactDoctor':
+        return localizations.contactDoctor;
+      case 'healthInformationSaved':
+        return 'Health information saved and analyzed successfully!';
+      case 'errorSavingHealthInfo':
+        return 'Error saving health information';
+      case 'contactYourDoctors':
+        return localizations.contactYourDoctors;
+      case 'errorLoadingDoctors':
+        return 'Error loading doctors';
+      case 'noDoctorsLinked':
+        return localizations.noDoctorsLinked;
+      case 'linkDoctorFirst':
+        return localizations.linkDoctorFirst;
+      case 'phoneNumberNotAvailable':
+        return localizations.phoneNumberNotAvailable;
+      case 'callDoctor':
+        return localizations.callDoctor;
+      case 'pleaseCallNumber':
+        return localizations.pleaseCallNumber;
+      case 'unableToMakeCall':
+        return 'Unable to make call';
+      default:
+        return key;
     }
   }
 
@@ -1657,9 +1737,10 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                     ),
                                     SizedBox(width: 12),
                                     Text(
-                                      _getLocalizedString(context, 'todaysHealthCheck'),
+                                      _getLocalizedString(
+                                          context, 'todaysHealthCheck'),
                                       style: TextStyle(
-                                        fontSize: 20,
+                                        fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                         color: Color(0xFF2D1B69),
                                       ),
@@ -1671,12 +1752,14 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Blood Pressure
                                 _buildCustomTextField(
                                   controller: _bloodPressureController,
-                                  label: _getLocalizedString(context, 'bloodPressureExample'),
+                                  label: _getLocalizedString(
+                                      context, 'bloodPressureExample'),
                                   icon: Icons.favorite,
                                   iconColor: Color(0xFF7B1FA2),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return _getLocalizedString(context, 'enterBloodPressure');
+                                      return _getLocalizedString(
+                                          context, 'enterBloodPressure');
                                     }
                                     return null;
                                   },
@@ -1685,13 +1768,15 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Weight
                                 _buildCustomTextField(
                                   controller: _weightController,
-                                  label: _getLocalizedString(context, 'weightKg'),
+                                  label:
+                                      _getLocalizedString(context, 'weightKg'),
                                   icon: Icons.monitor_weight,
                                   iconColor: Color(0xFF9C27B0),
                                   keyboardType: TextInputType.number,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return _getLocalizedString(context, 'enterWeight');
+                                      return _getLocalizedString(
+                                          context, 'enterWeight');
                                     }
                                     return null;
                                   },
@@ -1706,7 +1791,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Symptoms
                                 _buildCustomTextField(
                                   controller: _symptomsController,
-                                  label: _getLocalizedString(context, 'symptomsIfAny'),
+                                  label: _getLocalizedString(
+                                      context, 'symptomsIfAny'),
                                   icon: Icons.healing,
                                   iconColor: Color(0xFFFF9800),
                                   maxLines: 2,
@@ -1715,12 +1801,14 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Sleep Hours
                                 _buildCustomTextField(
                                   controller: _sleepHoursController,
-                                  label: _getLocalizedString(context, 'sleepHoursExample'),
+                                  label: _getLocalizedString(
+                                      context, 'sleepHoursExample'),
                                   icon: Icons.bedtime,
                                   iconColor: Color(0xFF3F51B5),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return _getLocalizedString(context, 'enterSleepHours');
+                                      return _getLocalizedString(
+                                          context, 'enterSleepHours');
                                     }
                                     return null;
                                   },
@@ -1729,12 +1817,14 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Water Intake
                                 _buildCustomTextField(
                                   controller: _waterIntakeController,
-                                  label: _getLocalizedString(context, 'waterIntakeGlasses'),
+                                  label: _getLocalizedString(
+                                      context, 'waterIntakeGlasses'),
                                   icon: Icons.local_drink,
                                   iconColor: Color(0xFF2196F3),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return _getLocalizedString(context, 'enterWaterIntake');
+                                      return _getLocalizedString(
+                                          context, 'enterWaterIntake');
                                     }
                                     return null;
                                   },
@@ -1743,12 +1833,14 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Exercise Minutes
                                 _buildCustomTextField(
                                   controller: _exerciseMinutesController,
-                                  label: _getLocalizedString(context, 'exerciseMinutesDaily'),
+                                  label: _getLocalizedString(
+                                      context, 'exerciseMinutesDaily'),
                                   icon: Icons.fitness_center,
                                   iconColor: Color(0xFF4CAF50),
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return _getLocalizedString(context, 'enterExerciseMinutes');
+                                      return _getLocalizedString(
+                                          context, 'enterExerciseMinutes');
                                     }
                                     return null;
                                   },
@@ -1756,7 +1848,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
 
                                 // Energy Level Selector
                                 _buildDropdownSelector(
-                                  title: _getLocalizedString(context, 'energyLevel'),
+                                  title: _getLocalizedString(
+                                      context, 'energyLevel'),
                                   options: _energyLevelOptions,
                                   selectedValue: _energyLevel,
                                   onChanged: (value) {
@@ -1770,7 +1863,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
 
                                 // Appetite Level Selector
                                 _buildDropdownSelector(
-                                  title: _getLocalizedString(context, 'appetiteLevel'),
+                                  title: _getLocalizedString(
+                                      context, 'appetiteLevel'),
                                   options: _appetiteLevelOptions,
                                   selectedValue: _appetiteLevel,
                                   onChanged: (value) {
@@ -1784,7 +1878,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
 
                                 // Pain Level Selector
                                 _buildDropdownSelector(
-                                  title: _getLocalizedString(context, 'painLevel'),
+                                  title:
+                                      _getLocalizedString(context, 'painLevel'),
                                   options: _painLevelOptions,
                                   selectedValue: _painLevel,
                                   onChanged: (value) {
@@ -1815,7 +1910,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                           ),
                                           SizedBox(width: 8),
                                           Text(
-                                            _getLocalizedString(context, 'healthIndicators'),
+                                            _getLocalizedString(
+                                                context, 'healthIndicators'),
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
@@ -1825,9 +1921,9 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                         ],
                                       ),
                                       SizedBox(height: 12),
-
                                       CheckboxListTile(
-                                        title: Text(_getLocalizedString(context, 'hadContractions')),
+                                        title: Text(_getLocalizedString(
+                                            context, 'hadContractions')),
                                         value: _hadContractions,
                                         onChanged: (value) {
                                           setState(() {
@@ -1838,9 +1934,9 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                         controlAffinity:
                                             ListTileControlAffinity.leading,
                                       ),
-
                                       CheckboxListTile(
-                                        title: Text(_getLocalizedString(context, 'hadHeadaches')),
+                                        title: Text(_getLocalizedString(
+                                            context, 'hadHeadaches')),
                                         value: _hadHeadaches,
                                         onChanged: (value) {
                                           setState(() {
@@ -1851,9 +1947,9 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                         controlAffinity:
                                             ListTileControlAffinity.leading,
                                       ),
-
                                       CheckboxListTile(
-                                        title: Text(_getLocalizedString(context, 'hadSwelling')),
+                                        title: Text(_getLocalizedString(
+                                            context, 'hadSwelling')),
                                         value: _hadSwelling,
                                         onChanged: (value) {
                                           setState(() {
@@ -1864,9 +1960,9 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                         controlAffinity:
                                             ListTileControlAffinity.leading,
                                       ),
-
                                       CheckboxListTile(
-                                        title: Text(_getLocalizedString(context, 'tookVitamins')),
+                                        title: Text(_getLocalizedString(
+                                            context, 'tookVitamins')),
                                         value: _tookVitamins,
                                         onChanged: (value) {
                                           setState(() {
@@ -1884,7 +1980,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Nausea Details
                                 _buildCustomTextField(
                                   controller: _nauseaController,
-                                  label: _getLocalizedString(context, 'nauseaDetailsIfAny'),
+                                  label: _getLocalizedString(
+                                      context, 'nauseaDetailsIfAny'),
                                   icon: Icons.sick,
                                   iconColor: Color(0xFF9C27B0),
                                   maxLines: 2,
@@ -1893,7 +1990,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Medications
                                 _buildCustomTextField(
                                   controller: _medicationsController,
-                                  label: _getLocalizedString(context, 'currentMedications'),
+                                  label: _getLocalizedString(
+                                      context, 'currentMedications'),
                                   icon: Icons.medication,
                                   iconColor: Color(0xFF607D8B),
                                   maxLines: 2,
@@ -1902,7 +2000,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                 // Additional Notes
                                 _buildCustomTextField(
                                   controller: _notesController,
-                                  label: _getLocalizedString(context, 'additionalNotes'),
+                                  label: _getLocalizedString(
+                                      context, 'additionalNotes'),
                                   icon: Icons.note_add,
                                   iconColor: Color(0xFF4CAF50),
                                   maxLines: 3,
@@ -1956,7 +2055,8 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                               ),
                                               SizedBox(width: 8),
                                               Text(
-                                                _getLocalizedString(context, 'saveHealthLog'),
+                                                _getLocalizedString(
+                                                    context, 'saveHealthLog'),
                                                 style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w600,

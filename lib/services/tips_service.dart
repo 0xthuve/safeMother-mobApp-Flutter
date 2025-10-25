@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/daily_tip.dart';
+import '../l10n/app_localizations.dart';
 
 class TipsService {
   static const String tipsKey = 'daily_tips';
@@ -12,56 +13,62 @@ class TipsService {
   TipsService._internal();
 
   // Get today's tip based on pregnancy week and current date
-  Future<DailyTip> getTodaysTip({int pregnancyWeek = 0}) async {
-    final allTips = await getAllTips();
+  Future<DailyTip> getTodaysTip(
+      {int pregnancyWeek = 0, AppLocalizations? l10n}) async {
+    final allTips = await getAllTips(l10n: l10n);
     final today = DateTime.now();
-    
+
     // Filter tips suitable for current pregnancy week or general tips
-    final suitableTips = allTips.where((tip) => 
-        tip.pregnancyWeek <= pregnancyWeek + 2 && 
-        tip.pregnancyWeek >= pregnancyWeek - 2
-    ).toList();
-    
+    final suitableTips = allTips
+        .where((tip) =>
+            tip.pregnancyWeek <= pregnancyWeek + 2 &&
+            tip.pregnancyWeek >= pregnancyWeek - 2)
+        .toList();
+
     if (suitableTips.isEmpty) {
       // Fallback to general tips if no week-specific tips
-      final generalTips = allTips.where((tip) => tip.pregnancyWeek == 0).toList();
+      final generalTips =
+          allTips.where((tip) => tip.pregnancyWeek == 0).toList();
       if (generalTips.isNotEmpty) {
         return generalTips[today.day % generalTips.length];
       }
       // Last fallback - return first tip
       return allTips.isNotEmpty ? allTips[0] : _getDefaultTip();
     }
-    
+
     // Use day of year to rotate through suitable tips
     final dayOfYear = today.difference(DateTime(today.year, 1, 1)).inDays;
     return suitableTips[dayOfYear % suitableTips.length];
   }
 
   // Get all tips for a specific pregnancy week
-  Future<List<DailyTip>> getTipsForWeek(int pregnancyWeek) async {
-    final allTips = await getAllTips();
-    return allTips.where((tip) => 
-        tip.pregnancyWeek == pregnancyWeek || tip.pregnancyWeek == 0
-    ).toList();
+  Future<List<DailyTip>> getTipsForWeek(int pregnancyWeek,
+      {AppLocalizations? l10n}) async {
+    final allTips = await getAllTips(l10n: l10n);
+    return allTips
+        .where((tip) =>
+            tip.pregnancyWeek == pregnancyWeek || tip.pregnancyWeek == 0)
+        .toList();
   }
 
   // Get tips by category
-  Future<List<DailyTip>> getTipsByCategory(String category) async {
-    final allTips = await getAllTips();
+  Future<List<DailyTip>> getTipsByCategory(String category,
+      {AppLocalizations? l10n}) async {
+    final allTips = await getAllTips(l10n: l10n);
     return allTips.where((tip) => tip.category == category).toList();
   }
 
   // Get all available tips
-  Future<List<DailyTip>> getAllTips() async {
+  Future<List<DailyTip>> getAllTips({AppLocalizations? l10n}) async {
     final prefs = await SharedPreferences.getInstance();
     final tipsData = prefs.getString(tipsKey);
-    
+
     if (tipsData == null) {
       // Initialize with default tips if none exist
-      await _initializeDefaultTips();
-      return await getAllTips();
+      await _initializeDefaultTips(l10n);
+      return await getAllTips(l10n: l10n);
     }
-    
+
     final List<dynamic> json = jsonDecode(tipsData);
     return json.map((tipMap) => DailyTip.fromMap(tipMap)).toList();
   }
@@ -74,27 +81,30 @@ class TipsService {
       await prefs.setString(tipsKey, tipsData);
       return true;
     } catch (e) {
-
       return false;
     }
   }
 
   // Initialize default tips
-  Future<void> _initializeDefaultTips() async {
+  Future<void> _initializeDefaultTips(AppLocalizations? l10n) async {
+    // Helper to choose localized title if provided
+    String t(String? localized, String fallback) => localized ?? fallback;
+
     final defaultTips = [
       // General tips (week 0)
       DailyTip(
         id: 1,
-        title: 'Stay Hydrated',
-        description: 'Drink at least 8 glasses of water today to support your health and baby\'s development.',
+        title: t(l10n?.stayHydrated, 'Stay Hydrated'),
+        description: t(l10n?.stayHydrated,
+            'Drink at least 8 glasses of water today to support your health and baby\'s development.'),
         category: 'Health',
         pregnancyWeek: 0,
         imageAsset: 'assets/tip.png',
         keyPoints: [
-          'Aim for 8-10 glasses of water daily',
-          'Add lemon or cucumber for variety',
-          'Monitor your urine color - pale yellow is ideal',
-          'Increase intake during hot weather or exercise'
+          t(null, 'Aim for 8-10 glasses of water daily'),
+          t(null, 'Add lemon or cucumber for variety'),
+          t(null, 'Monitor your urine color - pale yellow is ideal'),
+          t(null, 'Increase intake during hot weather or exercise')
         ],
         fullContent: '''
 Staying properly hydrated during pregnancy is crucial for both you and your baby's health. Water helps form the amniotic fluid that surrounds your baby, aids in nutrient transport, and helps prevent common pregnancy discomforts like constipation and swelling.
@@ -120,16 +130,17 @@ Remember, if you're experiencing excessive thirst, frequent urination, or signs 
 
       DailyTip(
         id: 2,
-        title: 'Prenatal Vitamins',
-        description: 'Take your prenatal vitamins with food to reduce nausea and maximize absorption.',
+        title: t(null, 'Prenatal Vitamins'),
+        description: t(null,
+            'Take your prenatal vitamins with food to reduce nausea and maximize absorption.'),
         category: 'Nutrition',
         pregnancyWeek: 0,
         imageAsset: 'assets/tip.png',
         keyPoints: [
-          'Take with food to reduce stomach upset',
-          'Folic acid prevents birth defects',
-          'Iron supports increased blood volume',
-          'Consistency is key - take daily'
+          t(null, 'Take with food to reduce stomach upset'),
+          t(null, 'Folic acid prevents birth defects'),
+          t(null, 'Iron supports increased blood volume'),
+          t(null, 'Consistency is key - take daily')
         ],
         fullContent: '''
 Prenatal vitamins are essential supplements that help fill nutritional gaps during pregnancy. They provide crucial nutrients that support your baby's development and maintain your health throughout pregnancy.
@@ -156,16 +167,17 @@ Talk to your healthcare provider about the best prenatal vitamin for your specif
       // First trimester tips (weeks 4-12)
       DailyTip(
         id: 3,
-        title: 'Managing Morning Sickness',
-        description: 'Try eating small, frequent meals and keep crackers by your bedside to help with nausea.',
+        title: t(null, 'Managing Morning Sickness'),
+        description: t(null,
+            'Try eating small, frequent meals and keep crackers by your bedside to help with nausea.'),
         category: 'Health',
         pregnancyWeek: 8,
         imageAsset: 'assets/tip.png',
         keyPoints: [
-          'Eat small, frequent meals every 2-3 hours',
-          'Keep crackers or dry toast nearby',
-          'Try ginger tea or ginger candies',
-          'Avoid strong smells and triggers'
+          t(null, 'Eat small, frequent meals every 2-3 hours'),
+          t(null, 'Keep crackers or dry toast nearby'),
+          t(null, 'Try ginger tea or ginger candies'),
+          t(null, 'Avoid strong smells and triggers')
         ],
         fullContent: '''
 Morning sickness affects up to 80% of pregnant women, typically starting around week 6 and improving by week 12-14. Despite its name, nausea can occur at any time of day.
@@ -197,16 +209,17 @@ Remember, morning sickness is usually a sign of a healthy pregnancy due to risin
 
       DailyTip(
         id: 4,
-        title: 'First Prenatal Visit',
-        description: 'Schedule your first prenatal appointment between 8-10 weeks to confirm pregnancy and start proper care.',
+        title: t(null, 'First Prenatal Visit'),
+        description: t(null,
+            'Schedule your first prenatal appointment between 8-10 weeks to confirm pregnancy and start proper care.'),
         category: 'Medical',
         pregnancyWeek: 8,
         imageAsset: 'assets/tip.png',
         keyPoints: [
-          'Schedule between weeks 8-10',
-          'Bring list of medications and supplements',
-          'Prepare family medical history',
-          'Write down questions beforehand'
+          t(null, 'Schedule between weeks 8-10'),
+          t(null, 'Bring list of medications and supplements'),
+          t(null, 'Prepare family medical history'),
+          t(null, 'Write down questions beforehand')
         ],
         fullContent: '''
 Your first prenatal visit is an important milestone that establishes your pregnancy care plan. This comprehensive appointment typically lasts 45-60 minutes and covers many important topics.
@@ -247,16 +260,17 @@ This visit establishes the foundation for your prenatal care, so don't hesitate 
       // Second trimester tips (weeks 13-27)
       DailyTip(
         id: 5,
-        title: 'Gentle Exercise',
-        description: 'Light exercise like walking or prenatal yoga can boost energy and prepare your body for delivery.',
+        title: t(l10n?.lightExercise, 'Gentle Exercise'),
+        description: t(null,
+            'Light exercise like walking or prenatal yoga can boost energy and prepare your body for delivery.'),
         category: 'Fitness',
         pregnancyWeek: 16,
         imageAsset: 'assets/tip.png',
         keyPoints: [
-          'Aim for 30 minutes of moderate activity daily',
-          'Walking is safe and beneficial',
-          'Try prenatal yoga or swimming',
-          'Listen to your body and rest when needed'
+          t(null, 'Aim for 30 minutes of moderate activity daily'),
+          t(null, 'Walking is safe and beneficial'),
+          t(null, 'Try prenatal yoga or swimming'),
+          t(null, 'Listen to your body and rest when needed')
         ],
         fullContent: '''
 Regular exercise during pregnancy offers numerous benefits for both you and your baby. The second trimester is often the best time to establish or maintain an exercise routine.
@@ -305,16 +319,17 @@ Remember, pregnancy is not the time to start intense new workouts, but maintaini
 
       DailyTip(
         id: 6,
-        title: 'Baby Movement',
-        description: 'You might start feeling your baby move between 16-25 weeks. These first movements feel like flutters or bubbles.',
+        title: t(null, 'Baby Movement'),
+        description: t(null,
+            'You might start feeling your baby move between 16-25 weeks. These first movements feel like flutters or bubbles.'),
         category: 'Development',
         pregnancyWeek: 20,
         imageAsset: 'assets/baby.png',
         keyPoints: [
-          'First movements feel like flutters or gas bubbles',
-          'More noticeable when you\'re still and quiet',
-          'Frequency increases as baby grows',
-          'Each baby has their own movement pattern'
+          t(null, 'First movements feel like flutters or gas bubbles'),
+          t(null, 'More noticeable when you\'re still and quiet'),
+          t(null, 'Frequency increases as baby grows'),
+          t(null, 'Each baby has their own movement pattern')
         ],
         fullContent: '''
 Feeling your baby move for the first time is one of pregnancy's most exciting milestones. These first movements, called "quickening," typically occur between 16-25 weeks.
@@ -362,16 +377,17 @@ Remember, every baby is different, and movement patterns vary greatly between pr
       // Third trimester tips (weeks 28-40)
       DailyTip(
         id: 7,
-        title: 'Birth Plan Preparation',
-        description: 'Start thinking about your birth preferences and discuss them with your healthcare provider.',
+        title: t(null, 'Birth Plan Preparation'),
+        description: t(null,
+            'Start thinking about your birth preferences and discuss them with your healthcare provider.'),
         category: 'Preparation',
         pregnancyWeek: 32,
         imageAsset: 'assets/tip.png',
         keyPoints: [
-          'Consider your pain management preferences',
-          'Think about who you want present',
-          'Discuss options with your healthcare team',
-          'Remember to stay flexible'
+          t(null, 'Consider your pain management preferences'),
+          t(null, 'Think about who you want present'),
+          t(null, 'Discuss options with your healthcare team'),
+          t(null, 'Remember to stay flexible')
         ],
         fullContent: '''
 A birth plan is a document that outlines your preferences for labor and delivery. While you can't control everything about birth, having a plan helps communicate your wishes to your healthcare team.
@@ -427,16 +443,18 @@ A birth plan is a document that outlines your preferences for labor and delivery
 
       DailyTip(
         id: 8,
-        title: 'Hospital Bag Packing',
-        description: 'Pack your hospital bag by 36 weeks with essentials for you, your partner, and your baby.',
+        title: t(null, 'Hospital Bag Packing'),
+        description: t(null,
+            'Pack your hospital bag by 36 weeks with essentials for you, your partner, and your baby.'),
         category: 'Preparation',
         pregnancyWeek: 36,
         imageAsset: 'assets/tip.png',
         keyPoints: [
-          'Pack by 36 weeks in case of early labor',
-          'Include comfortable going-home outfits',
-          'Don\'t forget phone chargers and snacks',
-          'Pack baby\'s going-home outfit in newborn and 0-3 month sizes'
+          t(null, 'Pack by 36 weeks in case of early labor'),
+          t(null, 'Include comfortable going-home outfits'),
+          t(null, 'Don\'t forget phone chargers and snacks'),
+          t(null,
+              'Pack baby\'s going-home outfit in newborn and 0-3 month sizes')
         ],
         fullContent: '''
 Having your hospital bag packed and ready gives you peace of mind as you approach your due date. Aim to have everything ready by 36 weeks.
@@ -518,16 +536,17 @@ Pack your bag in a wheeled suitcase or large tote bag, and keep it easily access
       // Nutrition tips
       DailyTip(
         id: 9,
-        title: 'Healthy Pregnancy Snacks',
-        description: 'Choose nutrient-dense snacks like nuts, yogurt, fruits, and whole grains to fuel your pregnancy.',
+        title: t(null, 'Healthy Pregnancy Snacks'),
+        description: t(null,
+            'Choose nutrient-dense snacks like nuts, yogurt, fruits, and whole grains to fuel your pregnancy.'),
         category: 'Nutrition',
         pregnancyWeek: 0,
         imageAsset: 'assets/tip.png',
         keyPoints: [
-          'Combine protein with complex carbs',
-          'Include healthy fats for baby\'s brain development',
-          'Choose whole, unprocessed foods',
-          'Keep healthy snacks easily accessible'
+          t(null, 'Combine protein with complex carbs'),
+          t(null, 'Include healthy fats for baby\'s brain development'),
+          t(null, 'Choose whole, unprocessed foods'),
+          t(null, 'Keep healthy snacks easily accessible')
         ],
         fullContent: '''
 Healthy snacking during pregnancy helps maintain steady blood sugar levels, provides essential nutrients, and can help manage pregnancy symptoms like nausea and heartburn.
@@ -611,16 +630,17 @@ Remember, pregnancy is not the time for restrictive dieting. Focus on nourishing
 
       DailyTip(
         id: 10,
-        title: 'Sleep Comfort Tips',
-        description: 'Use pillows to support your growing belly and try sleeping on your left side for better circulation.',
+        title: t(null, 'Sleep Comfort Tips'),
+        description: t(null,
+            'Use pillows to support your growing belly and try sleeping on your left side for better circulation.'),
         category: 'Health',
         pregnancyWeek: 24,
         imageAsset: 'assets/tip.png',
         keyPoints: [
-          'Sleep on your left side when possible',
-          'Use pregnancy pillow for support',
-          'Elevate your head if experiencing heartburn',
-          'Create a relaxing bedtime routine'
+          t(null, 'Sleep on your left side when possible'),
+          t(null, 'Use pregnancy pillow for support'),
+          t(null, 'Elevate your head if experiencing heartburn'),
+          t(null, 'Create a relaxing bedtime routine')
         ],
         fullContent: '''
 Getting quality sleep during pregnancy can be challenging as your body changes and grows. These strategies can help improve your sleep comfort and quality.
@@ -710,7 +730,8 @@ Remember, some sleep disruption is normal during pregnancy. Focus on rest when p
     return DailyTip(
       id: 0,
       title: 'Welcome to Your Pregnancy Journey',
-      description: 'Take care of yourself and your growing baby with proper nutrition, rest, and regular prenatal care.',
+      description:
+          'Take care of yourself and your growing baby with proper nutrition, rest, and regular prenatal care.',
       category: 'General',
       pregnancyWeek: 0,
       imageAsset: 'assets/tip.png',
@@ -720,7 +741,8 @@ Remember, some sleep disruption is normal during pregnancy. Focus on rest when p
         'Eat a balanced, nutritious diet',
         'Stay active with doctor-approved exercise'
       ],
-      fullContent: 'Welcome to your pregnancy journey! This is an exciting time filled with growth and changes. Remember to take care of yourself with proper nutrition, regular prenatal care, and adequate rest.',
+      fullContent:
+          'Welcome to your pregnancy journey! This is an exciting time filled with growth and changes. Remember to take care of yourself with proper nutrition, regular prenatal care, and adequate rest.',
       createdAt: DateTime.now(),
     );
   }
@@ -733,7 +755,6 @@ Remember, some sleep disruption is normal during pregnancy. Focus on rest when p
       tips.add(newTip);
       return await _saveTips(tips);
     } catch (e) {
-
       return false;
     }
   }

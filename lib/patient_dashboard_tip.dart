@@ -48,15 +48,15 @@ class _LearnScreenState extends State<LearnScreen> {
   int _selectedCategory = 0;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  
+
   List<String> get _categories => [
-    AppLocalizations.of(context)?.all ?? 'All',
-    AppLocalizations.of(context)?.pregnancy ?? 'Pregnancy',
-    AppLocalizations.of(context)?.health ?? 'Health',
-    AppLocalizations.of(context)?.nutrition ?? 'Nutrition',
-    AppLocalizations.of(context)?.baby ?? 'Baby',
-    AppLocalizations.of(context)?.parenting ?? 'Parenting'
-  ];
+        AppLocalizations.of(context)?.all ?? 'All',
+        AppLocalizations.of(context)?.pregnancy ?? 'Pregnancy',
+        AppLocalizations.of(context)?.health ?? 'Health',
+        AppLocalizations.of(context)?.nutrition ?? 'Nutrition',
+        AppLocalizations.of(context)?.baby ?? 'Baby',
+        AppLocalizations.of(context)?.parenting ?? 'Parenting'
+      ];
 
   @override
   void initState() {
@@ -74,12 +74,13 @@ class _LearnScreenState extends State<LearnScreen> {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       final response = await http.get(
-        Uri.parse('https://newsapi.org/v2/everything?q=pregnancy%20OR%20parenting%20OR%20baby%20OR%20motherhood&apiKey=5ab8635d12744f488a9cc7f24f7e4d70'),
+        Uri.parse(
+            'https://newsapi.org/v2/everything?q=pregnancy%20OR%20parenting%20OR%20baby%20OR%20motherhood&apiKey=5ab8635d12744f488a9cc7f24f7e4d70'),
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         if (data['status'] == 'ok') {
@@ -96,7 +97,8 @@ class _LearnScreenState extends State<LearnScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = AppLocalizations.of(context)?.failedLoadArticles ?? 'Failed to load articles. Please try again later.';
+        _errorMessage = AppLocalizations.of(context)?.failedLoadArticles ??
+            'Failed to load articles. Please try again later.';
         _isLoading = false;
       });
     }
@@ -114,20 +116,24 @@ class _LearnScreenState extends State<LearnScreen> {
     setState(() {
       _filteredArticles = _articles.where((article) {
         final title = article['title']?.toString().toLowerCase() ?? '';
-        final description = article['description']?.toString().toLowerCase() ?? '';
+        final description =
+            article['description']?.toString().toLowerCase() ?? '';
         final content = article['content']?.toString().toLowerCase() ?? '';
 
         // Category filter
         final matchesCategory = _selectedCategory == 0
             ? true
             : (title.contains(_categories[_selectedCategory].toLowerCase()) ||
-                description.contains(_categories[_selectedCategory].toLowerCase()) ||
+                description
+                    .contains(_categories[_selectedCategory].toLowerCase()) ||
                 content.contains(_categories[_selectedCategory].toLowerCase()));
 
         // Search query filter
         final matchesQuery = query.isEmpty
             ? true
-            : (title.contains(query) || description.contains(query) || content.contains(query));
+            : (title.contains(query) ||
+                description.contains(query) ||
+                content.contains(query));
 
         return matchesCategory && matchesQuery;
       }).toList();
@@ -167,49 +173,57 @@ class _LearnScreenState extends State<LearnScreen> {
                         ),
                       ),
                     ),
-                  
+
                   // Article Title
                   Text(
-                    article['title'] ?? AppLocalizations.of(context)?.noTitle ?? 'No title',
+                    article['title'] ??
+                        AppLocalizations.of(context)?.noTitle ??
+                        'No title',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF111611),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // Article Description
                   Text(
-                    article['description'] ?? AppLocalizations.of(context)?.noDescription ?? 'No description',
+                    article['description'] ??
+                        AppLocalizations.of(context)?.noDescription ??
+                        'No description',
                     style: const TextStyle(
                       fontSize: 16,
                       color: Color(0xFF638763),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Article Content
                   if (article['content'] != null)
                     Text(
-                      article['content'].toString().replaceAll('[+\\d chars]', ''),
+                      article['content']
+                          .toString()
+                          .replaceAll('[+\\d chars]', ''),
                       style: const TextStyle(
                         fontSize: 14,
                         color: Color(0xFF5A5A5A),
                       ),
                     ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Published Date and Source
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       if (article['publishedAt'] != null)
                         Text(
-                          AppLocalizations.of(context)?.publishedLabel(_formatDate(article['publishedAt'])) ?? 'Published: ${_formatDate(article['publishedAt'])}',
+                          AppLocalizations.of(context)?.publishedLabel(
+                                  _formatDate(article['publishedAt'])) ??
+                              'Published: ${_formatDate(article['publishedAt'])}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -217,7 +231,9 @@ class _LearnScreenState extends State<LearnScreen> {
                         ),
                       if (article['source']['name'] != null)
                         Text(
-                          AppLocalizations.of(context)?.sourceLabel(article['source']['name']) ?? 'Source: ${article['source']['name']}',
+                          AppLocalizations.of(context)
+                                  ?.sourceLabel(article['source']['name']) ??
+                              'Source: ${article['source']['name']}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.grey,
@@ -225,9 +241,9 @@ class _LearnScreenState extends State<LearnScreen> {
                         ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Read More Button
                   SizedBox(
                     width: double.infinity,
@@ -235,13 +251,17 @@ class _LearnScreenState extends State<LearnScreen> {
                       onPressed: () {
                         // Open article in browser using url_launcher
                         final url = article['url'];
-                        if (url != null && url.toString().isNotEmpty && url.toString() != 'null') {
+                        if (url != null &&
+                            url.toString().isNotEmpty &&
+                            url.toString() != 'null') {
                           _launchURL(url.toString());
                         } else {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(AppLocalizations.of(context)?.articleUrlNotAvailable ?? 'Article URL is not available'),
+                                content: Text(AppLocalizations.of(context)
+                                        ?.articleUrlNotAvailable ??
+                                    'Article URL is not available'),
                                 backgroundColor: Colors.orange,
                                 duration: Duration(seconds: 2),
                               ),
@@ -257,7 +277,8 @@ class _LearnScreenState extends State<LearnScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                       child: Text(
-                        AppLocalizations.of(context)?.readFullArticle ?? 'Read Full Article',
+                        AppLocalizations.of(context)?.readFullArticle ??
+                            'Read Full Article',
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -265,9 +286,9 @@ class _LearnScreenState extends State<LearnScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 10),
-                  
+
                   // Close Button
                   SizedBox(
                     width: double.infinity,
@@ -324,7 +345,9 @@ class _LearnScreenState extends State<LearnScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)?.couldNotOpenArticle(e.toString()) ?? 'Could not open article. Error: ${e.toString()}'),
+            content: Text(AppLocalizations.of(context)
+                    ?.couldNotOpenArticle(e.toString()) ??
+                'Could not open article. Error: ${e.toString()}'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -365,11 +388,18 @@ class _LearnScreenState extends State<LearnScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(Icons.home_outlined, AppLocalizations.of(context)?.home ?? 'Home', 0),
-            _buildNavItem(Icons.assignment_outlined, AppLocalizations.of(context)?.log ?? 'Log', 1),
-            _buildNavItem(Icons.calendar_today, AppLocalizations.of(context)?.consultationNav ?? 'Consultation', 2),
-            _buildNavItem(Icons.school_outlined, AppLocalizations.of(context)?.learn ?? 'Learn', 3),
-            _buildNavItem(Icons.chat_outlined, AppLocalizations.of(context)?.chat ?? 'Chat', 4),
+            _buildNavItem(Icons.home_outlined,
+                AppLocalizations.of(context)?.home ?? 'Home', 0),
+            _buildNavItem(Icons.assignment_outlined,
+                AppLocalizations.of(context)?.log ?? 'Log', 1),
+            _buildNavItem(
+                Icons.calendar_today,
+                AppLocalizations.of(context)?.consultationNav ?? 'Consultation',
+                2),
+            _buildNavItem(Icons.school_outlined,
+                AppLocalizations.of(context)?.learn ?? 'Learn', 3),
+            _buildNavItem(Icons.chat_outlined,
+                AppLocalizations.of(context)?.chat ?? 'Chat', 4),
           ],
         ),
       ),
@@ -385,7 +415,7 @@ class _LearnScreenState extends State<LearnScreen> {
               ),
             ),
           ),
-          
+
           // Decorative elements
           Positioned(
             top: -50,
@@ -402,7 +432,7 @@ class _LearnScreenState extends State<LearnScreen> {
               ),
             ),
           ),
-          
+
           Positioned(
             top: 100,
             right: -40,
@@ -415,7 +445,7 @@ class _LearnScreenState extends State<LearnScreen> {
               ),
             ),
           ),
-          
+
           Positioned(
             right: -60,
             bottom: -90,
@@ -431,7 +461,7 @@ class _LearnScreenState extends State<LearnScreen> {
               ),
             ),
           ),
-          
+
           // Content
           SafeArea(
             child: Column(
@@ -454,7 +484,8 @@ class _LearnScreenState extends State<LearnScreen> {
                         onPressed: () {
                           NavigationHandler.navigateToScreen(context, 0);
                         },
-                        icon: const Icon(Icons.arrow_back, color: Color(0xFF111611)),
+                        icon: const Icon(Icons.arrow_back,
+                            color: Color(0xFF111611)),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -474,11 +505,12 @@ class _LearnScreenState extends State<LearnScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Search Bar
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: SizedBox(
                     width: double.infinity,
                     height: 48,
@@ -515,16 +547,19 @@ class _LearnScreenState extends State<LearnScreen> {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
-                                      const Icon(Icons.search, color: Color(0xFF638763)),
+                                      const Icon(Icons.search,
+                                          color: Color(0xFF638763)),
                                     ],
                                   ),
                                 ),
                                 Expanded(
                                   child: Container(
                                     height: double.infinity,
-                                    padding: const EdgeInsets.only(top: 8, left: 8, right: 16, bottom: 8),
+                                    padding: const EdgeInsets.only(
+                                        top: 8, left: 8, right: 16, bottom: 8),
                                     decoration: const ShapeDecoration(
                                       color: Color(0xFFEFF4EF),
                                       shape: RoundedRectangleBorder(
@@ -540,9 +575,13 @@ class _LearnScreenState extends State<LearnScreen> {
                                           child: TextField(
                                             controller: _searchController,
                                             decoration: InputDecoration(
-                                              hintText: AppLocalizations.of(context)?.searchArticles ?? 'Search articles',
+                                              hintText:
+                                                  AppLocalizations.of(context)
+                                                          ?.searchArticles ??
+                                                      'Search articles',
                                               border: InputBorder.none,
-                                              hintStyle: TextStyle(color: Color(0xFF638763)),
+                                              hintStyle: TextStyle(
+                                                  color: Color(0xFF638763)),
                                             ),
                                             onChanged: (val) {
                                               _searchQuery = val;
@@ -558,7 +597,8 @@ class _LearnScreenState extends State<LearnScreen> {
                                               _applyFilters();
                                               setState(() {});
                                             },
-                                            icon: const Icon(Icons.close, color: Color(0xFF638763)),
+                                            icon: const Icon(Icons.close,
+                                                color: Color(0xFF638763)),
                                           ),
                                       ],
                                     ),
@@ -572,7 +612,7 @@ class _LearnScreenState extends State<LearnScreen> {
                     ),
                   ),
                 ),
-                
+
                 // Categories
                 Container(
                   width: double.infinity,
@@ -599,20 +639,22 @@ class _LearnScreenState extends State<LearnScreen> {
                             mainAxisSize: MainAxisSize.min,
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: List.generate(_categories.length, (index) {
+                            children:
+                                List.generate(_categories.length, (index) {
                               return GestureDetector(
                                 onTap: () {
                                   _filterArticles(index);
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.only(top: 16, bottom: 13, left: 8, right: 8),
+                                  padding: const EdgeInsets.only(
+                                      top: 16, bottom: 13, left: 8, right: 8),
                                   margin: const EdgeInsets.only(right: 8),
                                   decoration: ShapeDecoration(
                                     shape: RoundedRectangleBorder(
                                       side: BorderSide(
                                         width: 3,
-                                        color: _selectedCategory == index 
-                                            ? const Color(0xFFE91E63) 
+                                        color: _selectedCategory == index
+                                            ? const Color(0xFFE91E63)
                                             : const Color(0xFFE5E8EA),
                                       ),
                                     ),
@@ -620,13 +662,14 @@ class _LearnScreenState extends State<LearnScreen> {
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
                                     children: [
                                       Text(
                                         _categories[index],
                                         style: TextStyle(
-                                          color: _selectedCategory == index 
-                                              ? const Color(0xFF111611) 
+                                          color: _selectedCategory == index
+                                              ? const Color(0xFF111611)
                                               : const Color(0xFF638763),
                                           fontSize: 14,
                                           fontFamily: 'Lexend',
@@ -645,13 +688,14 @@ class _LearnScreenState extends State<LearnScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Articles List
                 Expanded(
                   child: _isLoading
                       ? const Center(
                           child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFFE91E63)),
                           ),
                         )
                       : _errorMessage.isNotEmpty
@@ -669,7 +713,9 @@ class _LearnScreenState extends State<LearnScreen> {
                           : _filteredArticles.isEmpty
                               ? Center(
                                   child: Text(
-                                    AppLocalizations.of(context)?.noArticlesFound ?? 'No articles found in this category',
+                                    AppLocalizations.of(context)
+                                            ?.noArticlesFound ??
+                                        'No articles found in this category',
                                     style: TextStyle(
                                       color: Color(0xFF638763),
                                       fontSize: 16,
@@ -688,9 +734,16 @@ class _LearnScreenState extends State<LearnScreen> {
                                         _showArticleDetails(article);
                                       },
                                       child: _buildArticleCard(
-                                        category: _categories[_selectedCategory],
-                                        title: article['title'] ?? AppLocalizations.of(context)?.noTitle ?? 'No title',
-                                        description: article['description'] ?? AppLocalizations.of(context)?.noDescription ?? 'No description',
+                                        category:
+                                            _categories[_selectedCategory],
+                                        title: article['title'] ??
+                                            AppLocalizations.of(context)
+                                                ?.noTitle ??
+                                            'No title',
+                                        description: article['description'] ??
+                                            AppLocalizations.of(context)
+                                                ?.noDescription ??
+                                            'No description',
                                         imageUrl: article['urlToImage'],
                                       ),
                                     );
@@ -704,7 +757,7 @@ class _LearnScreenState extends State<LearnScreen> {
       ),
     );
   }
-  
+
   Widget _buildArticleCard({
     required String category,
     required String title,
@@ -791,7 +844,8 @@ class _LearnScreenState extends State<LearnScreen> {
                       fit: BoxFit.cover,
                     )
                   : const DecorationImage(
-                      image: NetworkImage("https://placehold.co/130x130?text=No+Image"),
+                      image: NetworkImage(
+                          "https://placehold.co/130x130?text=No+Image"),
                       fit: BoxFit.cover,
                     ),
             ),
@@ -800,7 +854,7 @@ class _LearnScreenState extends State<LearnScreen> {
       ),
     );
   }
-  
+
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isActive = _currentIndex == index;
     return GestureDetector(
@@ -817,7 +871,8 @@ class _LearnScreenState extends State<LearnScreen> {
           Text(
             label,
             style: TextStyle(
-              color: isActive ? const Color(0xFFE91E63) : const Color(0xFF9575CD),
+              color:
+                  isActive ? const Color(0xFFE91E63) : const Color(0xFF9575CD),
               fontSize: 12,
               fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
             ),

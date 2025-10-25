@@ -15,6 +15,7 @@ import 'dart:async';
 import 'widgets/pregnancy_progress_widget.dart';
 import 'widgets/dynamic_tip_widget.dart';
 import 'patient_dashboard_tip.dart';
+import 'food_scan_page.dart';
 
 void main() {
   runApp(const PregnancyApp());
@@ -100,42 +101,43 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Added null checks and default values for user data
-Future<void> _loadUserData() async {
+  Future<void> _loadUserData() async {
     try {
-        // Get user data from session
-        final userName = await SessionManager.getUserName() ?? 'User';
-        final userId = await SessionManager.getUserId();
-        if (userId == null) {
-            print('Error: User ID is null');
-            return;
-        }
+      // Get user data from session
+      final userName = await SessionManager.getUserName() ?? 'User';
+      final userId = await SessionManager.getUserId();
+      if (userId == null) {
+        print('Error: User ID is null');
+        return;
+      }
 
-        print('Loading data for user: $userName (ID: $userId)');
+      print('Loading data for user: $userName (ID: $userId)');
 
-        // Initialize demo data if needed
-        await _backendService.initializeDemoData();
+      // Initialize demo data if needed
+      await _backendService.initializeDemoData();
 
-        // Load dynamic meals and exercises
-        final meals = await _nutritionService.getTodaysMeals();
-        final exercises = await _nutritionService.getTodaysExercises();
+      // Load dynamic meals and exercises
+      final meals = await _nutritionService.getTodaysMeals();
+      final exercises = await _nutritionService.getTodaysExercises();
 
-        print('Loaded ${meals.length} meals and ${exercises.length} exercises');
-        print('Meals: ${meals.map((m) => m.name).toList()}');
-        print('Exercises: ${exercises.map((e) => e.name).toList()}');
+      print('Loaded ${meals.length} meals and ${exercises.length} exercises');
+      print('Meals: ${meals.map((m) => m.name).toList()}');
+      print('Exercises: ${exercises.map((e) => e.name).toList()}');
 
-        setState(() {
-            _userName = userName;
-            _todaysMeals = meals;
-            _todaysExercises = exercises;
-            _isLoading = false;
-        });
+      setState(() {
+        _userName = userName;
+        _todaysMeals = meals;
+        _todaysExercises = exercises;
+        _isLoading = false;
+      });
     } catch (e) {
-        print('Error loading user data: $e');
-        setState(() {
-            _isLoading = false;
-        });
+      print('Error loading user data: $e');
+      setState(() {
+        _isLoading = false;
+      });
     }
-}
+  }
+
   String _getGreetingTime() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
@@ -157,486 +159,570 @@ Future<void> _loadUserData() async {
     return RouteGuard.patientRouteGuard(
       context: context,
       child: Scaffold(
-      body: Stack(
-        children: [
-          // Soft gradient background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFFBE9E7), Color(0xFFF8F6F8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          
-          // Decorative shapes with softer colors
-          Positioned(
-            top: -60,
-            left: -40,
-            child: Transform.rotate(
-              angle: -0.4,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(70),
-                  color: const Color(0xFFFFCCBC).withOpacity(0.4),
+        body: Stack(
+          children: [
+            // Soft gradient background
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFFBE9E7), Color(0xFFF8F6F8)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
             ),
-          ),
-          Positioned(
-            right: -70,
-            bottom: -100,
-            child: Transform.rotate(
-              angle: 0.5,
-              child: Container(
-                width: 240,
-                height: 240,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(90),
-                  color: const Color(0xFFF8BBD0).withOpacity(0.3),
-                ),
-              ),
-            ),
-          ),
-          
-          // Content
-          SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  // Responsive padding based on screen width
-                  final horizontalPadding = constraints.maxWidth > 600 
-                      ? 32.0 
-                      : constraints.maxWidth > 400 
-                          ? 20.0 
-                          : 16.0;
-                  
-                  return Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: horizontalPadding,
-                      vertical: 16,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                  // Header with profile and greeting - Refactored layout
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Left side: Icon and greeting in Column
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // User icon
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const ProfileScreen(),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF3E5F5),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.woman,
-                                  color: Color(0xFFE91E63),
-                                  size: 32,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            // Greeting text
-                            _isLoading
-                                ? const CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7B1FA2)),
-                                  )
-                                : RichText(
-                                    text: TextSpan(
-                                      style: GoogleFonts.poppins(),
-                                      children: [
-                                        TextSpan(
-                                          text: '${_getGreetingTime()},\n',
-                                          style: GoogleFonts.poppins(
-                                            color: const Color(0xFF7B1FA2),
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                        TextSpan(
-                                          text: _userName,
-                                          style: GoogleFonts.poppins(
-                                            color: const Color(0xFF7B1FA2),
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                          ],
-                        ),
-                        
-                        // Right side: App title
-                        Flexible(
-                          child: Text(
-                            'Safe Mother',
-                            style: GoogleFonts.poppins(
-                              color: const Color(0xFF7B1FA2),
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Pregnancy progress card - Dynamic implementation
-                  const PregnancyProgressWidget(
-                    showRefreshButton: true,
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Today's tip card - Dynamic implementation with null safety
-                  _buildDynamicTipWidget(),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Today's meal preference - Dynamic
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)?.todayMealPreference ?? 'Today\'s Meal Preference',
-                        style: const TextStyle(
-                          color: Color(0xFF7B1FA2),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (_todaysMeals.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            AppLocalizations.of(context)?.doctorRecommended ?? 'Doctor Recommended',
-                            style: const TextStyle(
-                              color: Color(0xFF4CAF50),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Dynamic meal preferences - Only doctor prescribed
-                  SizedBox(
-                    height: 200,
-                    child: _isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
-                            ),
-                          )
-                        : _todaysMeals.isEmpty
-                            ? Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey.shade200),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.restaurant_menu,
-                                        color: Colors.grey,
-                                        size: 48,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        AppLocalizations.of(context)?.noMealPrescribed ?? 'No meals prescribed today',
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        maxLines: 2,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        AppLocalizations.of(context)?.noMealPrescribedDesc ?? 'Your doctor will prescribe meals based on your needs',
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 12,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            : ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                itemCount: _todaysMeals.length,
-                                separatorBuilder: (context, index) => const SizedBox(width: 12),
-                                itemBuilder: (context, index) {
-                                  final meal = _todaysMeals[index];
-                                  return _buildMealItem(meal);
-                                },
-                              ),
-                  ),
-                  const SizedBox(height: 24),
 
-                  // Today's exercise preference - Dynamic
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        AppLocalizations.of(context)?.todayExercisePreference ?? 'Today\'s Exercise Preference',
-                        style: const TextStyle(
-                          color: Color(0xFF7B1FA2),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
+            // Decorative shapes with softer colors
+            Positioned(
+              top: -60,
+              left: -40,
+              child: Transform.rotate(
+                angle: -0.4,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(70),
+                    color: const Color(0xFFFFCCBC).withOpacity(0.4),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: -70,
+              bottom: -100,
+              child: Transform.rotate(
+                angle: 0.5,
+                child: Container(
+                  width: 240,
+                  height: 240,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(90),
+                    color: const Color(0xFFF8BBD0).withOpacity(0.3),
+                  ),
+                ),
+              ),
+            ),
+
+            // Content
+            SafeArea(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Responsive padding based on screen width
+                    final horizontalPadding = constraints.maxWidth > 600
+                        ? 32.0
+                        : constraints.maxWidth > 400
+                            ? 20.0
+                            : 16.0;
+
+                    return Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: horizontalPadding,
+                        vertical: 16,
                       ),
-                      if (_todaysExercises.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            AppLocalizations.of(context)?.doctorRecommended ?? 'Doctor Recommended',
-                            style: const TextStyle(
-                              color: Color(0xFF4CAF50),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    height: 160,
-                    child: _isLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
-                            ),
-                          )
-                        : _todaysExercises.isEmpty
-                            ? Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey.shade200),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header with profile and greeting - Refactored layout
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.fitness_center,
-                                        color: Colors.grey,
-                                        size: 32,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        AppLocalizations.of(context)?.noExercisePrescribed ?? 'No exercises prescribed today',
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Left side: Icon and greeting in Column
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // User icon
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const ProfileScreen(),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF3E5F5),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(
+                                          Icons.woman,
+                                          color: Color(0xFFE91E63),
+                                          size: 32,
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        AppLocalizations.of(context)?.noExercisePrescribedDesc ?? 'Your doctor will prescribe exercises based on your trimester',
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 11,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            : ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 8),
-                                itemCount: _todaysExercises.length,
-                                separatorBuilder: (context, index) => const SizedBox(width: 10),
-                                itemBuilder: (context, index) {
-                                  final exercise = _todaysExercises[index];
-                                  return _buildExerciseItem(exercise);
-                                },
-                              ),
-                  ),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Quick Actions Card
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)?.quickActions ?? 'Quick Actions',
-                          style: const TextStyle(
-                            color: Color(0xFF7B1FA2),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            // Log symptoms button - Equal width
-                            Expanded(
-                              flex: 1,
-                              child: Container(
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFFE91E63), Color(0xFFAD1457)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFFE91E63).withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
                                     ),
+                                    const SizedBox(height: 8),
+                                    // Greeting text
+                                    _isLoading
+                                        ? const CircularProgressIndicator(
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Color(0xFF7B1FA2)),
+                                          )
+                                        : RichText(
+                                            text: TextSpan(
+                                              style: GoogleFonts.poppins(),
+                                              children: [
+                                                TextSpan(
+                                                  text:
+                                                      '${_getGreetingTime()},\n',
+                                                  style: GoogleFonts.poppins(
+                                                    color:
+                                                        const Color(0xFF7B1FA2),
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                                TextSpan(
+                                                  text: _userName,
+                                                  style: GoogleFonts.poppins(
+                                                    color:
+                                                        const Color(0xFF7B1FA2),
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                   ],
                                 ),
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    NavigationHandler.navigateToScreen(context, 1);
-                                  },
-                                  icon: const Icon(
-                                    Icons.medical_services,
-                                    color: Colors.white,
-                                    size: 18,
-                                  ),
-                                  label: Text(
-                                    AppLocalizations.of(context)?.logSymptoms ?? 'Log Symptoms',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+
+                                // Right side: App title
+                                Flexible(
+                                  child: Text(
+                                    'Safe Mother',
+                                    style: GoogleFonts.poppins(
+                                      color: const Color(0xFF7B1FA2),
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.transparent,
-                                    shadowColor: Colors.transparent,
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Pregnancy progress card - Dynamic implementation
+                          const PregnancyProgressWidget(
+                            showRefreshButton: true,
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Today's tip card - Dynamic implementation with null safety
+                          _buildDynamicTipWidget(),
+
+                          const SizedBox(height: 24),
+
+                          // Today's meal preference - Dynamic
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                AppLocalizations.of(context)
+                                        ?.todayMealPreference ??
+                                    'Today\'s Meal Preference',
+                                style: const TextStyle(
+                                  color: Color(0xFF7B1FA2),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (_todaysMeals.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF4CAF50)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    AppLocalizations.of(context)
+                                            ?.doctorRecommended ??
+                                        'Doctor Recommended',
+                                    style: const TextStyle(
+                                      color: Color(0xFF4CAF50),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Dynamic meal preferences - Only doctor prescribed
+                          SizedBox(
+                            height: 200,
+                            child: _isLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Color(0xFFE91E63)),
+                                    ),
+                                  )
+                                : _todaysMeals.isEmpty
+                                    ? Container(
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade50,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: Colors.grey.shade200),
+                                        ),
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(
+                                                Icons.restaurant_menu,
+                                                color: Colors.grey,
+                                                size: 48,
+                                              ),
+                                              const SizedBox(height: 12),
+                                              Text(
+                                                AppLocalizations.of(context)
+                                                        ?.noMealPrescribed ??
+                                                    'No meals prescribed today',
+                                                style: const TextStyle(
+                                                  color: Colors.grey,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                maxLines: 2,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                AppLocalizations.of(context)
+                                                        ?.noMealPrescribedDesc ??
+                                                    'Your doctor will prescribe meals based on your needs',
+                                                style: const TextStyle(
+                                                  color: Colors.grey,
+                                                  fontSize: 12,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    : ListView.separated(
+                                        scrollDirection: Axis.horizontal,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8),
+                                        itemCount: _todaysMeals.length,
+                                        separatorBuilder: (context, index) =>
+                                            const SizedBox(width: 12),
+                                        itemBuilder: (context, index) {
+                                          final meal = _todaysMeals[index];
+                                          return _buildMealItem(meal);
+                                        },
+                                      ),
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Today's exercise preference - Dynamic
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                AppLocalizations.of(context)
+                                        ?.todayExercisePreference ??
+                                    'Today\'s Exercise Preference',
+                                style: const TextStyle(
+                                  color: Color(0xFF7B1FA2),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
+                              if (_todaysExercises.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF4CAF50)
+                                        .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    AppLocalizations.of(context)
+                                            ?.doctorRecommended ??
+                                        'Doctor Recommended',
+                                    style: const TextStyle(
+                                      color: Color(0xFF4CAF50),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            height: 160,
+                            child: _isLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                          Color(0xFFE91E63)),
+                                    ),
+                                  )
+                                : _todaysExercises.isEmpty
+                                    ? Container(
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade50,
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          border: Border.all(
+                                              color: Colors.grey.shade200),
+                                        ),
+                                        child: Center(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const Icon(
+                                                Icons.fitness_center,
+                                                color: Colors.grey,
+                                                size: 32,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                AppLocalizations.of(context)
+                                                        ?.noExercisePrescribed ??
+                                                    'No exercises prescribed today',
+                                                style: const TextStyle(
+                                                  color: Colors.grey,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                AppLocalizations.of(context)
+                                                        ?.noExercisePrescribedDesc ??
+                                                    'Your doctor will prescribe exercises based on your trimester',
+                                                style: const TextStyle(
+                                                  color: Colors.grey,
+                                                  fontSize: 11,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    : ListView.separated(
+                                        scrollDirection: Axis.horizontal,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8),
+                                        itemCount: _todaysExercises.length,
+                                        separatorBuilder: (context, index) =>
+                                            const SizedBox(width: 10),
+                                        itemBuilder: (context, index) {
+                                          final exercise =
+                                              _todaysExercises[index];
+                                          return _buildExerciseItem(exercise);
+                                        },
+                                      ),
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // Quick Actions Card
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
                             ),
-                            
-                            const SizedBox(width: 10),
-                            
-                            // Emergency ambulance button - Equal width
-                            Expanded(
-                              flex: 1,
-                              child: SizedBox(
-                                height: 56,
-                                child: const AmbulanceButton(),
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context)?.quickActions ??
+                                      'Quick Actions',
+                                  style: const TextStyle(
+                                    color: Color(0xFF7B1FA2),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Row(
+                                  children: [
+                                    // Log symptoms button - Equal width
+                                    Expanded(
+                                      flex: 1,
+                                      child: Container(
+                                        height: 56,
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              Color(0xFFE91E63),
+                                              Color(0xFFAD1457)
+                                            ],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFFE91E63)
+                                                  .withOpacity(0.3),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ElevatedButton.icon(
+                                          onPressed: () {
+                                            NavigationHandler.navigateToScreen(
+                                                context, 1);
+                                          },
+                                          icon: const Icon(
+                                            Icons.medical_services,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                          label: Text(
+                                            AppLocalizations.of(context)
+                                                    ?.logSymptoms ??
+                                                'Log Symptoms',
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.transparent,
+                                            shadowColor: Colors.transparent,
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 12),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    const SizedBox(width: 10),
+
+                                    // Emergency ambulance button - Equal width
+                                    Expanded(
+                                      flex: 1,
+                                      child: SizedBox(
+                                        height: 56,
+                                        child: const AmbulanceButton(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                // Scan Food Button
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 56,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                FoodScanPage()),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.camera_alt,
+                                        color: Colors.white),
+                                    label: const Text(
+                                      'Scan Food',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF7B1FA2),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                        const SizedBox(height: 80), // Space for bottom navigation
-                      ],
-                    ),
-                  );
-                },
+                          ),
+
+                          const SizedBox(
+                              height: 80), // Space for bottom navigation
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          
-          // Bottom navigation bar - Now using the separate widget
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: CustomBottomNavigationBar(
-              currentIndex: _currentIndex,
-              onTap: _onItemTapped,
+
+            // Bottom navigation bar - Now using the separate widget
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: CustomBottomNavigationBar(
+                currentIndex: _currentIndex,
+                onTap: _onItemTapped,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
-  
+
   Widget _buildMealItem(Meal meal) {
     return GestureDetector(
       onTap: () {
@@ -781,7 +867,8 @@ Future<void> _loadUserData() async {
                   color: const Color(0xFFF3E5F5),
                   borderRadius: BorderRadius.circular(25),
                 ),
-                child: Icon(exercise.icon, color: const Color(0xFFE91E63), size: 24),
+                child: Icon(exercise.icon,
+                    color: const Color(0xFFE91E63), size: 24),
               ),
               const SizedBox(height: 8),
               Flexible(
@@ -819,7 +906,8 @@ Future<void> _loadUserData() async {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _getDifficultyColor(exercise.difficulty).withOpacity(0.1),
+                  color:
+                      _getDifficultyColor(exercise.difficulty).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -945,12 +1033,13 @@ Future<void> _loadUserData() async {
                         ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Calories and Category
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE91E63).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -977,7 +1066,8 @@ Future<void> _loadUserData() async {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: const Color(0xFF4CAF50).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -994,7 +1084,7 @@ Future<void> _loadUserData() async {
                   ],
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Description
                 const Text(
                   'Description:',
@@ -1014,7 +1104,7 @@ Future<void> _loadUserData() async {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Nutritional Benefits
                 const Text(
                   'Nutritional Benefits:',
@@ -1028,27 +1118,30 @@ Future<void> _loadUserData() async {
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children: meal.nutritionalBenefits.map((benefit) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2196F3).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF2196F3).withOpacity(0.3),
-                      ),
-                    ),
-                    child: Text(
-                      benefit,
-                      style: const TextStyle(
-                        color: Color(0xFF2196F3),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  )).toList(),
+                  children: meal.nutritionalBenefits
+                      .map((benefit) => Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2196F3).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFF2196F3).withOpacity(0.3),
+                              ),
+                            ),
+                            child: Text(
+                              benefit,
+                              style: const TextStyle(
+                                color: Color(0xFF2196F3),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ))
+                      .toList(),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Ingredients
                 const Text(
                   'Ingredients:',
@@ -1059,30 +1152,32 @@ Future<void> _loadUserData() async {
                   ),
                 ),
                 const SizedBox(height: 6),
-                ...meal.ingredients.map((ingredient) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.fiber_manual_record,
-                        size: 8,
-                        color: Color(0xFF9E9E9E),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          ingredient,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF666666),
+                ...meal.ingredients
+                    .map((ingredient) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.fiber_manual_record,
+                                size: 8,
+                                color: Color(0xFF9E9E9E),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  ingredient,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF666666),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )).toList(),
+                        ))
+                    .toList(),
                 const SizedBox(height: 16),
-                
+
                 // Preparation
                 const Text(
                   'Preparation:',
@@ -1101,7 +1196,7 @@ Future<void> _loadUserData() async {
                     height: 1.4,
                   ),
                 ),
-                
+
                 // Pregnancy Safety Badge
                 if (meal.isPregnancySafe) ...[
                   const SizedBox(height: 16),
@@ -1175,35 +1270,42 @@ Future<void> _loadUserData() async {
                     color: const Color(0xFFF3E5F5),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(exercise.icon, color: const Color(0xFFE91E63), size: 40),
+                  child: Icon(exercise.icon,
+                      color: const Color(0xFFE91E63), size: 40),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
                     const Icon(Icons.timer, color: Colors.blue, size: 16),
                     const SizedBox(width: 4),
-                    Text('${exercise.duration} minutes', style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text('${exercise.duration} minutes',
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.fitness_center, color: Colors.red, size: 16),
+                    const Icon(Icons.fitness_center,
+                        color: Colors.red, size: 16),
                     const SizedBox(width: 4),
-                    Text('Difficulty: ${exercise.difficulty}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text('Difficulty: ${exercise.difficulty}',
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text('Description:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Description:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(exercise.description),
                 const SizedBox(height: 12),
-                const Text('Benefits:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('Benefits:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text(exercise.benefits.join(', ')),
                 if (exercise.trimester.isNotEmpty) ...[
                   const SizedBox(height: 12),
-                  const Text('Safe for:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text('Safe for:',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text('${exercise.trimester} trimester'),
                 ],
@@ -1219,7 +1321,10 @@ Future<void> _loadUserData() async {
                       children: [
                         Icon(Icons.warning, color: Colors.red, size: 16),
                         SizedBox(width: 4),
-                        Expanded(child: Text('Consult with your doctor before performing', style: TextStyle(fontSize: 12))),
+                        Expanded(
+                            child: Text(
+                                'Consult with your doctor before performing',
+                                style: TextStyle(fontSize: 12))),
                       ],
                     ),
                   ),

@@ -145,7 +145,7 @@
   "relieveMorningSicknessQuestion": "காலை நோயை எவ்வாறு குறைக்கலாம்?",
   "pretermLaborSignsQuestion": "பிறப்புக்கு முன் உழைப்பின் அறிகுறிகள் என்ன?",
   "weightGainQuestion": "கர்ப்ப காலத்தில் எவ்வளவு எடை அதிகரிக்க வேண்டும்?",
-  "todaysHealthCheck": "இன்றைய சுகாதார சோதனை",
+  "todaysHealthChecks": "சுகாதார சோதனை",
   "bloodPressureExample": "இரத்த அழுத்தம் (எ.கா., 120/80)",
   "weightKg": "எடை (கி.கி.)",
   "symptomsIfAny": "அறிகுறிகள் (இருந்தால்)",
@@ -403,5 +403,21 @@
   "noArticlesFound": "கட்டுரைகள் கிடைக்கவில்லை",
   "tryAdjustingSearch": "உங்கள் தேடலை அல்லது வகை வடிப்பை சரிசெய்ய முயற்சிக்கவும்",
   "readArticle": "கட்டுரையைப் படிக்கவும்",
-  "cannotOpenArticle": "கட்டுரையைத் திறக்க முடியவில்லை: {url}"
+  "cannotOpenArticle": "கட்டுரையைத் திறக்க முடியவில்லை: {url}",
+  "todayTip": "இன்றைய உதவிக்குறிப்பு",
+  "noTipsAvailable": "உதவிக்குறிப்புகள் இல்லை",
+  "checkBackLater": "கர்ப்ப கால உதவிக்குறிப்புகளுக்கு பின்னர் சரிபார்க்கவும்",
+  "exploreLearnPage": "கற்றல் பக்கத்தை ஆராயுங்கள்",
+  "readMore": "மேலும் வாசிக்க",
+  "learnMore": "மேலும் அறிக",
+  "keyPoints": "முக்கிய புள்ளிகள்",
+  "detailedInformation": "விரிவான தகவல்",
+  "week": "வாரம் {weekNumber}",
+  
+  "categoryHealth": "ஆரோக்கியம்",
+  "categoryNutrition": "ஊட்டச்சத்து",
+  "categoryFitness": "உடற்தகுதி", 
+  "categoryMedical": "மருத்துவ",
+  "categoryPreparation": "தயாரிப்பு",
+  "categoryDevelopment": "வளர்ச்சி"
 }

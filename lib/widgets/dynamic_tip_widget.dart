@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import '../services/tips_service.dart';
 import '../services/backend_service.dart';
 import '../services/session_manager.dart';
 import '../models/daily_tip.dart';
 import '../pages/learn_page.dart';
+import '../l10n/app_localizations.dart';
 
 class DynamicTipWidget extends StatefulWidget {
   final VoidCallback? onLearnMorePressed;
-  
+
   const DynamicTipWidget({
     super.key,
     this.onLearnMorePressed,
@@ -20,14 +22,17 @@ class DynamicTipWidget extends StatefulWidget {
 class _DynamicTipWidgetState extends State<DynamicTipWidget> {
   final TipsService _tipsService = TipsService();
   final BackendService _backendService = BackendService();
-  
+
   DailyTip? _todaysTip;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadTodaysTip();
+    // Defer until after first frame so localization is available
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _loadTodaysTip();
+    });
   }
 
   Future<void> _loadTodaysTip() async {
@@ -40,13 +45,16 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
       int pregnancyWeek = 0;
       final userId = await SessionManager.getUserId();
       if (userId != null) {
-        final progress = await _backendService.calculatePregnancyProgress(userId);
+        final progress =
+            await _backendService.calculatePregnancyProgress(userId);
         pregnancyWeek = progress['weeks'] as int? ?? 0;
       }
 
-      // Get today's tip
-      final tip = await _tipsService.getTodaysTip(pregnancyWeek: pregnancyWeek);
-      
+      // Get today's tip (pass localization if available)
+      final l10n = AppLocalizations.of(context);
+      final tip = await _tipsService.getTodaysTip(
+          pregnancyWeek: pregnancyWeek, l10n: l10n);
+
       setState(() {
         _todaysTip = tip;
         _isLoading = false;
@@ -82,6 +90,8 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     if (_isLoading) {
       return Container(
         width: double.infinity,
@@ -136,18 +146,19 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
               size: 48,
             ),
             const SizedBox(height: 16),
-            const Text(
-              'No Tips Available',
-              style: TextStyle(
+            Text(
+              l10n?.noTipsAvailable ?? 'No Tips Available',
+              style: const TextStyle(
                 color: Color(0xFF7B1FA2),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Check back later for helpful pregnancy tips',
-              style: TextStyle(
+            Text(
+              l10n?.noTipsAvailable ??
+                  'Check back later for helpful pregnancy tips',
+              style: const TextStyle(
                 color: Color(0xFF9575CD),
                 fontSize: 14,
               ),
@@ -163,7 +174,7 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text('Explore Learn Page'),
+              child: Text(l10n?.learn ?? 'Explore Learn Page'),
             ),
           ],
         ),
@@ -192,7 +203,7 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
         builder: (context, constraints) {
           // Use column layout for narrow screens to prevent overflow
           final isNarrow = constraints.maxWidth < 350;
-          
+
           if (isNarrow) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,22 +211,23 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                 // Header row
                 Row(
                   children: [
-                    const Text(
-                      "Today's Tip",
-                      style: TextStyle(
+                    Text(
+                      l10n?.todaysFeaturedTip ?? "Today's Tip",
+                      style: const TextStyle(
                         color: Color(0xFF9575CD),
                         fontSize: 14,
                       ),
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE91E63).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        _todaysTip!.category,
+                        _localizedCategory(_todaysTip!.category, context),
                         style: const TextStyle(
                           color: Color(0xFFE91E63),
                           fontSize: 10,
@@ -225,9 +237,9 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Title
                 Text(
                   _todaysTip!.title,
@@ -239,9 +251,9 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                   overflow: TextOverflow.ellipsis,
                   maxLines: 2,
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Description
                 Text(
                   _todaysTip!.description,
@@ -253,9 +265,9 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Action buttons - responsive
                 Wrap(
                   spacing: 8,
@@ -270,10 +282,10 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                           color: const Color(0xFFF3E5F5),
                           borderRadius: BorderRadius.circular(18),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
-                            'Read More',
-                            style: TextStyle(
+                            l10n?.readMore ?? 'Read More',
+                            style: const TextStyle(
                               color: Color(0xFF7B1FA2),
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -291,10 +303,10 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                           color: const Color(0xFFE91E63),
                           borderRadius: BorderRadius.circular(18),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text(
-                            'Learn More',
-                            style: TextStyle(
+                            l10n?.learn ?? 'Learn More',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -308,7 +320,7 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
               ],
             );
           }
-          
+
           // Wide layout - use Row
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,22 +332,23 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                   children: [
                     Row(
                       children: [
-                        const Text(
-                          "Today's Tip",
-                          style: TextStyle(
+                        Text(
+                          l10n?.todaysFeaturedTip ?? "Today's Tip",
+                          style: const TextStyle(
                             color: Color(0xFF9575CD),
                             fontSize: 14,
                           ),
                         ),
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFFE91E63).withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            _todaysTip!.category,
+                            _localizedCategory(_todaysTip!.category, context),
                             style: const TextStyle(
                               color: Color(0xFFE91E63),
                               fontSize: 10,
@@ -345,9 +358,9 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     Text(
                       _todaysTip!.title,
                       style: const TextStyle(
@@ -358,9 +371,9 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                       overflow: TextOverflow.ellipsis,
                       maxLines: 2,
                     ),
-                    
+
                     const SizedBox(height: 8),
-                    
+
                     Text(
                       _todaysTip!.description,
                       style: const TextStyle(
@@ -371,9 +384,9 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Action buttons
                     Row(
                       children: [
@@ -382,15 +395,16 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                             onTap: _showTipDetail,
                             child: Container(
                               height: 36,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF3E5F5),
                                 borderRadius: BorderRadius.circular(18),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Text(
-                                  'Read More',
-                                  style: TextStyle(
+                                  l10n?.readMore ?? 'Read More',
+                                  style: const TextStyle(
                                     color: Color(0xFF7B1FA2),
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
@@ -406,15 +420,16 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                             onTap: _navigateToLearnPage,
                             child: Container(
                               height: 36,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 12),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFE91E63),
                                 borderRadius: BorderRadius.circular(18),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: Text(
-                                  'Learn More',
-                                  style: TextStyle(
+                                  l10n?.learn ?? 'Learn More',
+                                  style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
@@ -429,16 +444,17 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Tip image - flexible size
               GestureDetector(
                 onTap: _showTipDetail,
                 child: Container(
                   width: 80,
                   height: 100,
-                  constraints: const BoxConstraints(minWidth: 60, maxWidth: 100),
+                  constraints:
+                      const BoxConstraints(minWidth: 60, maxWidth: 100),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: const Color(0xFFE91E63).withOpacity(0.1),
@@ -490,6 +506,18 @@ class _DynamicTipWidgetState extends State<DynamicTipWidget> {
         return Icons.lightbulb;
     }
   }
+
+  String _localizedCategory(String category, BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final c = category.toLowerCase();
+    if (c == 'health') return l10n?.health ?? category;
+    if (c == 'nutrition') return l10n?.nutrition ?? category;
+    if (c == 'fitness') return l10n?.exerciseMinutesDaily ?? category;
+    if (c == 'medical') return l10n?.doctor ?? category;
+    if (c == 'preparation') return l10n?.pregnancy ?? category;
+    if (c == 'development') return l10n?.baby ?? category;
+    return category;
+  }
 }
 
 class _TipDetailSheet extends StatelessWidget {
@@ -499,6 +527,19 @@ class _TipDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    String localizedCategory() {
+      final c = tip.category.toLowerCase();
+      if (c == 'health') return l10n?.health ?? tip.category;
+      if (c == 'nutrition') return l10n?.nutrition ?? tip.category;
+      if (c == 'fitness') return l10n?.exerciseMinutesDaily ?? tip.category;
+      if (c == 'medical') return l10n?.doctor ?? tip.category;
+      if (c == 'preparation') return l10n?.pregnancy ?? tip.category;
+      if (c == 'development') return l10n?.baby ?? tip.category;
+      return tip.category;
+    }
+
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
       minChildSize: 0.5,
@@ -521,7 +562,7 @@ class _TipDetailSheet extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
+
               // Header
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -547,7 +588,7 @@ class _TipDetailSheet extends StatelessWidget {
                           Row(
                             children: [
                               Text(
-                                tip.category,
+                                localizedCategory(),
                                 style: const TextStyle(
                                   color: Color(0xFF9575CD),
                                   fontSize: 12,
@@ -555,7 +596,8 @@ class _TipDetailSheet extends StatelessWidget {
                                 ),
                               ),
                               if (tip.pregnancyWeek > 0) ...[
-                                const Text(' • ', style: TextStyle(color: Color(0xFF9575CD))),
+                                const Text(' • ',
+                                    style: TextStyle(color: Color(0xFF9575CD))),
                                 Text(
                                   'Week ${tip.pregnancyWeek}',
                                   style: const TextStyle(
@@ -585,9 +627,9 @@ class _TipDetailSheet extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Content
               Expanded(
                 child: SingleChildScrollView(
@@ -605,56 +647,58 @@ class _TipDetailSheet extends StatelessWidget {
                           height: 1.5,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // Key Points
                       if (tip.keyPoints.isNotEmpty) ...[
-                        const Text(
-                          'Key Points',
-                          style: TextStyle(
+                        Text(
+                          l10n?.keyPoints ?? 'Key Points',
+                          style: const TextStyle(
                             color: Color(0xFF7B1FA2),
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 12),
-                        ...tip.keyPoints.map((point) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(top: 6),
-                                    width: 6,
-                                    height: 6,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFE91E63),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      point,
-                                      style: const TextStyle(
-                                        color: Color(0xFF5A5A5A),
-                                        fontSize: 14,
-                                        height: 1.4,
+                        ...tip.keyPoints
+                            .map((point) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        margin: const EdgeInsets.only(top: 6),
+                                        width: 6,
+                                        height: 6,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFFE91E63),
+                                          shape: BoxShape.circle,
+                                        ),
                                       ),
-                                    ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          point,
+                                          style: const TextStyle(
+                                            color: Color(0xFF5A5A5A),
+                                            fontSize: 14,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            )).toList(),
-                        
+                                ))
+                            .toList(),
                         const SizedBox(height: 24),
                       ],
-                      
+
                       // Full Content
-                      const Text(
-                        'Detailed Information',
-                        style: TextStyle(
+                      Text(
+                        l10n?.detailedInformation ?? 'Detailed Information',
+                        style: const TextStyle(
                           color: Color(0xFF7B1FA2),
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -669,7 +713,7 @@ class _TipDetailSheet extends StatelessWidget {
                           height: 1.6,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 40),
                     ],
                   ),

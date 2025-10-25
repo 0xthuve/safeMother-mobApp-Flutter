@@ -474,5 +474,21 @@
   "noArticlesFound": "No Articles Found",
   "tryAdjustingSearch": "Try adjusting your search or category filter",
   "readArticle": "Read Article",
-  "cannotOpenArticle": "Cannot open article: {url}"
+  "cannotOpenArticle": "Cannot open article: {url}",
+  "todayTip": "Today's Tip",
+  "noTipsAvailable": "No Tips Available",
+  "checkBackLater": "Check back later for helpful pregnancy tips",
+  "exploreLearnPage": "Explore Learn Page",
+  "readMore": "Read More",
+  "learnMore": "Learn More",
+  "keyPoints": "Key Points",
+  "detailedInformation": "Detailed Information",
+  "week": "Week {weekNumber}",
+  
+  "categoryHealth": "Health",
+  "categoryNutrition": "Nutrition", 
+  "categoryFitness": "Fitness",
+  "categoryMedical": "Medical",
+  "categoryPreparation": "Preparation",
+  "categoryDevelopment": "Development"
 }

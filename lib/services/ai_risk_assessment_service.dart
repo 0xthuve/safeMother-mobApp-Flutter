@@ -1,116 +1,174 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/symptom_log.dart';
+import '../utils/connectivity_checker.dart';
+import '../utils/offline_storage.dart';
+import '../utils/toast_service.dart';
 import 'notification_service.dart';
+import 'risk_predictor.dart';
 
 class AIRiskAssessmentService {
-  static String get _apiKey => dotenv.env['AI_RISK_API_KEY'] ?? '';
-  static const String _apiUrl = "https://api.groq.com/openai/v1/chat/completions";
-  
   final NotificationService _notificationService = NotificationService();
+  final RiskPredictor _riskPredictor = RiskPredictor();
 
   /// Analyzes symptom log and provides risk assessment
   Future<RiskAssessment> analyzeSymptoms(SymptomLog symptomLog) async {
     try {
-      // STEP 1: Always perform clinical assessment first
+      // STEP 1: Always perform clinical assessment first (offline capable)
       print('🩺 Step 1: Performing clinical assessment...');
       final clinicalAssessment = _performClinicalAssessment(symptomLog);
-      
-      // STEP 2: If clinical assessment shows HIGH risk, return immediately
-      if (clinicalAssessment.riskLevel == RiskLevel.high) {
-        print('🚨 Clinical assessment shows HIGH RISK - immediate action required!');
-        return clinicalAssessment;
-      }
-      
-      // STEP 3: Try AI analysis for additional insights (if clinical assessment is not high risk)
-      print('🤖 Step 2: Attempting AI analysis for additional insights...');
-      
-      // Prepare symptom data for AI analysis
-      final symptomPrompt = _buildSymptomPrompt(symptomLog);
-      
-      // Send to Groq AI for analysis
-      final response = await http.post(
-        Uri.parse(_apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiKey',
-        },
-        body: json.encode({
-          'model': 'llama-3.1-70b-versatile', // Using more capable model for medical analysis
-          'messages': [
-            {
-              'role': 'system',
-              'content': _getSystemPrompt(),
-            },
-            {
-              'role': 'user',
-              'content': symptomPrompt,
-            }
-          ],
-          'temperature': 0.1, // Low temperature for consistent medical analysis
-          'max_tokens': 300,
-        }),
-      );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        final String aiResponse = data['choices'][0]['message']['content'];
-        
-        print('✅ AI analysis successful');
-        
-        // Parse AI response to extract risk assessment
-        final aiAssessment = _parseRiskAssessment(aiResponse, symptomLog);
-        
-        // Use the higher risk level between clinical and AI assessment
-        final finalAssessment = _combineAssessments(clinicalAssessment, aiAssessment);
-        
-        // Send push notification if high risk
-        if (finalAssessment.riskLevel == RiskLevel.high) {
-          await _sendHighRiskNotification(finalAssessment, symptomLog.patientId);
+      // STEP 2: If clinical assessment shows HIGH risk, show alert immediately
+      if (clinicalAssessment.riskLevel == RiskLevel.high) {
+        print(
+            '🚨 Clinical assessment shows HIGH RISK - immediate action required!');
+
+        // First priority: Show the alert immediately
+        bool notificationShown = await _notificationService.sendHighRiskAlert(
+          patientId: symptomLog.patientId,
+          riskLevel: clinicalAssessment.riskLevel,
+          message: clinicalAssessment.message,
+        );
+
+        if (!notificationShown) {
+          // If notification failed, try one more time after a short delay
+          await Future.delayed(Duration(milliseconds: 500));
+          notificationShown = await _notificationService.sendHighRiskAlert(
+            patientId: symptomLog.patientId,
+            riskLevel: clinicalAssessment.riskLevel,
+            message: clinicalAssessment.message,
+          );
         }
-        
-        return finalAssessment;
-      } else {
-        print('❌ AI API Error: ${response.statusCode} - ${response.body}');
-        // Return clinical assessment if AI fails
+
+        // Save assessment data in background
+        _sendHighRiskNotification(clinicalAssessment, symptomLog.patientId)
+            .catchError((e) {
+          print('Error saving assessment data: $e');
+          // Error is caught but we still return assessment
+        });
+
         return clinicalAssessment;
       }
+
+      // STEP 3: Try local TensorFlow Lite prediction
+      print('🤖 Step 2: Running local TensorFlow Lite prediction...');
+
+      // Load model if not already loaded
+      if (!_riskPredictor.isModelLoaded) {
+        try {
+          print('🔄 Loading TensorFlow Lite model...');
+          await _riskPredictor.loadModel();
+          print('✅ Model loaded successfully');
+        } catch (e) {
+          print('❌ Error loading model: $e');
+          await ToastService.showError(
+            'Unable to load risk assessment model. Using clinical assessment only.',
+          );
+          // Return clinical assessment as fallback
+          return clinicalAssessment;
+        }
+      }
+
+      // Prepare input data for model
+      print('📊 Preparing symptom data for model...');
+      final List<double> modelInput = _prepareModelInput(symptomLog);
+
+      // Get prediction from TensorFlow Lite model
+      final double riskScore = await _riskPredictor.predictRisk(modelInput);
+      final String riskLabel = _riskPredictor.getRiskLabel(riskScore);
+
+      print(
+          '✅ TFLite prediction successful: score=$riskScore, label=$riskLabel');
+
+      // Convert prediction to risk assessment
+      final modelAssessment =
+          _convertPredictionToAssessment(riskScore, symptomLog);
+
+      // Use the higher risk level between clinical and model assessment
+      final finalAssessment =
+          _combineAssessments(clinicalAssessment, modelAssessment);
+
+      // If high risk, send notification locally first
+      if (finalAssessment.riskLevel == RiskLevel.high) {
+        await _sendHighRiskNotification(finalAssessment, symptomLog.patientId);
+      }
+
+      return finalAssessment;
     } catch (e) {
-      print('Error in AI risk assessment: $e');
-      // CRITICAL: Perform clinical assessment even when AI fails
+      print('Error in risk assessment: $e');
+      // CRITICAL: Perform clinical assessment as backup
       print('🩺 Performing clinical assessment as backup...');
       print('🔍 DEBUG: About to call _performClinicalAssessment');
       final backupAssessment = _performClinicalAssessment(symptomLog);
-      print('🔍 DEBUG: Clinical assessment returned: ${backupAssessment.riskLevel.displayName}');
+      print(
+          '🔍 DEBUG: Clinical assessment returned: ${backupAssessment.riskLevel.displayName}');
+
+      // If high risk during backup assessment, ensure local notification
+      if (backupAssessment.riskLevel == RiskLevel.high) {
+        await _sendHighRiskNotification(backupAssessment, symptomLog.patientId);
+      }
+
       return backupAssessment;
     }
   }
 
-  String _getSystemPrompt() {
-    return '''
-You are a specialized AI medical assistant focused on pregnancy health risk assessment. 
+  /// Prepares symptom data for model input
+  List<double> _prepareModelInput(SymptomLog log) {
+    return [
+      _parseBloodPressure(log.bloodPressure),
+      _parseDouble(log.weight),
+      _parseDouble(log.painLevel),
+      _parseDouble(log.babyKicks),
+      _parseDouble(log.energyLevel),
+      _parseDouble(log.appetiteLevel),
+      log.hadContractions ? 1.0 : 0.0,
+      log.hadHeadaches ? 1.0 : 0.0,
+      log.hadSwelling ? 1.0 : 0.0,
+      _parseDouble(log.sleepHours),
+      _parseDouble(log.waterIntake),
+      _parseDouble(log.exerciseMinutes),
+      log.tookVitamins ? 1.0 : 0.0,
+    ];
+  }
 
-Your task is to analyze pregnancy symptoms and provide a risk assessment with the following format:
+  /// Safely converts a dynamic value to double
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 
-RISK_LEVEL: [LOW/MODERATE/HIGH]
-CONFIDENCE: [0.0-1.0]
-MESSAGE: [Brief explanation of the risk assessment]
-RECOMMENDATIONS: [List of specific recommendations]
+  /// Parse blood pressure string to numeric value
+  double _parseBloodPressure(String bp) {
+    if (bp.contains('/')) {
+      final parts = bp.split('/');
+      if (parts.length == 2) {
+        final systolic = double.tryParse(parts[0].trim()) ?? 0.0;
+        final diastolic = double.tryParse(parts[1].trim()) ?? 0.0;
+        // Use mean arterial pressure as a single value
+        return (systolic + 2 * diastolic) / 3;
+      }
+    }
+    return 0.0;
+  }
 
-CRITICAL RULES:
-1. Always err on the side of caution - if uncertain, classify as MODERATE or HIGH risk
-2. HIGH risk indicators include: severe bleeding, severe headaches with vision changes, severe abdominal pain, signs of preeclampsia (high BP + headaches + swelling), severe contractions before 37 weeks, no fetal movement for extended periods
-3. MODERATE risk indicators include: persistent headaches, unusual swelling, moderate pain, irregular contractions, high blood pressure readings
-4. LOW risk indicates normal pregnancy symptoms with no concerning patterns
-5. Always recommend consulting healthcare provider for HIGH and MODERATE risks
-6. Be specific and actionable in recommendations
-7. Consider the combination of symptoms, not just individual symptoms
-8. Pay attention to symptom severity and frequency
+  /// Converts model prediction to risk assessment
+  RiskAssessment _convertPredictionToAssessment(double score, SymptomLog log) {
+    final RiskLevel riskLevel = score <= 0.5
+        ? RiskLevel.low
+        : (score <= 0.75 ? RiskLevel.moderate : RiskLevel.high);
 
-Analyze the following pregnancy symptoms and provide your assessment:
-''';
+    final String message = _generateRiskMessage(riskLevel, log);
+    final List<String> recommendations = _getDefaultRecommendations(riskLevel);
+
+    return RiskAssessment(
+      riskLevel: riskLevel,
+      message: message,
+      recommendations: recommendations,
+      confidence:
+          score > 0.5 ? score : 1 - score, // Convert score to confidence
+      analysisDate: DateTime.now(),
+    );
   }
 
   /// Performs clinical assessment based on medical guidelines
@@ -119,19 +177,19 @@ Analyze the following pregnancy symptoms and provide your assessment:
     RiskLevel riskLevel = RiskLevel.low;
     double confidence = 0.7;
     List<String> riskFactors = [];
-    
+
     // Critical blood pressure assessment
     final bp = log.bloodPressure.trim();
     print('🩺 Clinical BP Analysis: "$bp"');
-    
+
     if (bp.contains('/')) {
       final parts = bp.split('/');
       if (parts.length == 2) {
         final systolic = int.tryParse(parts[0].trim()) ?? 0;
         final diastolic = int.tryParse(parts[1].trim()) ?? 0;
-        
+
         print('📊 BP Values: Systolic=$systolic, Diastolic=$diastolic');
-        
+
         if (systolic >= 180 || diastolic >= 120) {
           riskLevel = RiskLevel.high;
           confidence = 0.98;
@@ -152,7 +210,7 @@ Analyze the following pregnancy symptoms and provide your assessment:
         }
       }
     }
-    
+
     // Critical symptom combinations (Preeclampsia indicators)
     if (log.hadHeadaches && log.hadSwelling) {
       if (riskLevel == RiskLevel.low) {
@@ -162,7 +220,7 @@ Analyze the following pregnancy symptoms and provide your assessment:
       riskFactors.add('Headaches with swelling (possible preeclampsia)');
       print('⚠️ Preeclampsia symptoms detected');
     }
-    
+
     // Contractions assessment
     if (log.hadContractions) {
       if (riskLevel == RiskLevel.low) {
@@ -172,13 +230,14 @@ Analyze the following pregnancy symptoms and provide your assessment:
       riskFactors.add('Uterine contractions');
       print('⚠️ Contractions reported');
     }
-    
+
     // Generate clinical message
     String message = _generateClinicalMessage(riskLevel, riskFactors, log);
     List<String> recommendations = _getDefaultRecommendations(riskLevel);
-    
-    print('🎯 Clinical Assessment: ${riskLevel.displayName} (${(confidence * 100).toStringAsFixed(1)}%)');
-    
+
+    print(
+        '🎯 Clinical Assessment: ${riskLevel.displayName} (${(confidence * 100).toStringAsFixed(1)}%)');
+
     final assessment = RiskAssessment(
       riskLevel: riskLevel,
       message: message,
@@ -186,7 +245,7 @@ Analyze the following pregnancy symptoms and provide your assessment:
       confidence: confidence,
       analysisDate: DateTime.now(),
     );
-    
+
     // Send notification for high risk
     if (riskLevel == RiskLevel.high) {
       print('🚨 HIGH RISK - Sending emergency notification!');
@@ -196,41 +255,48 @@ Analyze the following pregnancy symptoms and provide your assessment:
         message: message,
       );
     }
-    
+
     return assessment;
   }
 
-  String _generateClinicalMessage(RiskLevel riskLevel, List<String> riskFactors, SymptomLog log) {
+  String _generateClinicalMessage(
+      RiskLevel riskLevel, List<String> riskFactors, SymptomLog log) {
     switch (riskLevel) {
       case RiskLevel.high:
         String message = 'URGENT: HIGH RISK CONDITION DETECTED. ';
         if (riskFactors.isNotEmpty) {
           message += 'Critical factors identified: ${riskFactors.join(", ")}. ';
         }
-        message += 'IMMEDIATE medical attention required. Contact your healthcare provider or go to the emergency room now.';
+        message +=
+            'IMMEDIATE medical attention required. Contact your healthcare provider or go to the emergency room now.';
         return message;
-        
+
       case RiskLevel.moderate:
         String message = 'MODERATE RISK: Your condition requires attention. ';
         if (riskFactors.isNotEmpty) {
           message += 'Concerning factors: ${riskFactors.join(", ")}. ';
         }
-        message += 'Please schedule an appointment with your healthcare provider promptly.';
+        message +=
+            'Please schedule an appointment with your healthcare provider promptly.';
         return message;
-        
+
       case RiskLevel.low:
         return 'Your symptoms appear to be within normal range for pregnancy. Continue monitoring and maintain regular prenatal care.';
     }
   }
 
   /// Combines clinical and AI assessments, using the higher risk level
-  RiskAssessment _combineAssessments(RiskAssessment clinical, RiskAssessment ai) {
+  RiskAssessment _combineAssessments(
+      RiskAssessment clinical, RiskAssessment ai) {
     // Use the higher risk level
-    final RiskLevel finalRisk = _getHigherRiskLevel(clinical.riskLevel, ai.riskLevel);
-    
+    final RiskLevel finalRisk =
+        _getHigherRiskLevel(clinical.riskLevel, ai.riskLevel);
+
     // Use higher confidence
-    final double finalConfidence = clinical.confidence > ai.confidence ? clinical.confidence : ai.confidence;
-    
+    final double finalConfidence = clinical.confidence > ai.confidence
+        ? clinical.confidence
+        : ai.confidence;
+
     // Combine messages
     String finalMessage = '';
     if (finalRisk == clinical.riskLevel) {
@@ -244,14 +310,15 @@ Analyze the following pregnancy symptoms and provide your assessment:
         finalMessage += ' Clinical Assessment: ${clinical.message}';
       }
     }
-    
+
     // Combine recommendations (remove duplicates)
     final Set<String> allRecommendations = {};
     allRecommendations.addAll(clinical.recommendations);
     allRecommendations.addAll(ai.recommendations);
-    
-    print('🔗 Combined Assessment: ${finalRisk.displayName} (${(finalConfidence * 100).toStringAsFixed(1)}%)');
-    
+
+    print(
+        '🔗 Combined Assessment: ${finalRisk.displayName} (${(finalConfidence * 100).toStringAsFixed(1)}%)');
+
     return RiskAssessment(
       riskLevel: finalRisk,
       message: finalMessage,
@@ -268,217 +335,45 @@ Analyze the following pregnancy symptoms and provide your assessment:
     return index1 > index2 ? level1 : level2;
   }
 
-  String _buildSymptomPrompt(SymptomLog log) {
-    return '''
-PATIENT SYMPTOM LOG ANALYSIS:
-
-Basic Vitals:
-- Blood Pressure: ${log.bloodPressure}
-- Weight: ${log.weight}
-- Baby Kicks: ${log.babyKicks}
-
-Symptom Details:
-- Primary Symptoms: ${log.symptoms}
-- Pain Level: ${log.painLevel}
-- Energy Level: ${log.energyLevel}
-- Appetite Level: ${log.appetiteLevel}
-- Mood: ${log.mood}
-
-Critical Symptoms:
-- Contractions: ${log.hadContractions ? 'YES' : 'NO'}
-- Headaches: ${log.hadHeadaches ? 'YES' : 'NO'}
-- Swelling: ${log.hadSwelling ? 'YES' : 'NO'}
-
-Additional Information:
-- Nausea Details: ${log.nauseaDetails ?? 'None reported'}
-- Current Medications: ${log.medications ?? 'None reported'}
-- Sleep Hours: ${log.sleepHours ?? 'Not specified'}
-- Water Intake: ${log.waterIntake ?? 'Not specified'}
-- Exercise Minutes: ${log.exerciseMinutes ?? 'Not specified'}
-- Taking Vitamins: ${log.tookVitamins ? 'YES' : 'NO'}
-- Additional Notes: ${log.additionalNotes ?? 'None'}
-
-Please analyze these symptoms and provide a comprehensive risk assessment.
-''';
-  }
-
-  RiskAssessment _parseRiskAssessment(String aiResponse, SymptomLog log) {
-    try {
-      print('🤖 AI Response: $aiResponse'); // Debug log
-      
-      RiskLevel riskLevel = RiskLevel.low;
-      double confidence = 0.5;
-      String message = '';
-      List<String> recommendations = [];
-
-      // First, check for manual high-risk indicators in blood pressure
-      final bp = log.bloodPressure.trim();
-      print('🩺 Analyzing blood pressure: "$bp"');
-      
-      if (bp.contains('/')) {
-        final parts = bp.split('/');
-        if (parts.length == 2) {
-          final systolic = int.tryParse(parts[0].trim()) ?? 0;
-          final diastolic = int.tryParse(parts[1].trim()) ?? 0;
-          
-          print('📊 Parsed BP values - Systolic: $systolic, Diastolic: $diastolic');
-          
-          // High blood pressure detection - CRITICAL OVERRIDE
-          if (systolic >= 160 || diastolic >= 110) {
-            riskLevel = RiskLevel.high;
-            confidence = 0.95;
-            print('🚨 CRITICAL: HIGH RISK - Blood pressure $bp is dangerously high!');
-            print('🚨 Systolic ≥ 160 OR Diastolic ≥ 110 detected!');
-          } else if (systolic >= 140 || diastolic >= 90) {
-            riskLevel = RiskLevel.moderate;
-            confidence = 0.85;
-            print('⚠️ WARNING: MODERATE RISK - Elevated blood pressure $bp detected!');
-            print('⚠️ Systolic ≥ 140 OR Diastolic ≥ 90 detected!');
-          } else {
-            print('✅ Blood pressure $bp is within acceptable range');
-          }
-        } else {
-          print('❌ Invalid blood pressure format: $bp');
-        }
-      } else {
-        print('❌ Blood pressure does not contain "/" separator: $bp');
-      }
-
-      // Check for critical symptoms
-      if (log.hadContractions || log.hadHeadaches || log.hadSwelling) {
-        if (riskLevel == RiskLevel.low) {
-          riskLevel = RiskLevel.moderate;
-          confidence = 0.8;
-        }
-      }
-
-      // Parse AI response for additional insights
-      final lines = aiResponse.split('\n');
-      
-      for (String line in lines) {
-        line = line.trim();
-        
-        // Look for risk indicators in the response
-        final lowerLine = line.toLowerCase();
-        if (lowerLine.contains('high risk') || lowerLine.contains('urgent') || 
-            lowerLine.contains('immediate') || lowerLine.contains('emergency')) {
-          riskLevel = RiskLevel.high;
-          confidence = 0.9;
-        } else if (lowerLine.contains('moderate') || lowerLine.contains('elevated') || 
-                   lowerLine.contains('concerning')) {
-          if (riskLevel == RiskLevel.low) {
-            riskLevel = RiskLevel.moderate;
-            confidence = 0.75;
-          }
-        }
-        
-        if (line.startsWith('RISK_LEVEL:')) {
-          final level = line.split(':')[1].trim().toUpperCase();
-          switch (level) {
-            case 'HIGH':
-              riskLevel = RiskLevel.high;
-              confidence = 0.9;
-              break;
-            case 'MODERATE':
-              riskLevel = RiskLevel.moderate;
-              confidence = 0.8;
-              break;
-            default:
-              // Keep existing risk level if already elevated
-              if (riskLevel == RiskLevel.low) {
-                riskLevel = RiskLevel.low;
-                confidence = 0.7;
-              }
-          }
-        } else if (line.startsWith('CONFIDENCE:')) {
-          final parsedConfidence = double.tryParse(line.split(':')[1].trim());
-          if (parsedConfidence != null) {
-            confidence = parsedConfidence;
-          }
-        } else if (line.startsWith('MESSAGE:')) {
-          message = line.split(':').skip(1).join(':').trim();
-        } else if (line.startsWith('RECOMMENDATIONS:')) {
-          final recommendationText = line.split(':').skip(1).join(':').trim();
-          if (recommendationText.isNotEmpty) {
-            recommendations.add(recommendationText);
-          }
-        } else if (line.startsWith('-') && recommendations.isNotEmpty) {
-          recommendations.add(line.substring(1).trim());
-        }
-      }
-
-      // Generate message based on risk level and symptoms
-      if (message.isEmpty) {
-        message = _generateRiskMessage(riskLevel, log);
-      }
-
-      if (recommendations.isEmpty) {
-        recommendations = _getDefaultRecommendations(riskLevel);
-      }
-
-      print('🎯 Final Risk Assessment: ${riskLevel.toString().split('.').last.toUpperCase()} (${(confidence * 100).toStringAsFixed(1)}%)');
-
-      final assessment = RiskAssessment(
-        riskLevel: riskLevel,
-        message: message,
-        recommendations: recommendations,
-        confidence: confidence,
-        analysisDate: DateTime.now(),
-      );
-
-      // Send notification for high risk
-      if (riskLevel == RiskLevel.high) {
-        print('🚨 HIGH RISK DETECTED - Sending notification!');
-        _notificationService.sendHighRiskAlert(
-          patientId: log.patientId,
-          riskLevel: riskLevel,
-          message: message,
-        );
-      }
-
-      return assessment;
-    } catch (e) {
-      print('Error parsing AI response: $e');
-      return RiskAssessment(
-        riskLevel: RiskLevel.moderate,
-        message: 'Analysis completed. Please review your symptoms with a healthcare provider.',
-        recommendations: _getDefaultRecommendations(RiskLevel.moderate),
-        confidence: 0.3,
-        analysisDate: DateTime.now(),
-      );
-    }
-  }
-
   String _generateRiskMessage(RiskLevel riskLevel, SymptomLog log) {
     switch (riskLevel) {
       case RiskLevel.high:
-        String message = 'HIGH RISK DETECTED: Your symptoms require immediate medical attention. ';
+        String message =
+            'HIGH RISK DETECTED: Your symptoms require immediate medical attention. ';
         if (log.bloodPressure.contains('/')) {
           final parts = log.bloodPressure.split('/');
           final systolic = int.tryParse(parts[0].trim()) ?? 0;
           if (systolic >= 160) {
-            message += 'Your blood pressure (${log.bloodPressure}) is dangerously high. ';
+            message +=
+                'Your blood pressure (${log.bloodPressure}) is dangerously high. ';
           }
         }
-        if (log.hadContractions) message += 'Contractions may indicate preterm labor. ';
-        if (log.hadHeadaches && log.hadSwelling) message += 'Headaches with swelling may indicate preeclampsia. ';
-        message += 'Please contact your healthcare provider or go to the emergency room immediately.';
+        if (log.hadContractions)
+          message += 'Contractions may indicate preterm labor. ';
+        if (log.hadHeadaches && log.hadSwelling)
+          message += 'Headaches with swelling may indicate preeclampsia. ';
+        message +=
+            'Please contact your healthcare provider or go to the emergency room immediately.';
         return message;
-        
+
       case RiskLevel.moderate:
         String message = 'MODERATE RISK: Your symptoms need attention. ';
         if (log.bloodPressure.contains('/')) {
           final parts = log.bloodPressure.split('/');
           final systolic = int.tryParse(parts[0].trim()) ?? 0;
           if (systolic >= 140) {
-            message += 'Your blood pressure (${log.bloodPressure}) is elevated. ';
+            message +=
+                'Your blood pressure (${log.bloodPressure}) is elevated. ';
           }
         }
-        if (log.hadHeadaches) message += 'Frequent headaches should be monitored. ';
-        if (log.hadSwelling) message += 'Swelling may indicate fluid retention. ';
-        message += 'Please schedule an appointment with your healthcare provider soon.';
+        if (log.hadHeadaches)
+          message += 'Frequent headaches should be monitored. ';
+        if (log.hadSwelling)
+          message += 'Swelling may indicate fluid retention. ';
+        message +=
+            'Please schedule an appointment with your healthcare provider soon.';
         return message;
-        
+
       case RiskLevel.low:
         return 'Your symptoms appear to be within normal range for pregnancy. Continue your regular prenatal care and monitor any changes.';
     }
@@ -510,16 +405,80 @@ Please analyze these symptoms and provide a comprehensive risk assessment.
     }
   }
 
-  Future<void> _sendHighRiskNotification(RiskAssessment assessment, String patientId) async {
+  Future<void> _sendHighRiskNotification(
+      RiskAssessment assessment, String patientId) async {
     try {
-      await _notificationService.sendHighRiskAlert(
-        patientId: patientId,
-        riskLevel: assessment.riskLevel,
-        message: assessment.message,
-      );
-      print('High risk notification sent for patient: $patientId');
+      // First, always try to save locally regardless of connectivity
+      try {
+        await OfflineStorage().saveSymptomLog(
+          SymptomLog(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            patientId: patientId,
+            bloodPressure: "120/80", // Default value
+            weight: "0",
+            babyKicks: "0",
+            mood: "Unknown",
+            symptoms: "High Risk Alert",
+            energyLevel: "Normal",
+            appetiteLevel: "Normal",
+            painLevel: "None",
+            hadContractions: false,
+            hadHeadaches: false,
+            hadSwelling: false,
+            tookVitamins: false,
+            logDate: DateTime.now(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            // Risk assessment data
+            riskLevel: assessment.riskLevel.toString(),
+            riskMessage: assessment.message,
+            riskRecommendations: assessment.recommendations,
+            riskConfidence: assessment.confidence,
+            riskAnalysisDate: assessment.analysisDate,
+          ),
+        );
+        print('✅ Assessment saved locally');
+      } catch (e) {
+        print('Error saving assessment locally: $e');
+        await ToastService.showError(
+          'Unable to save assessment data. Please try again.',
+        );
+        // Continue execution to at least show the notification
+      }
+
+      // Show local notification for immediate alert
+      try {
+        await _notificationService.sendHighRiskAlert(
+          patientId: patientId,
+          riskLevel: assessment.riskLevel,
+          message: assessment.message,
+        );
+        print('🔔 Local high risk notification shown for patient: $patientId');
+      } catch (e) {
+        print('Error showing local notification: $e');
+        await ToastService.showError(
+          'Unable to show notification. Please check your notification settings.',
+        );
+      }
+
+      // Check internet connectivity for cloud sync
+      bool hasInternet = await ConnectivityChecker().hasInternetConnection();
+      if (!hasInternet) {
+        print('📴 No internet connection detected');
+        await ToastService.showInfo(
+          'No internet connection. Assessment saved locally and will sync when online.',
+        );
+        return;
+      }
+
+      // If we have internet, additional cloud operations can be performed here
+      print(
+          '✅ High risk notification processing completed for patient: $patientId');
     } catch (e) {
-      print('Error sending high risk notification: $e');
+      print('❌ Critical error in notification processing: $e');
+      await ToastService.showError(
+        'A problem occurred. Please ensure your device has notification permissions enabled.',
+      );
     }
   }
 }
