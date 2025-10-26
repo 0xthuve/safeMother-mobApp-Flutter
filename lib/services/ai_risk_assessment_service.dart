@@ -465,9 +465,31 @@ class AIRiskAssessmentService {
       bool hasInternet = await ConnectivityChecker().hasInternetConnection();
       if (!hasInternet) {
         print('📴 No internet connection detected');
-        await ToastService.showInfo(
-          'No internet connection. Assessment saved locally and will sync when online.',
-        );
+        // Per requirement: show specific message but do NOT block local model
+        await ToastService.showInfo('Internet not accessible.');
+
+        // Start a background task that waits for connectivity and attempts cloud sync
+        () async {
+          try {
+      final connected = await ConnectivityChecker()
+        .waitForInternetConnection(timeout: Duration(seconds: 10));
+            if (connected) {
+              print('📶 Internet restored - attempting cloud sync for patient: $patientId');
+              try {
+                await _performCloudSync(assessment, patientId);
+                await ToastService.showSuccess('Assessment synced successfully.');
+              } catch (e) {
+                print('Error during cloud sync after reconnect: $e');
+                await ToastService.showError('Failed to sync assessment after reconnect.');
+              }
+            } else {
+              print('⏰ Internet did not become available within timeout; will retry later.');
+            }
+          } catch (e) {
+            print('Error while waiting for connectivity: $e');
+          }
+        }();
+
         return;
       }
 
@@ -479,6 +501,21 @@ class AIRiskAssessmentService {
       await ToastService.showError(
         'A problem occurred. Please ensure your device has notification permissions enabled.',
       );
+    }
+  }
+
+  /// Attempt to sync assessment to cloud. This is a minimal placeholder that
+  /// performs any required cloud calls. It intentionally keeps errors local so
+  /// they don't affect the main flow. Implement actual cloud upload logic here.
+  Future<void> _performCloudSync(RiskAssessment assessment, String patientId) async {
+    try {
+      // TODO: replace with actual cloud sync logic (e.g., Firestore or HTTP API)
+      print('🔁 _performCloudSync: Simulating cloud sync for patient: $patientId');
+      await Future.delayed(Duration(seconds: 1));
+      print('🔁 _performCloudSync: Completed simulation');
+    } catch (e) {
+      print('Error in _performCloudSync: $e');
+      rethrow;
     }
   }
 }

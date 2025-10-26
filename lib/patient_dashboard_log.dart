@@ -7,6 +7,9 @@ import 'models/symptom_log.dart';
 import 'models/doctor_alert.dart';
 import 'services/backend_service.dart';
 import 'services/ai_risk_assessment_service.dart';
+import 'utils/connectivity_checker.dart';
+import 'utils/offline_storage.dart';
+import 'utils/toast_service.dart';
 import 'bottom_navigation.dart';
 import 'navigation_handler.dart';
 
@@ -43,6 +46,7 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
   bool _hadSwelling = false;
   bool _tookVitamins = false;
   bool _isLoading = false;
+  bool _isPredicting = false;
   List<SymptomLog> _recentLogs = [];
 
   final List<String> _moodOptions = [
@@ -83,6 +87,62 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRecentLogs();
     });
+  }
+
+  /// Predict risk using current form values without saving the log.
+  Future<void> _predictRisk() async {
+    // Build a SymptomLog from current form values (but don't persist yet)
+    setState(() {
+      _isPredicting = true;
+    });
+
+    try {
+      final now = DateTime.now();
+      final user = FirebaseAuth.instance.currentUser;
+      final patientId = user?.uid ?? '';
+
+      final symptomLog = SymptomLog(
+        patientId: patientId,
+        bloodPressure: _bloodPressureController.text,
+        weight: _weightController.text,
+        babyKicks: _babyKicks.toString(),
+        mood: _mood,
+        symptoms: _symptomsController.text,
+        additionalNotes: _notesController.text,
+        sleepHours: _sleepHoursController.text,
+        waterIntake: _waterIntakeController.text,
+        exerciseMinutes: _exerciseMinutesController.text,
+        energyLevel: _energyLevel,
+        appetiteLevel: _appetiteLevel,
+        painLevel: _painLevel,
+        hadContractions: _hadContractions,
+        hadHeadaches: _hadHeadaches,
+        hadSwelling: _hadSwelling,
+        tookVitamins: _tookVitamins,
+        nauseaDetails: _nauseaController.text,
+        medications: _medicationsController.text,
+        logDate: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+
+      // Run local AI assessment (this uses the local TF model and does not require internet)
+      final assessment = await _aiService.analyzeSymptoms(symptomLog);
+
+      if (!mounted) return;
+
+      // Show the existing risk dialog UI with the result
+      _showRiskAssessmentDialog(assessment);
+    } catch (e) {
+      print('Error predicting risk: $e');
+      await ToastService.showError('Failed to predict risk.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPredicting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -158,10 +218,34 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
         updatedAt: now,
       );
 
-      // Save to database first
-      final logId = await _backendService.saveSymptomLog(symptomLog);
-      if (logId != null) {
-        symptomLog = symptomLog.copyWith(id: logId);
+      // Save to database first if internet is available. If offline, save
+      // locally and continue (do not block UI). This prevents the form from
+      // getting stuck while waiting for network timeouts.
+      try {
+        final hasInternet = await ConnectivityChecker().hasInternetConnection();
+        if (hasInternet) {
+          final logId = await _backendService.saveSymptomLog(symptomLog);
+          if (logId != null) {
+            symptomLog = symptomLog.copyWith(id: logId);
+          }
+        } else {
+          // Assign a local id and persist locally for later sync
+          final localId = DateTime.now().millisecondsSinceEpoch.toString();
+          symptomLog = symptomLog.copyWith(id: localId);
+          await OfflineStorage().saveSymptomLog(symptomLog);
+          await ToastService.showInfo('Internet not accessible.');
+        }
+      } catch (e) {
+        // If connectivity check or saving fails, persist locally and continue.
+        print('Error saving symptom log (will save offline): $e');
+        try {
+          final localId = DateTime.now().millisecondsSinceEpoch.toString();
+          symptomLog = symptomLog.copyWith(id: localId);
+          await OfflineStorage().saveSymptomLog(symptomLog);
+        } catch (saveErr) {
+          print('Failed to save symptom log offline: $saveErr');
+        }
+        await ToastService.showInfo('Internet not accessible.');
       }
 
       // Perform AI risk assessment
@@ -178,16 +262,43 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
           '📈 Confidence: ${(riskAssessment.confidence * 100).toStringAsFixed(1)}%');
       print('💬 Message: ${riskAssessment.message}');
 
-      // Update symptom log with risk assessment
-      if (symptomLog.id != null) {
-        await _backendService
-            .updateSymptomLogWithRiskAssessment(symptomLog.id!, {
-          'riskLevel': riskAssessment.riskLevel.displayName,
-          'riskMessage': riskAssessment.message,
-          'riskRecommendations': riskAssessment.recommendations,
-          'riskConfidence': riskAssessment.confidence,
-          'riskAnalysisDate': DateTime.now().toIso8601String(),
-        });
+      // Update symptom log with risk assessment. If offline, save locally and
+      // show an 'Internet not accessible.' toast — do not block the UI.
+      final updatedLog = symptomLog.copyWith(
+        riskLevel: riskAssessment.riskLevel.displayName,
+        riskMessage: riskAssessment.message,
+        riskRecommendations: riskAssessment.recommendations,
+        riskConfidence: riskAssessment.confidence,
+        riskAnalysisDate: DateTime.now(),
+      );
+
+      try {
+        final hasInternet = await ConnectivityChecker().hasInternetConnection();
+        if (hasInternet) {
+          if (updatedLog.id != null) {
+            await _backendService
+                .updateSymptomLogWithRiskAssessment(updatedLog.id!, {
+              'riskLevel': updatedLog.riskLevel,
+              'riskMessage': updatedLog.riskMessage,
+              'riskRecommendations': updatedLog.riskRecommendations,
+              'riskConfidence': updatedLog.riskConfidence,
+              'riskAnalysisDate': updatedLog.riskAnalysisDate?.toIso8601String(),
+            });
+          }
+        } else {
+          // No internet: inform user and persist locally for later sync
+          await ToastService.showInfo('Internet not accessible.');
+          await OfflineStorage().saveSymptomLog(updatedLog);
+        }
+      } catch (e) {
+        print('Error updating symptom log or saving offline: $e');
+        // Ensure we persist locally so data isn't lost
+        try {
+          await OfflineStorage().saveSymptomLog(updatedLog);
+        } catch (saveErr) {
+          print('Failed to save log offline: $saveErr');
+        }
+        await ToastService.showInfo('Internet not accessible.');
       }
 
       // Create doctor alerts for high-risk cases
@@ -2065,6 +2176,43 @@ class _PatientDashboardLogState extends State<PatientDashboardLog> {
                                               ),
                                             ],
                                           ),
+                                  ),
+                                ),
+                                SizedBox(height: 12),
+                                // Predict Risk Button
+                                Container(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _isPredicting
+                                        ? null
+                                        : () async {
+                                            await _predictRisk();
+                                          },
+                                    icon: _isPredicting
+                                        ? SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : Icon(Icons.analytics),
+                                    label: Text(
+                                      'Predict Risk',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(
+                                        color: Color(0xFF7B1FA2),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
