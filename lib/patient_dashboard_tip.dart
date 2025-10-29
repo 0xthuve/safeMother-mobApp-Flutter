@@ -3,9 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart'; // Add this import
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'l10n/app_localizations.dart';
 
-void main() {
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Load environment variables from the project's .env file
+  await dotenv.load(fileName: '.env');
   runApp(const PregnancyTip());
 }
 
@@ -76,10 +81,26 @@ class _LearnScreenState extends State<LearnScreen> {
     });
 
     try {
-      final response = await http.get(
-        Uri.parse(
-            'https://newsapi.org/v2/everything?q=pregnancy%20OR%20parenting%20OR%20baby%20OR%20motherhood&apiKey=5ab8635d12744f488a9cc7f24f7e4d70'),
-      );
+      // Read API URL from environment (LEARN_API_KEY contains the full newsapi.org URL)
+      String rawUrl = dotenv.env['LEARN_API_KEY'] ?? '';
+      // Strip surrounding quotes if any and trim whitespace
+      String apiUrl = rawUrl.trim();
+      if (apiUrl.length >= 2 &&
+          ((apiUrl.startsWith("'") && apiUrl.endsWith("'")) ||
+              (apiUrl.startsWith('"') && apiUrl.endsWith('"')))) {
+        apiUrl = apiUrl.substring(1, apiUrl.length - 1).trim();
+      }
+
+      if (apiUrl.isEmpty) {
+        throw Exception('LEARN_API_KEY is not set in .env');
+      }
+
+      final uri = Uri.tryParse(apiUrl);
+      if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+        throw Exception('Invalid LEARN_API_KEY URL: $apiUrl');
+      }
+
+      final response = await http.get(uri);
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
