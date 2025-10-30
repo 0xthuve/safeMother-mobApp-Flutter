@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'signup-roleSelection.dart';
-import 'patientDashboard.dart';
-import 'patientDashboardLog.dart';
-import 'reminderPatientDashboard.dart';
-import 'patientDashboardTip.dart';
-import 'chatPatient.dart';
+import 'signup-roleMother-p2.dart';
+import 'patient_dashboard.dart';
+import 'patient_dashboard_log.dart';
+import 'consultation_patient_dashboard.dart';
+import 'patient_dashboard_tip.dart';
+import 'chat_patient.dart';
 import 'pages/doctor/doctor_login.dart';
-import 'services/session_manager.dart';
+import 'services/user_management_service.dart';
+import './pages/family_logIn_page.dart';
+import 'pages/family_home_screen.dart';
+import 'pages/family_log_page.dart';
+import 'pages/family_appointment_page.dart';
+import 'pages/family_profile_page.dart';
 
 void main() {
   runApp(const SignInApp());
@@ -18,8 +24,8 @@ class SignInApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother - Login',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
@@ -31,15 +37,115 @@ class SignInApp extends StatelessWidget {
           bodyMedium: TextStyle(color: Color(0xFF5A5A5A)), // Dark gray text
         ),
       ),
-      home: const SignInScreen(),
+      home: const AuthWrapper(),
       routes: {
         '/home': (context) => const HomeScreen(),
-        '/log': (context) => const LogScreen(),
-        '/reminders': (context) => const RemindersScreen(),
+        '/log': (context) => PatientDashboardLog(),
+        '/consultation': (context) => const ConsultationScreen(),
         '/learn': (context) => const LearnScreen(),
         '/chat': (context) => const ChatScreen(),
+  '/familyViewLog': (context) => const FamilyViewLogScreen(),
+  '/familyAppointments': (context) => const FamilyAppointmentsScreen(),
+  '/familyProfile': (context) => const FamilyProfileScreen(),
       },
     );
+  }
+}
+
+class AuthWrapper extends StatefulWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _isLoading = true;
+  Widget? _initialScreen;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthState();
+  }
+
+  Future<void> _checkAuthState() async {
+    try {
+      // Check if user is already logged in with a timeout
+      final userData = await UserManagementService.getCurrentUserData()
+          .timeout(const Duration(seconds: 5), onTimeout: () {
+        print('Auth check timed out, assuming user is not logged in');
+        return null;
+      });
+      
+      if (userData != null) {
+        final userRole = userData['role'];
+        
+        // Navigate based on user role
+        if (userRole == 'family') {
+          _initialScreen = const FamilyHomeScreen();
+        } else if (userRole == 'doctor' || userRole == 'healthcare') {
+          // Healthcare providers should use their dedicated login
+          await UserManagementService.signOutUser();
+          _initialScreen = const SignInScreen();
+        } else {
+          // Regular patient
+          _initialScreen = const HomeScreen();
+        }
+      } else {
+        // No user logged in, show sign in screen
+        _initialScreen = const SignInScreen();
+      }
+    } catch (e) {
+      print('Auth check failed: $e');
+      // If there's an error checking auth state, show sign in screen
+      _initialScreen = const SignInScreen();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      // Show loading screen while checking authentication
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFFBE9E7), Color(0xFFF8F6F8)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Checking authentication...',
+                  style: TextStyle(
+                    color: Color(0xFF7B1FA2),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return _initialScreen ?? const SignInScreen();
   }
 }
 
@@ -239,61 +345,123 @@ class SignInScreen extends StatelessWidget {
                       ),
                       
                       const SizedBox(height: 20),
+
+                      // // Demo mode button
+                      // Container(
+                      //   width: double.infinity,
+                      //   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      //   decoration: BoxDecoration(
+                      //     color: const Color(0xFFE3F2FD).withOpacity(0.6),
+                      //     borderRadius: BorderRadius.circular(12),
+                      //     border: Border.all(
+                      //       color: const Color(0xFF1976D2).withOpacity(0.3),
+                      //       width: 1,
+                      //     ),
+                      //   ),
+                      //   child: Row(
+                      //     children: [
+                      //       const Icon(
+                      //         Icons.info_outline,
+                      //         color: Color(0xFF1976D2),
+                      //         size: 20,
+                      //       ),
+                      //       const SizedBox(width: 12),
+                      //       const Expanded(
+                      //         child: Text(
+                      //           'Demo Mode: Firebase not configured',
+                      //           style: TextStyle(
+                      //             color: Color(0xFF1976D2),
+                      //             fontSize: 14,
+                      //             fontWeight: FontWeight.w500,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //       TextButton(
+                      //         onPressed: () {
+                      //           // Import the FirebaseMockService to show instructions
+                      //           showDialog(
+                      //             context: context,
+                      //             builder: (context) => AlertDialog(
+                      //               title: const Text(
+                      //                 'Demo Mode',
+                      //                 style: TextStyle(
+                      //                   color: Color(0xFF7B1FA2),
+                      //                   fontWeight: FontWeight.bold,
+                      //                 ),
+                      //               ),
+                      //               content: Column(
+                      //                 mainAxisSize: MainAxisSize.min,
+                      //                 crossAxisAlignment: CrossAxisAlignment.start,
+                      //                 children: [
+                      //                   const Text(
+                      //                     'Firebase is not configured. Using demo mode with these credentials:',
+                      //                     style: TextStyle(fontSize: 16),
+                      //                   ),
+                      //                   const SizedBox(height: 16),
+                      //                   Container(
+                      //                     padding: const EdgeInsets.all(12),
+                      //                     decoration: BoxDecoration(
+                      //                       color: const Color(0xFFF3E5F5),
+                      //                       borderRadius: BorderRadius.circular(8),
+                      //                     ),
+                      //                     child: const Column(
+                      //                       crossAxisAlignment: CrossAxisAlignment.start,
+                      //                       children: [
+                      //                         Text(
+                      //                           'Demo Credentials:',
+                      //                           style: TextStyle(
+                      //                             fontWeight: FontWeight.bold,
+                      //                             color: Color(0xFF7B1FA2),
+                      //                           ),
+                      //                         ),
+                      //                         SizedBox(height: 8),
+                      //                         Text('Email: demo@safemother.com'),
+                      //                         Text('Password: demo123'),
+                      //                       ],
+                      //                     ),
+                      //                   ),
+                      //                   const SizedBox(height: 16),
+                      //                   const Text(
+                      //                     'Or create a new account - all data will be stored locally.',
+                      //                     style: TextStyle(
+                      //                       fontSize: 14,
+                      //                       color: Color(0xFF9575CD),
+                      //                     ),
+                      //                   ),
+                      //                 ],
+                      //               ),
+                      //               actions: [
+                      //                 TextButton(
+                      //                   onPressed: () => Navigator.of(context).pop(),
+                      //                   child: const Text(
+                      //                     'Got it!',
+                      //                     style: TextStyle(
+                      //                       color: Color(0xFFE91E63),
+                      //                       fontWeight: FontWeight.bold,
+                      //                     ),
+                      //                   ),
+                      //                 ),
+                      //               ],
+                      //             ),
+                      //           );
+                      //         },
+                      //         style: TextButton.styleFrom(
+                      //           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      //         ),
+                      //         child: const Text(
+                      //           'Info',
+                      //           style: TextStyle(
+                      //             color: Color(0xFF1976D2),
+                      //             fontSize: 12,
+                      //             fontWeight: FontWeight.w600,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                       
-                      // Quick access options
-                      const Text(
-                        'Or continue with',
-                        style: TextStyle(
-                          color: Color(0xFF9575CD),
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Social login options
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            onPressed: () {},
-                            icon: Image.asset(
-                              'assets/google_icon.png',
-                              width: 24,
-                              height: 24,
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: const Color(0xFFF5F5F5),
-                              padding: const EdgeInsets.all(12),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          IconButton(
-                            onPressed: () {},
-                            icon: Image.asset(
-                              'assets/facebook_icon.png',
-                              width: 24,
-                              height: 24,
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: const Color(0xFFF5F5F5),
-                              padding: const EdgeInsets.all(12),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(
-                              Icons.phone,
-                              color: Color(0xFF7B1FA2),
-                              size: 24,
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: const Color(0xFFF5F5F5),
-                              padding: const EdgeInsets.all(12),
-                            ),
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: 20),
                       
                       const SizedBox(height: 32),
                       
@@ -304,17 +472,24 @@ class SignInScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              const Color(0xFFE3F2FD).withOpacity(0.6),
-                              const Color(0xFFF1F8E9).withOpacity(0.6),
+                              const Color(0xFFE3F2FD), // Light blue
+                              const Color(0xFFBBDEFB), // Deeper blue
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: const Color(0xFF81C784).withOpacity(0.3),
+                            color: const Color(0xFF1976D2).withOpacity(0.2),
                             width: 1,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1976D2).withOpacity(0.1),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Column(
                           children: [
@@ -322,36 +497,58 @@ class SignInScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1976D2).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
+                                    color: const Color(0xFF1976D2).withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFF1976D2).withOpacity(0.3),
+                                      width: 1,
+                                    ),
                                   ),
                                   child: const Icon(
                                     Icons.medical_services,
                                     color: Color(0xFF1976D2),
-                                    size: 20,
+                                    size: 24,
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  'Healthcare Provider?',
-                                  style: TextStyle(
+                                const SizedBox(width: 16),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Healthcare Provider',
+                                        style: TextStyle(
+                                          color: Color(0xFF1976D2),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        'Access medical dashboard & patient management',
+                                        style: TextStyle(
+                                          color: Color(0xFF64B5F6),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1976D2).withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.local_hospital,
                                     color: Color(0xFF1976D2),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                                    size: 16,
                                   ),
                                 ),
                               ],
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'Access your medical dashboard and patient management tools',
-                              style: TextStyle(
-                                color: Color(0xFF64B5F6),
-                                fontSize: 13,
-                              ),
-                              textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 16),
                             SizedBox(
@@ -373,6 +570,7 @@ class SignInScreen extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   elevation: 2,
+                                  shadowColor: const Color(0xFF1976D2).withOpacity(0.3),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -396,6 +594,157 @@ class SignInScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                    
+
+                      const SizedBox(height: 20),
+                      
+
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFFFFF3E0), // Light orange
+                              const Color(0xFFFFE0B2), // Deeper orange
+                              const Color(0xFFFFCCBC), // Light coral
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFFE91E63).withOpacity(0.3),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFE91E63).withOpacity(0.15),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFFE91E63),
+                                        const Color(0xFFD81B60),
+                                      ],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFE91E63).withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.family_restroom,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Family Member',
+                                        style: TextStyle(
+                                          color: Color(0xFFE91E63),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        'Stay connected with your loved one\'s care',
+                                        style: TextStyle(
+                                          color: Color(0xFFAD1457),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(0xFFE91E63).withOpacity(0.2),
+                                        const Color(0xFFE91E63).withOpacity(0.1),
+                                      ],
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.favorite,
+                                    color: Color(0xFFE91E63),
+                                    size: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const FamilyLoginScreen(),
+                                    ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE91E63),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 3,
+                                  shadowColor: const Color(0xFFE91E63).withOpacity(0.4),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.home,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Family Access',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      
                     ],
                   ),
                 ),
@@ -420,7 +769,7 @@ class _SignInFormState extends State<SignInForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -431,19 +780,105 @@ class _SignInFormState extends State<SignInForm> {
 
   Future<void> _onSignIn() async {
     if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isLoading = true;
+      });
+
       try {
-        // Save login session for patient
-        await SessionManager.saveLoginSession(
-          userType: SessionManager.userTypePatient,
-          userId: 'patient_${DateTime.now().millisecondsSinceEpoch}', // Demo ID
-          userName: 'Sophia Carter', // Demo name
-          userEmail: _emailController.text.trim(),
+        final success = await UserManagementService.signInUser(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+          context,
         );
+
+        if (success) {
+          // Get user data to show welcome message
+          final userData = await UserManagementService.getCurrentUserData();
+          final userName = userData?['fullName'] ?? 'User';
+          final userRole = userData?['role'];
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Welcome back, $userName!'),
+                backgroundColor: const Color(0xFFE91E63),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+
+                  // Navigate to appropriate dashboard based on role
+                  if (userRole == 'doctor' || userRole == 'healthcare') {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text('Healthcare providers cannot access patient dashboard. Please use Healthcare Login.'),
+                        backgroundColor: Colors.orange,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+                    await UserManagementService.signOutUser();
+                    return;
+                  } else if (userRole == 'family') {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const FamilyHomeScreen()),
+                    );
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomeScreen()),
+                    );
+                  }
+          }
+        } else {
+          throw Exception('Invalid email or password');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Login failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    }
+  }
+
+
+
+  Future<void> _onGoogleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await UserManagementService.signInWithGoogle(context);
+
+      if (result != null && result['success'] == true) {
+        final userName = result['userName'] ?? 'User';
+        final needsPregnancyInfo = result['needsPregnancyInfo'] as bool? ?? false;
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Welcome back, Sophia! Signing in as ${_emailController.text.trim()}'),
+              content: Text('Welcome, $userName!'),
               backgroundColor: const Color(0xFFE91E63),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -452,17 +887,194 @@ class _SignInFormState extends State<SignInForm> {
             ),
           );
 
-          // Navigate to patient dashboard and replace the sign-in route
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
+          // Check if user role is allowed to access patient dashboard
+          final userRole = result['userRole'] as String?;
+          if (userRole == 'doctor' || userRole == 'healthcare') {
+            // Doctors should not access patient dashboard via Google Sign-In
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Healthcare providers cannot access patient dashboard. Please use Healthcare Login.'),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+            // Sign out the user and return to login
+            await UserManagementService.signOutUser();
+            return;
+          }
+
+          // Navigate based on profile completion status
+          if (needsPregnancyInfo) {
+            // New user or incomplete profile - go to pregnancy questions
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const RoleMotherP2(), // Pregnancy questions page
+              ),
+            );
+          } else {
+            // Existing user with complete profile - go to dashboard
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          }
+        }
+      } else {
+        throw Exception('Google sign-in was cancelled or failed');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google sign-in failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _onForgotPassword() async {
+    // Show dialog to ask for email or username
+    final TextEditingController resetController = TextEditingController();
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Reset Password',
+          style: TextStyle(
+            color: Color(0xFF7B1FA2),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter your email address or username to receive a password reset link.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            TextFormField(
+              controller: resetController,
+              decoration: InputDecoration(
+                labelText: 'Email or Username',
+                labelStyle: const TextStyle(color: Color(0xFF9575CD)),
+                filled: true,
+                fillColor: const Color(0xFFF5F5F5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF9575CD)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFF9575CD)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (resetController.text.trim().isNotEmpty) {
+                Navigator.of(context).pop(resetController.text.trim());
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE91E63),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Send Reset Link',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      try {
+        // Check if input is email or username and convert to email if needed
+        String emailToReset = result;
+        
+        // If input doesn't contain @, treat it as username and try to find the email
+        if (!result.contains('@')) {
+          final userEmail = await UserManagementService.getEmailByUsername(result);
+          if (userEmail != null) {
+            emailToReset = userEmail;
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Username not found. Please try with your email address.'),
+                  backgroundColor: Colors.orange,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            }
+            return;
+          }
+        }
+
+        final success = await UserManagementService.resetPassword(emailToReset);
+        
+        if (mounted) {
+          if (success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Password reset email sent to $emailToReset'),
+                backgroundColor: const Color(0xFFE91E63),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Failed to send reset email. Please check your email address.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Login failed: $e'),
+              content: Text('Failed to send reset email: ${e.toString()}'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -486,7 +1098,7 @@ class _SignInFormState extends State<SignInForm> {
             controller: _emailController,
             style: const TextStyle(color: Color(0xFF5A5A5A)),
             decoration: InputDecoration(
-              labelText: 'Email or Phone',
+              labelText: 'Email',
               labelStyle: const TextStyle(color: Color(0xFF9575CD)),
               filled: true,
               fillColor: const Color(0xFFF5F5F5),
@@ -546,43 +1158,12 @@ class _SignInFormState extends State<SignInForm> {
           ),
           const SizedBox(height: 16),
           
-          // Remember me checkbox
+          // Forgot password
           Row(
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Checkbox(
-                value: _rememberMe,
-                onChanged: (value) {
-                  setState(() {
-                    _rememberMe = value ?? false;
-                  });
-                },
-                activeColor: const Color(0xFFE91E63),
-                checkColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const Text(
-                'Remember me',
-                style: TextStyle(
-                  color: Color(0xFF7E57C2),
-                  fontSize: 14,
-                ),
-              ),
-              const Spacer(),
               TextButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Password reset instructions will be sent to your email'),
-                      backgroundColor: const Color(0xFFE91E63),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  );
-                },
+                onPressed: _isLoading ? null : _onForgotPassword,
                 child: const Text(
                   'Forgot Password?',
                   style: TextStyle(
@@ -601,7 +1182,7 @@ class _SignInFormState extends State<SignInForm> {
             width: double.infinity,
             height: 54,
             child: ElevatedButton(
-              onPressed: _onSignIn,
+              onPressed: _isLoading ? null : _onSignIn,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFE91E63),
                 shape: RoundedRectangleBorder(
@@ -610,13 +1191,49 @@ class _SignInFormState extends State<SignInForm> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 elevation: 2,
               ),
-              child: const Text(
-                'Sign In',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text(
+                      'Sign In',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Google Sign-In option
+          const Text(
+            'Or continue with',
+            style: TextStyle(
+              color: Color(0xFF9575CD),
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Google Sign-In only
+          Center(
+            child: IconButton(
+              onPressed: _isLoading ? null : _onGoogleSignIn,
+              icon: Image.asset(
+                'assets/google_icon.png',
+                width: 24,
+                height: 24,
+              ),
+              style: IconButton.styleFrom(
+                backgroundColor: const Color(0xFFF5F5F5),
+                padding: const EdgeInsets.all(12),
               ),
             ),
           ),

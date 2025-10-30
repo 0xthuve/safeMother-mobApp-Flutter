@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../pages/doctor/doctor_dashboard.dart';
-import 'doctor_registration.dart';
-import '../../services/session_manager.dart';
+import '../../services/user_management_service.dart';
+import '../../signin.dart';
+import '../../signup-roleSelection.dart';
 
 class DoctorLogin extends StatefulWidget {
   const DoctorLogin({super.key});
@@ -15,7 +16,6 @@ class _DoctorLoginState extends State<DoctorLogin> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
   bool _isLoading = false;
 
   @override
@@ -32,39 +32,55 @@ class _DoctorLoginState extends State<DoctorLogin> {
       });
 
       try {
-        // Simulate login process
-        await Future.delayed(const Duration(seconds: 2));
-
-        // Save login session for doctor
-        await SessionManager.saveLoginSession(
-          userType: SessionManager.userTypeDoctor,
-          userId: 'doctor_${DateTime.now().millisecondsSinceEpoch}', // Demo ID
-          userName: 'Dr. Sarah Johnson', // Demo name
-          userEmail: _emailController.text.trim(),
+        // Use proper Firebase authentication for healthcare professionals
+        final success = await UserManagementService.signInUser(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+          context,
         );
 
-        setState(() {
-          _isLoading = false;
-        });
+        if (success) {
+          // Get user data to verify role
+          final userData = await UserManagementService.getCurrentUserData();
+          final userRole = userData?['role'] as String?;
+          
+          // Check if user is a healthcare professional
+          if (userRole == 'doctor' || userRole == 'healthcare') {
+            final userName = userData?['fullName'] ?? 'Healthcare Professional';
+            
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Welcome back, $userName!'),
+                  backgroundColor: const Color(0xFF1976D2),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
 
-        if (mounted) {
-          // Navigate to doctor dashboard
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const DoctorDashboard(),
-            ),
-          );
+              // Navigate to doctor dashboard
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DoctorDashboard(),
+                ),
+              );
+            }
+          } else {
+            // User is not a healthcare professional
+            await UserManagementService.signOutUser();
+            throw Exception('Access denied. This login is for healthcare professionals only.');
+          }
+        } else {
+          throw Exception('Invalid email or password.');
         }
       } catch (e) {
-        setState(() {
-          _isLoading = false;
-        });
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Login failed: $e'),
+              content: Text('Login failed: ${e.toString()}'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
@@ -72,6 +88,12 @@ class _DoctorLoginState extends State<DoctorLogin> {
               ),
             ),
           );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
         }
       }
     }
@@ -150,7 +172,12 @@ class _DoctorLoginState extends State<DoctorLogin> {
                             ),
                             child: IconButton(
                               onPressed: () {
-                                Navigator.pop(context);
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignInScreen(),
+                                  ),
+                                );
                               },
                               icon: const Icon(
                                 Icons.arrow_back_ios,
@@ -247,7 +274,7 @@ class _DoctorLoginState extends State<DoctorLogin> {
                                 controller: _emailController,
                                 style: const TextStyle(color: Color(0xFF5A5A5A)),
                                 decoration: InputDecoration(
-                                  labelText: 'Email or License Number',
+                                  labelText: 'Email',
                                   labelStyle: const TextStyle(color: Color(0xFF64B5F6)),
                                   filled: true,
                                   fillColor: const Color(0xFFF5F5F5),
@@ -260,7 +287,7 @@ class _DoctorLoginState extends State<DoctorLogin> {
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter your email or license number';
+                                    return 'Please enter your email';
                                   }
                                   return null;
                                 },
@@ -307,30 +334,10 @@ class _DoctorLoginState extends State<DoctorLogin> {
                               ),
                               const SizedBox(height: 16),
                               
-                              // Remember me checkbox
+                              // Forgot password
                               Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  Checkbox(
-                                    value: _rememberMe,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _rememberMe = value ?? false;
-                                      });
-                                    },
-                                    activeColor: const Color(0xFF1976D2),
-                                    checkColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                  const Text(
-                                    'Remember me',
-                                    style: TextStyle(
-                                      color: Color(0xFF64B5F6),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const Spacer(),
                                   TextButton(
                                     onPressed: () {
                                       ScaffoldMessenger.of(context).showSnackBar(
@@ -395,7 +402,7 @@ class _DoctorLoginState extends State<DoctorLogin> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Text(
-                            "Don't have an account? ",
+                            "New to Safe Mother?",
                             style: TextStyle(
                               color: Color(0xFF64B5F6),
                               fontSize: 15,
@@ -405,11 +412,11 @@ class _DoctorLoginState extends State<DoctorLogin> {
                             onPressed: () {
                               Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(builder: (context) => const DoctorRegistration()),
+                                MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
                               );
                             },
                             child: const Text(
-                              'Register Now',
+                              'Create Account',
                               style: TextStyle(
                                 color: Color(0xFF1976D2),
                                 fontWeight: FontWeight.w700,
@@ -442,7 +449,12 @@ class _DoctorLoginState extends State<DoctorLogin> {
                             const SizedBox(width: 8),
                             TextButton(
                               onPressed: () {
-                                Navigator.pop(context);
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignInScreen(),
+                                  ),
+                                );
                               },
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

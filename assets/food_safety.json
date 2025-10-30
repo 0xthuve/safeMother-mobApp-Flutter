@@ -1,0 +1,1429 @@
+{
+  "Food Safety Guide for Pregnancy": {
+    "disclaimer": "This guide is for informational purposes. Always consult your healthcare provider or a registered dietitian for personalized medical advice.",
+    "foods": {
+      "fruits": {
+        "apple": {
+          "safe": true,
+          "advice": "Wash thoroughly before eating. Excellent source of fiber and vitamins.",
+          "nutrition": {
+            "level": "High",
+            "details": "High in fiber (aids digestion), Vitamin C (boosts immunity), and various antioxidants."
+          },
+          "calories": "~95 per medium apple",
+          "consumption": "1-2 apples daily"
+        },
+        "banana": {
+          "safe": true,
+          "advice": "Rich in potassium; good for digestion and preventing muscle cramps.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of potassium, Vitamin B6, and provides quick energy from natural sugars."
+          },
+          "calories": "~105 per medium banana",
+          "consumption": "1 banana daily"
+        },
+        "orange": {
+          "safe": true,
+          "advice": "Excellent source of Vitamin C and hydration. Wash skin before peeling.",
+          "nutrition": {
+            "level": "High",
+            "details": "Packed with Vitamin C (for immunity and iron absorption) and folate."
+          },
+          "calories": "~62 per medium orange",
+          "consumption": "1-2 oranges daily"
+        },
+        "mango": {
+          "safe": true,
+          "advice": "Excellent source of vitamins. Enjoy ripe mangoes in moderation due to high sugar content.",
+          "nutrition": {
+            "level": "High",
+            "details": "Rich in Vitamins A and C, which are important for immune function and fetal development."
+          },
+          "calories": "~150 per medium mango",
+          "consumption": "1/2 to 1 mango per day in moderation"
+        },
+        "pineapple": {
+          "safe": true,
+          "advice": "Safe in moderation. The enzyme bromelain is not harmful in normal food amounts. Can cause heartburn for some.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "High in Vitamin C and manganese. Contains bromelain, which aids digestion."
+          },
+          "calories": "~80 per cup (chunks)",
+          "consumption": "1-2 cups per week"
+        },
+        "pomegranate": {
+          "safe": true,
+          "advice": "Excellent source of iron and folate. Very beneficial during pregnancy.",
+          "nutrition": {
+            "level": "High",
+            "details": "Rich in iron, folate, Vitamin C, Vitamin K, and powerful antioxidants."
+          },
+          "calories": "~130 per medium fruit",
+          "consumption": "1/2 to 1 pomegranate daily"
+        },
+        "grapes": {
+          "safe": true,
+          "advice": "Safe when washed properly. Rich in antioxidants. Eat in moderation due to high sugar.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Contain Vitamins C and K, antioxidants (like resveratrol), and provide hydration."
+          },
+          "calories": "~100 per cup",
+          "consumption": "1-2 cups per week"
+        },
+        "watermelon": {
+          "safe": true,
+          "advice": "Hydrating and refreshing. Helps with morning sickness and hydration. Ensure it's fresh.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "High water content (90%+), provides Vitamins A and C, and lycopene."
+          },
+          "calories": "~45 per cup (diced)",
+          "consumption": "1-2 cups daily as desired"
+        },
+        "avocado": {
+          "safe": true,
+          "advice": "Rich in healthy fats and nutrients. Excellent for baby's brain development.",
+          "nutrition": {
+            "level": "High",
+            "details": "Packed with healthy monounsaturated fats, folate, potassium, fiber, and Vitamin K."
+          },
+          "calories": "~240 per avocado",
+          "consumption": "1/2 to 1 avocado daily"
+        },
+        "strawberry": {
+          "safe": true,
+          "advice": "Wash very thoroughly, as they can hold onto pesticides. Excellent Vitamin C source.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of Vitamin C, manganese, folate, and antioxidants."
+          },
+          "calories": "~50 per cup",
+          "consumption": "1 cup daily"
+        },
+        "blueberry": {
+          "safe": true,
+          "advice": "A 'superfood' rich in antioxidants. Wash before eating.",
+          "nutrition": {
+            "level": "High",
+            "details": "Packed with antioxidants, Vitamin C, Vitamin K, and fiber."
+          },
+          "calories": "~85 per cup",
+          "consumption": "1 cup daily"
+        },
+        "raspberry": {
+          "safe": true,
+          "advice": "High in fiber, which helps with pregnancy-related constipation. Wash gently.",
+          "nutrition": {
+            "level": "High",
+            "details": "Very high in fiber, Vitamin C, manganese, and antioxidants."
+          },
+          "calories": "~65 per cup",
+          "consumption": "1 cup daily"
+        },
+        "kiwi": {
+          "safe": true,
+          "advice": "High in Vitamin C. Can help with sleep and digestion.",
+          "nutrition": {
+            "level": "High",
+            "details": "Extremely high in Vitamin C, also provides Vitamin K, Vitamin E, and fiber."
+          },
+          "calories": "~90 per cup (sliced)",
+          "consumption": "1-2 kiwis daily"
+        },
+        "pear": {
+          "safe": true,
+          "advice": "Good source of fiber. Wash skin thoroughly before eating.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of fiber, Vitamin C, and potassium."
+          },
+          "calories": "~100 per medium pear",
+          "consumption": "1 pear daily"
+        },
+        "cherries": {
+          "safe": true,
+          "advice": "Safe in moderation. Can help with inflammation. Wash well.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Contain Vitamin C, antioxidants, and melatonin (which may aid sleep)."
+          },
+          "calories": "~90 per cup",
+          "consumption": "1 cup occasionally"
+        },
+        "guava": {
+          "safe": true,
+          "advice": "A tropical fruit powerhouse. Excellent for immunity. Wash well.",
+          "nutrition": {
+            "level": "High",
+            "details": "Exceptionally high in Vitamin C, also provides fiber, Vitamin A, and folate."
+          },
+          "calories": "~112 per cup",
+          "consumption": "1-2 guavas per week"
+        },
+        "jackfruit": {
+          "safe": true,
+          "advice": "Ripe jackfruit is safe in moderation. Unripe jackfruit is safe when cooked as a vegetable.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of fiber, Vitamin C, potassium, and B vitamins."
+          },
+          "calories": "~155 per cup (ripe)",
+          "consumption": "1 cup occasionally"
+        },
+        "custard apple": {
+          "safe": true,
+          "advice": "Safe and nutritious. High in natural sugars, so eat in moderation.",
+          "nutrition": {
+            "level": "High",
+            "details": "Rich in Vitamin C, Vitamin B6, fiber, and magnesium."
+          },
+          "calories": "~140 per 100g",
+          "consumption": "1 fruit occasionally"
+        }
+      },
+      "vegetables": {
+        "spinach": {
+          "safe": true,
+          "advice": "High in iron and folate. Wash leaves thoroughly. Best eaten cooked to increase nutrient absorption.",
+          "nutrition": {
+            "level": "High",
+            "details": "Packed with iron, folate (crucial for pregnancy), vitamins A, C, and K, and fiber."
+          },
+          "calories": "~40 per cup (cooked)",
+          "consumption": "1-2 cups (cooked) daily"
+        },
+        "broccoli": {
+          "safe": true,
+          "advice": "Packed with vitamins and fiber. Cook lightly to preserve nutrients.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of Vitamin C, folate, fiber, iron, calcium, and Vitamin K."
+          },
+          "calories": "~55 per cup (cooked)",
+          "consumption": "1-2 cups daily"
+        },
+        "carrots": {
+          "safe": true,
+          "advice": "Excellent for vitamin A in safe amounts (beta-carotene). Wash and/or peel before eating.",
+          "nutrition": {
+            "level": "High",
+            "details": "Rich in beta-carotene (converts to Vitamin A), fiber, and Vitamin K."
+          },
+          "calories": "~50 per cup (chopped)",
+          "consumption": "1-2 cups daily"
+        },
+        "sweet potatoes": {
+          "safe": true,
+          "advice": "Rich in vitamin A. Excellent complex carbohydrate source for sustained energy.",
+          "nutrition": {
+            "level": "High",
+            "details": "Very high in beta-carotene, fiber, Vitamin C, and potassium."
+          },
+          "calories": "~180 per medium potato (baked)",
+          "consumption": "2-3 servings per week"
+        },
+        "tomatoes": {
+          "safe": true,
+          "advice": "Rich in lycopene. Cooked tomatoes (in sauce) provide more available nutrients.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of Vitamin C, potassium, and the antioxidant lycopene."
+          },
+          "calories": "~30 per medium tomato",
+          "consumption": "1-2 servings daily"
+        },
+        "bell peppers": {
+          "safe": true,
+          "advice": "Excellent source of Vitamin C, especially red ones. Wash thoroughly.",
+          "nutrition": {
+            "level": "High",
+            "details": "Very high in Vitamin C (red peppers are highest), also contain Vitamin A and antioxidants."
+          },
+          "calories": "~30 per medium pepper",
+          "consumption": "1-2 peppers daily"
+        },
+        "leafy greens": {
+          "safe": true,
+          "advice": "Includes kale, collards, etc. Must be washed EXTREMELY well to avoid contamination. Best eaten cooked.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of folate, iron, calcium, fiber, and vitamins A, C, and K."
+          },
+          "calories": "~10-50 per cup (cooked)",
+          "consumption": "1-2 cups daily"
+        },
+        "lettuce": {
+          "safe": true,
+          "advice": "Romaine and dark-leaf lettuce are best. Wash meticulously, as it's a common source of foodborne illness.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Provides folate and Vitamin K. Good for hydration."
+          },
+          "calories": "~10 per cup (shredded)",
+          "consumption": "1-2 cups daily (well-washed)"
+        },
+        "cauliflower": {
+          "safe": true,
+          "advice": "Versatile vegetable, good source of fiber and vitamins.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of Vitamin C, Vitamin K, folate, and fiber."
+          },
+          "calories": "~27 per cup (cooked)",
+          "consumption": "1-2 cups daily"
+        },
+        "cucumber": {
+          "safe": true,
+          "advice": "Hydrating. Wash skin thoroughly if eating unpeeled.",
+          "nutrition": {
+            "level": "Low",
+            "details": "High water content, provides some Vitamin K."
+          },
+          "calories": "~16 per cup (sliced)",
+          "consumption": "1-2 cups daily"
+        },
+        "zucchini": {
+          "safe": true,
+          "advice": "Safe and hydrating. Cook to improve digestion.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Provides Vitamin C, potassium, and has high water content."
+          },
+          "calories": "~20 per cup (cooked)",
+          "consumption": "1-2 cups daily"
+        },
+        "green beans": {
+          "safe": true,
+          "advice": "Good source of vitamins. Must be eaten cooked.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of Vitamin C, Vitamin K, folate, and fiber."
+          },
+          "calories": "~44 per cup (cooked)",
+          "consumption": "1-2 cups daily"
+        },
+        "peas": {
+          "safe": true,
+          "advice": "Good source of plant-based protein and fiber.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Contains fiber, protein, Vitamin A, Vitamin C, and Vitamin K."
+          },
+          "calories": "~135 per cup (cooked)",
+          "consumption": "1 cup daily"
+        },
+        "corn": {
+          "safe": true,
+          "advice": "Good source of energy. Best in moderation as it's starchy.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Provides fiber, B vitamins, and carbohydrates for energy."
+          },
+          "calories": "~140 per cup",
+          "consumption": "1/2 to 1 cup daily"
+        },
+        "mushrooms": {
+          "safe": true,
+          "advice": "Must be cooked thoroughly. Avoid raw mushrooms and wild/foraged mushrooms.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of B vitamins (like riboflavin) and selenium. Some (like cremini) provide Vitamin D."
+          },
+          "calories": "~20 per cup (cooked)",
+          "consumption": "1-2 servings per week"
+        },
+        "onion": {
+          "safe": true,
+          "advice": "Safe when cooked. Adds flavor and antioxidants.",
+          "nutrition": {
+            "level": "Low",
+            "details": "Provides flavor, antioxidants (quercetin), and some Vitamin C."
+          },
+          "calories": "~64 per cup (cooked)",
+          "consumption": "As desired in cooking"
+        },
+        "garlic": {
+          "safe": true,
+          "advice": "Safe in culinary amounts. May cause heartburn in some.",
+          "nutrition": {
+            "level": "Low",
+            "details": "Contains allicin, which has immune-boosting properties."
+          },
+          "calories": "~5 per clove",
+          "consumption": "As desired in cooking"
+        },
+        "ginger": {
+          "safe": true,
+          "advice": "Excellent for nausea and morning sickness. Safe in culinary amounts.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Valued for its anti-nausea and anti-inflammatory properties."
+          },
+          "calories": "~5 per teaspoon (fresh)",
+          "consumption": "Small amounts daily for nausea"
+        },
+        "beets": {
+          "safe": true,
+          "advice": "Good for blood pressure and folate. Best eaten cooked.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of folate, fiber, iron, and nitrates (which help blood pressure)."
+          },
+          "calories": "~75 per cup (cooked)",
+          "consumption": "1-2 servings per week"
+        },
+        "pumpkin": {
+          "safe": true,
+          "advice": "Nutrient-dense vegetable, high in Vitamin A.",
+          "nutrition": {
+            "level": "High",
+            "details": "Very high in beta-carotene (Vitamin A), fiber, and potassium."
+          },
+          "calories": "~50 per cup (cooked)",
+          "consumption": "1-2 cups per week"
+        },
+        "okra": {
+          "safe": true,
+          "advice": "Also known as Lady's Finger. Good source of fiber and folate.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of fiber (helps digestion), folate, and Vitamin C."
+          },
+          "calories": "~33 per cup (cooked)",
+          "consumption": "1-2 servings per week"
+        },
+        "eggplant": {
+          "safe": true,
+          "advice": "Also known as Brinjal. Must be cooked.",
+          "nutrition": {
+            "level": "Low",
+            "details": "Provides fiber and antioxidants."
+          },
+          "calories": "~35 per cup (cooked)",
+          "consumption": "1-2 servings per week"
+        },
+        "cabbage": {
+          "safe": true,
+          "advice": "Safe when cooked. Can cause gas, so eat in moderation.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of Vitamin C, Vitamin K, and fiber."
+          },
+          "calories": "~33 per cup (cooked)",
+          "consumption": "1-2 cups per week"
+        }
+      },
+      "proteins": {
+        "chicken_breast": {
+          "safe": true,
+          "advice": "Cook thoroughly to 165°F (74°C). No pink inside. Excellent lean protein source.",
+          "nutrition": {
+            "level": "High",
+            "details": "High-quality lean protein, iron, zinc, and B vitamins (especially B6 and Niacin)."
+          },
+          "calories": "~165 per 100g (cooked)",
+          "consumption": "3-4 oz servings daily"
+        },
+        "turkey_breast": {
+          "safe": true,
+          "advice": "Cook thoroughly to 165°F (74°C). A very lean protein alternative to chicken.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent lean protein, iron, zinc, phosphorus, and B vitamins."
+          },
+          "calories": "~135 per 100g (cooked)",
+          "consumption": "3-4 oz servings daily"
+        },
+        "beef_lean": {
+          "safe": true,
+          "advice": "Must be cooked well-done (160°F or 71°C) with no pink. Excellent source of iron.",
+          "nutrition": {
+            "level": "High",
+            "details": "Rich in high-quality protein, heme iron (easily absorbed), zinc, and Vitamin B12."
+          },
+          "calories": "~250 per 100g (lean, cooked)",
+          "consumption": "2-3 servings per week"
+        },
+        "pork_lean": {
+          "safe": true,
+          "advice": "Must be cooked well-done (160°F or 71°C). Choose lean cuts like tenderloin.",
+          "nutrition": {
+            "level": "High",
+            "details": "Good source of protein, thiamine (Vitamin B1), and other B vitamins."
+          },
+          "calories": "~240 per 100g (lean, cooked)",
+          "consumption": "1-2 servings per week"
+        },
+        "lamb": {
+          "safe": true,
+          "advice": "Must be cooked well-done (160°F or 71°C). Good source of iron.",
+          "nutrition": {
+            "level": "High",
+            "details": "Rich in protein, iron, zinc, and Vitamin B12."
+          },
+          "calories": "~290 per 100g (cooked)",
+          "consumption": "1-2 servings per week"
+        },
+        "salmon": {
+          "safe": true,
+          "advice": "Cook thoroughly (145°F or 63°C). Excellent source of Omega-3s for baby's brain.",
+          "nutrition": {
+            "level": "High",
+            "details": "Rich in Omega-3s (DHA/EPA), high-quality protein, Vitamin D, and B vitamins."
+          },
+          "calories": "~230 per 100g (cooked)",
+          "consumption": "Two 4-6 oz servings per week"
+        },
+        "cod": {
+          "safe": true,
+          "advice": "Cook thoroughly. A great low-mercury, low-fat fish.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent lean protein, Vitamin B12, and iodine."
+          },
+          "calories": "~105 per 100g (cooked)",
+          "consumption": "2-3 servings per week"
+        },
+        "tilapia": {
+          "safe": true,
+          "advice": "Cook thoroughly. A common, safe, low-mercury fish.",
+          "nutrition": {
+            "level": "High",
+            "details": "Good source of lean protein and Vitamin B12."
+          },
+          "calories": "~130 per 100g (cooked)",
+          "consumption": "2-3 servings per week"
+        },
+        "shrimp": {
+          "safe": true,
+          "advice": "Must be cooked thoroughly (until pink and opaque). Low in mercury.",
+          "nutrition": {
+            "level": "High",
+            "details": "Good source of lean protein, selenium, and iodine."
+          },
+          "calories": "~100 per 100g (cooked)",
+          "consumption": "1-2 servings per week"
+        },
+        "canned_light_tuna": {
+          "safe": true,
+          "advice": "Limit due to mercury. 'Light' tuna (skipjack) is better than 'White' (albacore).",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of protein and Omega-3s, but mercury is a concern."
+          },
+          "calories": "~120 per 100g (in water)",
+          "consumption": "Limit to 1-2 servings per week (max 12oz total)"
+        },
+        "eggs": {
+          "safe": true,
+          "advice": "Cook thoroughly until both yolk and white are firm. Avoid raw or runny eggs. Excellent source of choline.",
+          "nutrition": {
+            "level": "High",
+            "details": "Complete protein, choline (crucial for brain development), iron, and vitamins A, D, B12."
+          },
+          "calories": "~70 per large egg",
+          "consumption": "1-2 eggs daily"
+        },
+        "lentils": {
+          "safe": true,
+          "advice": "Great source of plant-based protein, iron, and fiber. Cook well for easy digestion.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of plant-based protein, folate, iron, and fiber (helps constipation)."
+          },
+          "calories": "~230 per cup (cooked)",
+          "consumption": "1 cup daily"
+        },
+        "chickpeas": {
+          "safe": true,
+          "advice": "Versatile legume. Good source of protein, fiber, and folate.",
+          "nutrition": {
+            "level": "High",
+            "details": "Good source of protein, fiber, folate, and iron."
+          },
+          "calories": "~270 per cup (cooked)",
+          "consumption": "1 cup daily"
+        },
+        "kidney_beans": {
+          "safe": true,
+          "advice": "Must be cooked thoroughly. Never eat raw or undercooked. Great for iron.",
+          "nutrition": {
+            "level": "High",
+            "details": "High in protein, fiber, iron, and folate."
+          },
+          "calories": "~225 per cup (cooked)",
+          "consumption": "1 cup daily"
+        },
+        "black_beans": {
+          "safe": true,
+          "advice": "Cook thoroughly. Good source of fiber and protein.",
+          "nutrition": {
+            "level": "High",
+            "details": "High in protein, fiber, folate, magnesium, and antioxidants."
+          },
+          "calories": "~227 per cup (cooked)",
+          "consumption": "1 cup daily"
+        },
+        "tofu": {
+          "safe": true,
+          "advice": "Good plant-based protein. Ensure it's freshly prepared and cooked.",
+          "nutrition": {
+            "level": "High",
+            "details": "Complete plant protein, calcium (if set with calcium), iron, and isoflavones."
+          },
+          "calories": "~180 per cup (firm)",
+          "consumption": "3-4 servings weekly"
+        },
+        "edamame": {
+          "safe": true,
+          "advice": "Cooked soybeans. Great snack high in protein and folate.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of plant protein, folate, iron, and fiber."
+          },
+          "calories": "~190 per cup (shelled)",
+          "consumption": "1 cup daily"
+        },
+        "paneer": {
+          "safe": true,
+          "advice": "Safe if made from pasteurized milk. Good protein and calcium source for vegetarians.",
+          "nutrition": {
+            "level": "High",
+            "details": "High-quality protein, calcium, and phosphorus. Can be high in fat."
+          },
+          "calories": "~250 per 100g",
+          "consumption": "2-3 servings weekly"
+        }
+      },
+      "dairy": {
+        "milk": {
+          "safe": true,
+          "advice": "Must be pasteurized. Excellent calcium source.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of calcium, Vitamin D (if fortified), protein, and B vitamins."
+          },
+          "calories": "~150 per cup (whole milk)",
+          "consumption": "2-3 cups daily"
+        },
+        "yogurt": {
+          "safe": true,
+          "advice": "Must be pasteurized. Good source of calcium and probiotics (for gut health).",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of calcium, protein, probiotics, and B vitamins."
+          },
+          "calories": "~150 per cup (plain, whole milk)",
+          "consumption": "1-2 servings daily"
+        },
+        "greek_yogurt": {
+          "safe": true,
+          "advice": "Pasteurized. Higher in protein than regular yogurt. Choose plain to avoid excess sugar.",
+          "nutrition": {
+            "level": "High",
+            "details": "Very high in protein, calcium, and probiotics."
+          },
+          "calories": "~100 per 100g (plain, non-fat)",
+          "consumption": "1 serving daily"
+        },
+        "cottage_cheese": {
+          "safe": true,
+          "advice": "Must be pasteurized. Great source of protein.",
+          "nutrition": {
+            "level": "High",
+            "details": "High in protein, calcium, and phosphorus."
+          },
+          "calories": "~160 per cup (full fat)",
+          "consumption": "1/2 to 1 cup daily"
+        },
+        "hard_cheese": {
+          "safe": true,
+          "advice": "Includes cheddar, parmesan, mozzarella. Must be pasteurized. Good calcium source.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Concentrated source of calcium, protein, and phosphorus. High in sodium and fat."
+          },
+          "calories": "~110 per ounce (cheddar)",
+          "consumption": "1-2 ounces daily in moderation"
+        },
+        "cream_cheese": {
+          "safe": true,
+          "advice": "Must be pasteurized. High in fat, so use in moderation.",
+          "nutrition": {
+            "level": "Low",
+            "details": "Primarily fat, low in protein and calcium compared to other dairy."
+          },
+          "calories": "~100 per 2 tbsp",
+          "consumption": "Occasional treat"
+        },
+        "ghee": {
+          "safe": true,
+          "advice": "Clarified butter. Safe to use in cooking in moderation.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Pure fat. Contains fat-soluble vitamins (A, E, K). Use sparingly."
+          },
+          "calories": "~120 per tbsp",
+          "consumption": "1-2 tsp daily in cooking"
+        }
+      },
+      "grains": {
+        "oats": {
+          "safe": true,
+          "advice": "Great source of fiber and energy. Helps prevent constipation.",
+          "nutrition": {
+            "level": "High",
+            "details": "High in soluble fiber (beta-glucan), B vitamins, iron, and complex carbohydrates."
+          },
+          "calories": "~150 per cup (cooked)",
+          "consumption": "1-2 cups daily"
+        },
+        "brown_rice": {
+          "safe": true,
+          "advice": "Healthy whole grain option. Provides sustained energy and fiber.",
+          "nutrition": {
+            "level": "High",
+            "details": "Complex carbs for energy, high in fiber, B vitamins, and magnesium."
+          },
+          "calories": "~215 per cup (cooked)",
+          "consumption": "1-2 cups daily"
+        },
+        "quinoa": {
+          "safe": true,
+          "advice": "Complete protein and gluten-free. Excellent grain alternative. Rinse well before cooking.",
+          "nutrition": {
+            "level": "High",
+            "details": "A complete protein (all 9 essential amino acids), high in fiber, iron, and magnesium."
+          },
+          "calories": "~220 per cup (cooked)",
+          "consumption": "1-2 cups daily"
+        },
+        "whole_wheat_bread": {
+          "safe": true,
+          "advice": "Choose 100% whole grain for maximum nutrition and fiber.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of fiber, B vitamins, and complex carbohydrates."
+          },
+          "calories": "~80-100 per slice",
+          "consumption": "2-4 slices daily"
+        },
+        "white_rice": {
+          "safe": true,
+          "advice": "Safe, but lower in nutrients than brown rice. Good for energy if experiencing nausea.",
+          "nutrition": {
+            "level": "Low",
+            "details": "Mainly carbohydrates for energy. Often fortified, but lacks fiber."
+          },
+          "calories": "~205 per cup (cooked)",
+          "consumption": "In moderation; prefer whole grains"
+        },
+        "whole_wheat_pasta": {
+          "safe": true,
+          "advice": "Good source of complex carbs and fiber. Cook thoroughly.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Provides complex carbs, fiber, and B vitamins."
+          },
+          "calories": "~175 per cup (cooked)",
+          "consumption": "1-2 cups per meal"
+        },
+        "barley": {
+          "safe": true,
+          "advice": "A very high-fiber grain. Great for digestion.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of fiber, selenium, and B vitamins."
+          },
+          "calories": "~190 per cup (cooked)",
+          "consumption": "1-2 servings per week"
+        },
+        "millet": {
+          "safe": true,
+          "advice": "Gluten-free grain rich in minerals.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of magnesium, phosphorus, and antioxidants."
+          },
+          "calories": "~200 per cup (cooked)",
+          "consumption": "1-2 servings per week"
+        },
+        "whole_grain_cereal": {
+          "safe": true,
+          "advice": "Choose options low in sugar and high in fiber. Check for fortification (iron, folic acid).",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of fiber, B vitamins, and often fortified with iron and folic acid."
+          },
+          "calories": "~150-200 per cup",
+          "consumption": "1 serving daily"
+        }
+      },
+      "nuts_and_seeds": {
+        "almonds": {
+          "safe": true,
+          "advice": "Excellent snack. Rich in healthy fats, protein, and calcium.",
+          "nutrition": {
+            "level": "High",
+            "details": "High in healthy fats, protein, fiber, Vitamin E, magnesium, and calcium."
+          },
+          "calories": "~165 per 1/4 cup (small handful)",
+          "consumption": "1 small handful daily"
+        },
+        "walnuts": {
+          "safe": true,
+          "advice": "The best nut source of plant-based Omega-3s (ALA) for baby's brain.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of Omega-3 (ALA), protein, and antioxidants."
+          },
+          "calories": "~185 per 1/4 cup (small handful)",
+          "consumption": "1 small handful daily"
+        },
+        "peanuts": {
+          "safe": true,
+          "advice": "Safe unless allergic. Good source of protein and folate.",
+          "nutrition": {
+            "level": "High",
+            "details": "Good source of protein, folate, niacin, and healthy fats."
+          },
+          "calories": "~170 per 1/4 cup",
+          "consumption": "1 small handful daily"
+        },
+        "peanut_butter": {
+          "safe": true,
+          "advice": "Choose natural peanut butter without added sugar or hydrogenated oils.",
+          "nutrition": {
+            "level": "High",
+            "details": "Good source of protein, healthy fats, and folate."
+          },
+          "calories": "~190 per 2 tbsp",
+          "consumption": "1-2 tbsp daily"
+        },
+        "cashews": {
+          "safe": true,
+          "advice": "Good source of iron and zinc. Eat in moderation.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of iron, zinc, magnesium, and healthy fats."
+          },
+          "calories": "~165 per 1/4 cup",
+          "consumption": "1 small handful daily"
+        },
+        "chia_seeds": {
+          "safe": true,
+          "advice": "High in fiber and Omega-3s. Helps with constipation. Must be soaked or mixed with liquid.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of fiber, Omega-3 (ALA), protein, and calcium."
+          },
+          "calories": "~140 per 2 tbsp",
+          "consumption": "1-2 tbsp daily"
+        },
+        "flax_seeds": {
+          "safe": true,
+          "advice": "Must be ground to absorb nutrients. High in fiber and Omega-3s.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of fiber and Omega-3 (ALA)."
+          },
+          "calories": "~75 per 2 tbsp (ground)",
+          "consumption": "1-2 tbsp (ground) daily"
+        },
+        "pumpkin_seeds": {
+          "safe": true,
+          "advice": "Great snack, high in iron, magnesium, and zinc.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of iron, magnesium, zinc, and healthy fats."
+          },
+          "calories": "~180 per 1/4 cup",
+          "consumption": "1-2 tbsp daily"
+        },
+        "sunflower_seeds": {
+          "safe": true,
+          "advice": "Rich in Vitamin E and selenium.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of Vitamin E, selenium, and healthy fats."
+          },
+          "calories": "~200 per 1/4 cup",
+          "consumption": "1-2 tbsp daily"
+        }
+      },
+      "fats_and_oils": {
+        "olive_oil": {
+          "safe": true,
+          "advice": "Excellent healthy fat for cooking and dressings.",
+          "nutrition": {
+            "level": "High",
+            "details": "High in monounsaturated fats (heart-healthy) and antioxidants."
+          },
+          "calories": "~120 per tbsp",
+          "consumption": "1-2 tbsp daily"
+        },
+        "coconut_oil": {
+          "safe": true,
+          "advice": "Safe for cooking, but high in saturated fat. Use in moderation.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "High in saturated fat (MCTs). Use sparingly."
+          },
+          "calories": "~120 per tbsp",
+          "consumption": "In moderation"
+        },
+        "butter": {
+          "safe": true,
+          "advice": "Must be from pasteurized milk. Use in moderation due to high saturated fat.",
+          "nutrition": {
+            "level": "Low",
+            "details": "Saturated fat. Provides some Vitamin A."
+          },
+          "calories": "~100 per tbsp",
+          "consumption": "In moderation"
+        }
+      },
+      "beverages": {
+        "water": {
+          "safe": true,
+          "advice": "Stay well hydrated! Essential for all bodily functions, blood volume, and amniotic fluid.",
+          "nutrition": {
+            "level": "Essential",
+            "details": "Crucial for hydration, nutrient transport, waste removal, and amniotic fluid."
+          },
+          "calories": "0",
+          "consumption": "8-12 glasses (2-3 liters) daily"
+        },
+        "coconut_water": {
+          "safe": true,
+          "advice": "Hydrating and rich in electrolytes (potassium). Good for morning sickness. Choose 100% pure.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "High in potassium, provides hydration and electrolytes. Low in sugar compared to juice."
+          },
+          "calories": "~45 per cup",
+          "consumption": "1 cup daily as desired"
+        },
+        "pasteurized_fruit_juice": {
+          "safe": true,
+          "advice": "Must be pasteurized. High in natural sugars, so limit intake. Whole fruit is better.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Provides vitamins (like Vitamin C), but high in sugar and lacks fiber."
+          },
+          "calories": "~110-150 per cup",
+          "consumption": "Limit to 1 small glass (4-6 oz) daily"
+        },
+        "decaf_coffee": {
+          "safe": true,
+          "advice": "A good alternative to regular coffee. Still contains a very small amount of caffeine.",
+          "nutrition": {
+            "level": "Low",
+            "details": "Minimal nutritional value, provides flavor."
+          },
+          "calories": "~2 per cup",
+          "consumption": "1-2 cups daily"
+        },
+        "coffee": {
+          "safe": true,
+          "advice": "Limit caffeine to < 200mg per day (all sources combined).",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Caffeine is a stimulant. High intake is linked to risks. Provides antioxidants."
+          },
+          "calories": "~2 per cup (black)",
+          "consumption": "Max 1-2 small cups daily (check 200mg limit)"
+        },
+        "black_tea": {
+          "safe": true,
+          "advice": "Contains caffeine. Limit intake to stay under the 200mg daily caffeine limit.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Contains caffeine and antioxidants."
+          },
+          "calories": "~2 per cup",
+          "consumption": "Max 2-3 cups daily (check 200mg limit)"
+        },
+        "green_tea": {
+          "safe": true,
+          "advice": "Contains caffeine and may inhibit folic acid absorption. Drink in moderation, not with meals.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Contains caffeine and high levels of antioxidants (catechins)."
+          },
+          "calories": "~2 per cup",
+          "consumption": "Limit to 1-2 cups daily, between meals"
+        }
+      },
+      "indian_sri_lankan_foods": {
+        "idli": {
+          "safe": true,
+          "advice": "Steamed and easily digestible. Healthy breakfast option. Eat with fresh sambar.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Good source of carbohydrates and protein (from rice/lentils), easily digestible."
+          },
+          "calories": "~35-40 per idli",
+          "consumption": "2-4 idlis per meal"
+        },
+        "dosa": {
+          "safe": true,
+          "advice": "Safe when cooked thoroughly. Fermented for better digestion. Eat with fresh sambar/chutney.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Carbohydrates, protein from lentils. Can be oily depending on preparation."
+          },
+          "calories": "~150-200 per plain dosa",
+          "consumption": "1-2 dosas per meal"
+        },
+        "sambar": {
+          "safe": true,
+          "advice": "Nutritious lentil and vegetable stew. Ensure served hot and fresh.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of protein, fiber, and various vitamins from lentils and vegetables."
+          },
+          "calories": "~100-150 per cup",
+          "consumption": "1-2 cups daily"
+        },
+        "dal_tadka": {
+          "safe": true,
+          "advice": "A safe and highly nutritious lentil dish. Excellent source of protein and iron.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of plant-based protein, iron, folate, and fiber."
+          },
+          "calories": "~180 per cup",
+          "consumption": "1-2 cups daily"
+        },
+        "dhal_curry": {
+          "safe": true,
+          "advice": "Sri Lankan lentil curry. A staple, safe, and nutritious. Ensure coconut milk is fresh.",
+          "nutrition": {
+            "level": "High",
+            "details": "Excellent source of protein, iron, and fiber."
+          },
+          "calories": "~200 per cup",
+          "consumption": "1-2 cups daily"
+        },
+        "chana_masala": {
+          "safe": true,
+          "advice": "A healthy chickpea dish. Excellent source of protein and fiber.",
+          "nutrition": {
+            "level": "High",
+            "details": "High in protein, fiber, folate, and iron."
+          },
+          "calories": "~280 per cup",
+          "consumption": "1 cup daily"
+        },
+        "rajma": {
+          "safe": true,
+          "advice": "Kidney bean curry. A great source of iron and protein. Ensure beans are fully cooked.",
+          "nutrition": {
+            "level": "High",
+            "details": "High in protein, fiber, iron, and folate."
+          },
+          "calories": "~250 per cup",
+          "consumption": "1 cup daily"
+        },
+        "palak_paneer": {
+          "safe": true,
+          "advice": "Safe if the paneer is pasteurized and the spinach is well-washed and cooked.",
+          "nutrition": {
+            "level": "High",
+            "details": "Rich in iron, folate, and calcium from spinach and paneer. Can be high in fat."
+          },
+          "calories": "~260 per cup",
+          "consumption": "1-2 servings per week"
+        },
+        "chicken_curry": {
+          "safe": true,
+          "advice": "Ensure the chicken is thoroughly cooked with no pink parts. A good protein source.",
+          "nutrition": {
+            "level": "High",
+            "details": "Good source of protein and B vitamins from chicken."
+          },
+          "calories": "~300-450 per cup",
+          "consumption": "1-2 servings per week"
+        },
+        "fish_curry": {
+          "safe": true,
+          "advice": "Use low-mercury fish (like tilapia, cod, or local safe varieties) and cook thoroughly.",
+          "nutrition": {
+            "level": "High",
+            "details": "Good source of protein and Omega-3s (if using oily fish)."
+          },
+          "calories": "~250-400 per cup",
+          "consumption": "1-2 servings per week"
+        },
+        "kottu_roti": {
+          "safe": true,
+          "advice": "Ensure all meats (chicken/egg) are thoroughly cooked and the dish is prepared fresh and served piping hot.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Provides carbohydrates, protein, and vegetables. Can be high in oil and sodium."
+          },
+        "calories": "~500-800 per serving",
+          "consumption": "Occasional treat"
+        },
+        "string_hoppers": {
+          "safe": true,
+          "advice": "Also known as Idiyappam. Steamed rice noodles. A safe and light option.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Easily digestible carbohydrates. Low in fat."
+          },
+          "calories": "~150 per 10-piece serving",
+          "consumption": "1 serving per meal"
+        },
+        "hoppers": {
+          "safe": true,
+          "advice": "Also known as Appam. The pancake itself is safe. Ensure any egg in the center is fully cooked (firm yolk).",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Carbohydrates from rice flour. If egg is added, provides protein."
+          },
+          "calories": "~100 per plain hopper",
+          "consumption": "1-3 hoppers per meal"
+        },
+        "pol_sambol": {
+          "safe": true,
+          "advice": "Coconut relish. Must be freshly prepared to avoid bacterial growth. Eat in moderation.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Provides healthy fats from coconut, but can be high in calories and very spicy."
+          },
+          "calories": "~150 per 1/4 cup",
+          "consumption": "1-2 tbsp per meal"
+        },
+        "gotu_kola_sambol": {
+          "safe": true,
+          "advice": "A herb-based salad. The leaves MUST be washed meticulously to avoid contamination.",
+          "nutrition": {
+            "level": "High",
+            "details": "Rich in vitamins and considered a medicinal herb. Healthy if cleaned properly."
+          },
+          "calories": "~100 per cup",
+          "consumption": "1 serving per week (if confident in washing)"
+        },
+        "biriyani": {
+          "safe": true,
+          "advice": "Ensure meat (chicken/mutton) is thoroughly cooked and the dish is served hot. High in calories.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Carbohydrates, protein, but can be very high in fat, sodium, and calories."
+          },
+          "calories": "~400-700 per cup",
+          "consumption": "Occasional meal"
+        }
+      },
+      "snacks_and_treats": {
+        "dark_chocolate": {
+          "safe": true,
+          "advice": "Safe in moderation. Good source of antioxidants. Contains caffeine.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "High in antioxidants, iron, and magnesium. Contains caffeine and sugar."
+          },
+          "calories": "~170 per 1-ounce (30g) square",
+          "consumption": "1 small square daily"
+        },
+        "ice_cream": {
+          "safe": true,
+          "advice": "Safe if made with pasteurized milk and eggs. Avoid soft-serve (listeria risk). High in sugar.",
+          "nutrition": {
+            "level": "Low",
+            "details": "High in sugar and fat. Provides some calcium."
+          },
+          "calories": "~150-250 per 1/2 cup",
+          "consumption": "Occasional treat"
+        },
+        "hummus": {
+          "safe": true,
+          "advice": "Good source of protein and fiber. Ensure it's store-bought (pasteurized) or freshly made.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Provides plant-based protein, fiber, and healthy fats (from tahini)."
+          },
+          "calories": "~70 per 2 tbsp",
+          "consumption": "2-4 tbsp daily"
+        },
+        "whole_grain_crackers": {
+          "safe": true,
+          "advice": "Good vehicle for cheese or hummus. Check for low sodium.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "Provides fiber and complex carbs."
+          },
+          "calories": "~80-120 per serving",
+          "consumption": "1 serving daily"
+        },
+        "popcorn": {
+          "safe": true,
+          "advice": "Air-popped popcorn is a healthy, high-fiber snack. Avoid excessive butter and salt.",
+          "nutrition": {
+            "level": "Medium",
+            "details": "A whole grain, high in fiber and antioxidants."
+          },
+          "calories": "~30 per cup (air-popped)",
+          "consumption": "1-3 cups as a snack"
+        },
+        "cake_cookies": {
+          "safe": true,
+          "advice": "Safe in moderation. High in sugar, fat, and calories with low nutritional value.",
+          "nutrition": {
+            "level": "Low",
+            "details": "High in sugar, refined flour, and fats. Provides 'empty' calories."
+          },
+          "calories": "Varies (high)",
+          "consumption": "Occasional treat"
+        }
+      },
+      "foods_to_avoid_or_limit": {
+        "alcohol": {
+          "safe": false,
+          "advice": "Avoid completely. There is no known safe amount of alcohol during pregnancy.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Can cause Fetal Alcohol Spectrum Disorders (FASD) and other serious complications."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid completely"
+        },
+        "high_mercury_fish": {
+          "safe": false,
+          "advice": "Avoid shark, swordfish, king mackerel, tilefish, and orange roughy.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "High levels of mercury can damage the fetal nervous system."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid completely"
+        },
+        "canned_albacore_tuna": {
+          "safe": false,
+          "advice": "This is 'white' tuna. It has more mercury than 'light' tuna. Limit severely.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Moderate mercury levels. 'Light' tuna is a safer choice."
+          },
+          "calories": "N/A",
+          "consumption": "Limit to one 4-6 oz serving per week"
+        },
+        "raw_sushi": {
+          "safe": false,
+          "advice": "Avoid all sushi made with raw fish due to parasite and bacteria (Vibrio, Salmonella) risk.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Risk of foodborne illness outweighs any nutritional benefits."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid completely (cooked rolls are safe)"
+        },
+        "raw_shellfish": {
+          "safe": false,
+          "advice": "Avoid raw oysters, clams, and mussels. High risk of Vibrio and Norovirus.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "High risk of severe food poisoning."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid completely (must be cooked)"
+        },
+        "smoked_salmon": {
+          "safe": false,
+          "advice": "Avoid refrigerated smoked salmon (lox, gravlax) due to Listeria risk, unless it's cooked in a dish (e.g., casserole).",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Listeria risk. Canned, shelf-stable smoked salmon is generally safe."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid unless cooked until steaming hot"
+        },
+        "unpasteurized_dairy": {
+          "safe": false,
+          "advice": "Avoid raw milk and any cheese, yogurt, or juice that is 'unpasteurized'. High risk of Listeria and E. coli.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Risk of Listeria, Salmonella, E. coli."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid completely"
+        },
+        "soft_cheese": {
+          "safe": false,
+          "advice": "Avoid soft, mold-ripened (Brie, Camembert) and blue-veined (Blue cheese, Gorgonzola) cheeses unless they are explicitly made with PASTEURIZED milk.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "High risk of Listeria if unpasteurized. Read the label carefully."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid unless confirmed pasteurized or cooked hot"
+        },
+        "deli_meats": {
+          "safe": false,
+          "advice": "Avoid cold cuts, ham, turkey, roast beef, etc., from the deli counter due to Listeria risk.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Listeria can grow on these meats even when refrigerated."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid unless reheated until steaming hot (165°F)"
+        },
+        "hot_dogs_processed_meats": {
+          "safe": false,
+          "advice": "Includes hot dogs, sausages, salami, pepperoni. High in sodium and nitrates. Listeria risk.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Listeria risk and high in preservatives (nitrates/nitrites) and sodium."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid, or eat only if cooked until steaming hot"
+        },
+        "pate_meat_spreads": {
+          "safe": false,
+          "advice": "Avoid refrigerated pâtés or meat spreads due to Listeria risk.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Listeria risk. Canned, shelf-stable pâté is generally safe."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid refrigerated types"
+        },
+        "raw_eggs": {
+          "safe": false,
+          "advice": "Avoid raw or runny eggs. Found in homemade Caesar dressing, mayo, cookie dough, and some sauces (Hollandaise).",
+          "nutrition": {
+            "level": "N/A",
+            "details": "High risk of Salmonella poisoning."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid completely (store-bought mayo is safe)"
+        },
+        "unripe_papaya": {
+          "safe": false,
+          "advice": "Avoid green, unripe papaya. It contains latex that may trigger uterine contractions.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Contains papain and latex. Ripe papaya is safe in moderation."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid completely"
+        },
+        "raw_sprouts": {
+          "safe": false,
+          "advice": "Avoid all raw sprouts (alfalfa, clover, mung bean, radish). Bacteria (E. coli, Salmonella) are hard to wash off.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "High risk of bacterial contamination."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid completely (safe if cooked thoroughly)"
+        },
+        "unwashed_produce": {
+          "safe": false,
+          "advice": "All fruits and vegetables must be washed thoroughly to remove soil and bacteria (Toxoplasmosis, E. coli).",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Risk of Toxoplasmosis from soil."
+          },
+          "calories": "N/A",
+          "consumption": "Always wash all produce"
+        },
+        "liver": {
+          "safe": false,
+          "advice": "Limit or avoid. Liver is extremely high in Vitamin A, which can cause birth defects in high doses.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Dangerously high levels of preformed Vitamin A."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid or limit to one very small portion per month"
+        },
+        "excessive_caffeine": {
+          "safe": false,
+          "advice": "Limit total caffeine from all sources (coffee, tea, soda, chocolate) to 200mg per day.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "High intake linked to low birth weight and other risks."
+          },
+          "calories": "N/A",
+          "consumption": "Limit to < 200mg daily"
+        },
+        "energy_drinks": {
+          "safe": false,
+          "advice": "Avoid. They contain very high levels of caffeine and other stimulants not tested for pregnancy.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "High caffeine, sugar, and other unsafe stimulants."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid completely"
+        },
+        "herbal_tea": {
+          "safe": false,
+          "advice": "Consult your doctor. Some are safe (ginger, peppermint), but many are not (e.g., licorice, ginseng, hibiscus) and can stimulate the uterus.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Many herbs are not studied for pregnancy safety."
+          },
+          "calories": "~0-5 per cup",
+          "consumption": "Avoid unless specifically approved by your doctor"
+        },
+        "soft_serve_ice_cream": {
+          "safe": false,
+          "advice": "Avoid. The machines are difficult to clean and can be a breeding ground for Listeria.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "Listeria risk from equipment."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid (choose hard-packed ice cream)"
+        },
+        "street_food": {
+          "safe": false,
+          "advice": "Avoid due to high risk of contamination from unhygienic water, prep, and storage.",
+          "nutrition": {
+            "level": "N/A",
+            "details": "High risk of foodborne illness (E. coli, Cholera, Hepatitis A)."
+          },
+          "calories": "N/A",
+          "consumption": "Avoid completely"
+        }
+      }
+    },
+    "general_guidelines": {
+      "food_safety_first": [
+        "Wash hands thoroughly with soap and water before and after handling food.",
+        "Wash all fruits and vegetables under running water, even if you plan to peel them.",
+        "Use separate cutting boards for raw meat and produce to avoid cross-contamination.",
+        "Cook meats, poultry, fish, and eggs to their proper internal temperatures. Use a food thermometer.",
+        "Keep hot foods hot (above 140°F) and cold foods cold (below 40°F).",
+        "Reheat all leftovers until steaming hot (165°F).",
+        "Do not eat food left out at room temperature for more than 2 hours (or 1 hour if it's hot)."
+      ],
+      "key_nutrients_to_focus_on": {
+        "folate_folic_acid": "Found in leafy greens, lentils, beans, fortified cereals. Prevents neural tube defects.",
+        "iron": "Found in lean red meat, poultry, fish, lentils, spinach. Prevents anemia, supports blood volume.",
+        "calcium": "Found in dairy, fortified plant milks, tofu, kale. Builds baby's bones and teeth.",
+        "protein": "Found in meat, poultry, fish, eggs, dairy, legumes, nuts. Essential for tissue growth.",
+        "omega_3_dha": "Found in low-mercury fish (salmon, sardines). Crucial for baby's brain and eye development.",
+        "vitamin_d": "Found in fatty fish, fortified milk, eggs, sunlight. Helps build bones and immunity.",
+        "choline": "Found in eggs, lean meat, fish, peanuts. Critical for brain and spinal cord development.",
+        "iodine": "Found in iodized salt, dairy, seafood. Essential for thyroid function and brain development."
+      },
+      "healthy_eating_tips": [
+        "Eat a variety of colorful foods to get a wide range of nutrients.",
+        "Choose whole foods (fruits, vegetables, whole grains) over processed foods.",
+        "Eat small, frequent meals to combat nausea and maintain energy levels.",
+        "Stay hydrated! Drink 8-12 glasses of water per day.",
+        "Take your prenatal vitamin as prescribed by your doctor.",
+        "Listen to your hunger and fullness cues.",
+        "Limit added sugars, excessive salt, and unhealthy fats."
+      ]
+    }
+  }
+}

@@ -1,13 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Appointment {
-  final int? id;
-  final int doctorId;
-  final int patientId;
+  final String? id;
+  final String doctorId;
+  final String patientId;
   final DateTime appointmentDate;
   final String timeSlot;
-  final String status; // 'scheduled', 'completed', 'cancelled', 'rescheduled'
+  final String status; // 'pending', 'confirmed', 'completed', 'cancelled', 'rescheduled'
   final String reason;
   final String notes;
   final String prescription;
+  final String? videoCallUrl;
+  final String? videoCallId;
+  final bool isVideoCallEnabled;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -17,10 +22,13 @@ class Appointment {
     required this.patientId,
     required this.appointmentDate,
     required this.timeSlot,
-    this.status = 'scheduled',
+    this.status = 'pending',
     this.reason = '',
     this.notes = '',
     this.prescription = '',
+    this.videoCallUrl,
+    this.videoCallId,
+    this.isVideoCallEnabled = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -36,6 +44,9 @@ class Appointment {
       'reason': reason,
       'notes': notes,
       'prescription': prescription,
+      'videoCallUrl': videoCallUrl,
+      'videoCallId': videoCallId,
+      'isVideoCallEnabled': isVideoCallEnabled,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -46,27 +57,46 @@ class Appointment {
       id: map['id'],
       doctorId: map['doctorId'],
       patientId: map['patientId'],
-      appointmentDate: DateTime.parse(map['appointmentDate']),
+      appointmentDate: _parseDateTime(map['appointmentDate']),
       timeSlot: map['timeSlot'],
-      status: map['status'] ?? 'scheduled',
+      status: map['status'] ?? 'pending',
       reason: map['reason'] ?? '',
       notes: map['notes'] ?? '',
       prescription: map['prescription'] ?? '',
-      createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
+      videoCallUrl: map['videoCallUrl'],
+      videoCallId: map['videoCallId'],
+      isVideoCallEnabled: map['isVideoCallEnabled'] ?? false,
+      createdAt: _parseDateTime(map['createdAt']),
+      updatedAt: _parseDateTime(map['updatedAt']),
     );
   }
 
+  // Helper method to parse both Timestamp and String dates
+  static DateTime _parseDateTime(dynamic dateValue) {
+    if (dateValue == null) return DateTime.now();
+    
+    if (dateValue is Timestamp) {
+      return dateValue.toDate();
+    } else if (dateValue is String) {
+      return DateTime.parse(dateValue);
+    } else {
+      return DateTime.now();
+    }
+  }
+
   Appointment copyWith({
-    int? id,
-    int? doctorId,
-    int? patientId,
+    String? id,
+    String? doctorId,
+    String? patientId,
     DateTime? appointmentDate,
     String? timeSlot,
     String? status,
     String? reason,
     String? notes,
     String? prescription,
+    String? videoCallUrl,
+    String? videoCallId,
+    bool? isVideoCallEnabled,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -80,6 +110,9 @@ class Appointment {
       reason: reason ?? this.reason,
       notes: notes ?? this.notes,
       prescription: prescription ?? this.prescription,
+      videoCallUrl: videoCallUrl ?? this.videoCallUrl,
+      videoCallId: videoCallId ?? this.videoCallId,
+      isVideoCallEnabled: isVideoCallEnabled ?? this.isVideoCallEnabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

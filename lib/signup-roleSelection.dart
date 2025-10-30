@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'signup-roleMother.dart'; // keep this for SignupMotherForm()
-import 'linkFamMem.dart';
+import './pages/family_signUp_page.dart';
 import 'pages/doctor/doctor_registration.dart';
+import 'signin.dart';
 
 void main() {
   runApp(const RoleSelectionApp());
@@ -13,8 +14,8 @@ class RoleSelectionApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Safe Mother - Role Selection',
       debugShowCheckedModeBanner: false,
-      title: 'Safe Mother - Role Select',
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
@@ -32,7 +33,7 @@ class RoleSelectionApp extends StatelessWidget {
 }
 
 class RoleSelectionScreen extends StatefulWidget {
-  const RoleSelectionScreen({Key? key}) : super(key: key);
+  const RoleSelectionScreen({super.key});
 
   @override
   State<RoleSelectionScreen> createState() => _RoleSelectionScreenState();
@@ -105,7 +106,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with SingleTi
     if (title == "I'm a Family Member") {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const FamilyLinkScreen()),
+        MaterialPageRoute(builder: (_) => const FamilySignUpScreen()),
       );
       return;
     }
@@ -198,6 +199,51 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with SingleTi
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      // Back button
+                      Row(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.purple[100]!.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: IconButton(
+                              onPressed: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignInScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.arrow_back_ios,
+                                color: Color(0xFF7B1FA2),
+                                size: 20,
+                              ),
+                              padding: const EdgeInsets.all(12),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Back to Login',
+                            style: TextStyle(
+                              color: Color(0xFF9575CD),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      
                       // Top: logo + title
                       Container(
                         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -376,27 +422,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with SingleTi
                             const SizedBox(height: 12),
 
                             // small help row
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3E5F5).withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: const [
-                                  Icon(Icons.info_outline, size: 16, color: Color(0xFF7E57C2)),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'You can change this later in settings',
-                                    style: TextStyle(
-                                      color: Color(0xFF7E57C2),
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          
                           ],
                         ),
                       ),
@@ -404,48 +430,48 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> with SingleTi
                       const SizedBox(height: 24),
 
                       // footer CTA
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF3E5F5).withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              "Need help?",
-                              style: TextStyle(
-                                color: Color(0xFF7E57C2),
-                                fontSize: 15,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            TextButton(
-                              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Contact support tapped'),
-                                  backgroundColor: Color(0xFFE91E63),
-                                ),
-                              ),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                backgroundColor: const Color(0xFFE91E63).withOpacity(0.15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'Contact Us',
-                                style: TextStyle(
-                                  color: Color(0xFFE91E63),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // Container(
+                      //   padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      //   decoration: BoxDecoration(
+                      //     color: const Color(0xFFF3E5F5).withOpacity(0.5),
+                      //     borderRadius: BorderRadius.circular(16),
+                      //   ),
+                      //   child: Row(
+                      //     mainAxisAlignment: MainAxisAlignment.center,
+                      //     children: [
+                      //       const Text(
+                      //         "Need help?",
+                      //         style: TextStyle(
+                      //           color: Color(0xFF7E57C2),
+                      //           fontSize: 15,
+                      //         ),
+                      //       ),
+                      //       const SizedBox(width: 8),
+                      //       TextButton(
+                      //         onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                      //           const SnackBar(
+                      //             content: Text('Contact support tapped'),
+                      //             backgroundColor: Color(0xFFE91E63),
+                      //           ),
+                      //         ),
+                      //         style: TextButton.styleFrom(
+                      //           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      //           backgroundColor: const Color(0xFFE91E63).withOpacity(0.15),
+                      //           shape: RoundedRectangleBorder(
+                      //             borderRadius: BorderRadius.circular(8),
+                      //           ),
+                      //         ),
+                      //         child: const Text(
+                      //           'Contact Us',
+                      //           style: TextStyle(
+                      //             color: Color(0xFFE91E63),
+                      //             fontWeight: FontWeight.w700,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
                       const SizedBox(height: 16),
 
                       const Text(

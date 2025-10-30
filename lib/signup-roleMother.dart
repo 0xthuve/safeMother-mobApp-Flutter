@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'signup-roleMother-p2.dart'; // Make sure this file contains `RoleMotherP2` widget
 import 'signin.dart';
+import 'services/firebase_service.dart';
+import 'services/user_management_service.dart';
 
 void main() {
   runApp(const SignupMotherApp());
@@ -12,8 +14,8 @@ class SignupMotherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
       title: 'Safe Mother - Signup',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8), // Soft off-white background
@@ -46,11 +48,10 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _locationController = TextEditingController();
-  final _eddController = TextEditingController();
   
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  DateTime? _selectedDate;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -61,38 +62,109 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _locationController.dispose();
-    _eddController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFFE91E63), // Soft pink
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Color(0xFF5A5A5A),
-            ),
-            dialogBackgroundColor: Colors.white,
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != _selectedDate) {
+
+
+    Future<void> _registerUser() async {
+      if (!_formKey.currentState!.validate()) {
+        return;
+      }
+
       setState(() {
-        _selectedDate = picked;
-        _eddController.text = "${picked.day}/${picked.month}/${picked.year}";
+        _isLoading = true;
       });
+
+      try {
+        // Check if email is already registered
+        final isEmailRegistered =
+            await FirebaseService.isEmailRegistered(_emailController.text.trim());
+
+        if (isEmailRegistered) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text(
+                  'This email is already registered. Please use a different email or sign in.',
+                ),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+          return;
+        }
+
+        // Register user with UserManagementService
+        final success = await UserManagementService.registerUser(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          fullName: _nameController.text.trim(),
+          role: 'patient',
+          additionalData: {
+            'username': _usernameController.text.trim(),
+            'age': int.tryParse(_ageController.text.trim()) ?? 0,
+            'location': _locationController.text.trim(),
+            'signUpStep': 1, // Indicates user needs to complete profile
+          },
+          context: context,
+        );
+
+        if (success) {
+          // ✅ Wait briefly for Firebase Auth + Firestore sync
+          await Future.delayed(const Duration(seconds: 1));
+
+          // ✅ Reload Firebase user
+          await FirebaseService.reloadCurrentUser();
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Welcome to Safe Mother, ${_nameController.text.trim()}!',
+                ),
+                backgroundColor: const Color(0xFFE91E63),
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+
+            // ✅ Navigate only after user is fully synced
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const RoleMotherP2()),
+            );
+          }
+        } else {
+          throw Exception('Registration failed. Please try again.');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Registration failed: ${e.toString()}'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -358,51 +430,14 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                                   return null;
                                 },
                               ),
-                              const SizedBox(height: 16),
-                              
-                              // EDD (Estimated Due Date)
-                              TextFormField(
-                                controller: _eddController,
-                                readOnly: true,
-                                style: const TextStyle(color: Color(0xFF5A5A5A)),
-                                decoration: InputDecoration(
-                                  labelText: 'Estimated Due Date',
-                                  labelStyle: const TextStyle(color: Color(0xFF9575CD)),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF5F5F5),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  prefixIcon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF9575CD)),
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                                ),
-                                onTap: () => _selectDate(context),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please select your estimated due date';
-                                  }
-                                  return null;
-                                },
-                              ),
                               const SizedBox(height: 24),
                               
-                              // Continue Button - FIXED NAVIGATION
+                              // Continue Button with Firebase Registration
                               SizedBox(
                                 width: double.infinity,
                                 height: 50,
                                 child: ElevatedButton(
-                                  onPressed: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      // Fixed navigation to RoleMotherP2
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => const RoleMotherP2(),
-                                        ),
-                                      );
-                                    }
-                                  },
+                                  onPressed: _isLoading ? null : _registerUser,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFE91E63),
                                     shape: RoundedRectangleBorder(
@@ -411,14 +446,23 @@ class _SignupMotherFormState extends State<SignupMotherForm> {
                                     padding: const EdgeInsets.symmetric(vertical: 16),
                                     elevation: 2,
                                   ),
-                                  child: const Text(
-                                    'Continue',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : const Text(
+                                          'Create Account',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],

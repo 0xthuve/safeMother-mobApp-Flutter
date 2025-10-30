@@ -1,3 +1,7 @@
+# Environment variables
+.env
+vision-key.json
+
 # Miscellaneous
 *.class
 *.log
@@ -11,6 +15,11 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+assets/still-cipher-468306-p2-aae0a6034688.json
+
+# Ignore any other local JSON service account keys placed under assets
+# (uncomment if you want to ignore all JSONs in assets)
+# assets/*.json
 
 # IntelliJ related
 *.iml

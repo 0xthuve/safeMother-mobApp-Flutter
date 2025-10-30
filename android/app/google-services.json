@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1057692047745",
+    "project_id": "safe-mother-app",
+    "storage_bucket": "safe-mother-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1057692047745:android:bea4c4d4137973e1927080",
+        "android_client_info": {
+          "package_name": "com.example.safemothermobapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1057692047745-8ujrcvs7c1vh8qj95v70ac4kgikmgvoa.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB2a8mSJ7bO-w4sNAmpzNIFSuhhkhUaZEc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1057692047745-8ujrcvs7c1vh8qj95v70ac4kgikmgvoa.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,21 +1,107 @@
 import 'package:flutter/material.dart';
-import 'signin.dart';
-import 'services/session_manager.dart';
-import 'patientDashboard.dart';
-import 'pages/doctor/doctor_dashboard.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'l10n/app_localizations.dart'; // 👈 Add this for localization support
 
-void main() {
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'pages/family_home_screen.dart';
+import 'services/family_notification_service.dart';
+import 'services/session_manager.dart';
+import 'services/firebase_service.dart';
+import 'services/notification_service.dart';
+import 'services/backend_service.dart';
+import 'patient_dashboard.dart';
+import 'pages/doctor/doctor_dashboard.dart';
+import 'signin.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    // For development, continue without Firebase if there's an error
+    print('Firebase initialization error: $e');
+  }
+
+  // Initialize Firebase service (will use mock if Firebase not configured)
+  await FirebaseService.initialize();
+
+  // Initialize NotificationService for local notifications
+  await NotificationService().initialize();
+
+  // Initialize notification channels (without context)
+  await FamilyNotificationService().createNotificationChannels();
+  
   runApp(const SafeMotherApp());
 }
 
-class SafeMotherApp extends StatelessWidget {
+class SafeMotherApp extends StatefulWidget {
   const SafeMotherApp({super.key});
+
+  static _SafeMotherAppState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_SafeMotherAppState>();
+
+  @override
+  _SafeMotherAppState createState() => _SafeMotherAppState();
+}
+
+class _SafeMotherAppState extends State<SafeMotherApp> {
+  Locale _locale = const Locale('en');
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLanguagePreference();
+  }
+
+  Future<void> _loadLanguagePreference() async {
+    try {
+      final backendService = BackendService();
+      final languageCode = await backendService.getLanguagePreference();
+      setState(() {
+        _locale = Locale(languageCode);
+      });
+    } catch (e) {
+      // Keep default locale if loading fails
+      print('Error loading language preference: $e');
+    }
+  }
+
+  void setLocale(Locale locale) {
+    setState(() {
+      _locale = locale;
+    });
+    // Save the language preference
+    _saveLanguagePreference(locale.languageCode);
+  }
+
+  Future<void> _saveLanguagePreference(String languageCode) async {
+    try {
+      final backendService = BackendService();
+      await backendService.saveLanguagePreference(languageCode);
+    } catch (e) {
+      print('Error saving language preference: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
+      locale: _locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       title: 'Safe Mother',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Lexend',
         scaffoldBackgroundColor: const Color(0xFFF8F6F8),
@@ -53,15 +139,63 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     try {
-      // Check if session is valid
+      // Check Firebase authentication state
+      if (FirebaseService.isLoggedIn) {
+        final currentUserData = FirebaseService.currentUserData;
+        if (currentUserData != null) {
+          final uid = currentUserData['uid'] as String?;
+          if (uid != null) {
+            // Get user data from Firestore
+            final userData = await FirebaseService.getUserData(uid);
+
+            if (userData != null) {
+              final userRole = userData['role'] as String?;
+
+              // Update session manager with Firebase data
+              await SessionManager.saveLoginSession(
+                userType: userRole == 'doctor' || userRole == 'healthcare'
+                    ? SessionManager.userTypeDoctor
+                    : SessionManager.userTypePatient,
+                userId: uid,
+                userName: userData['fullName'] ??
+                    currentUserData['displayName'] as String? ??
+                    'User',
+                userEmail: currentUserData['email'] as String? ?? '',
+              );
+
+              // Navigate to appropriate dashboard
+              if (userRole == 'doctor' || userRole == 'healthcare') {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const DoctorDashboard()),
+                );
+              } else if (userRole == 'family') {
+                // Navigate to family home screen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FamilyHomeScreen()),
+                );
+              } else {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                );
+              }
+              return;
+            }
+          }
+        }
+      }
+
+      // Fallback to session manager check
       final isSessionValid = await SessionManager.isSessionValid();
-      
+
       if (isSessionValid) {
         final userType = await SessionManager.getUserType();
-        
+
         // Refresh session since user is returning
         await SessionManager.refreshSession();
-        
+
         // Navigate to appropriate dashboard based on user type
         if (userType == SessionManager.userTypePatient) {
           Navigator.pushReplacement(
@@ -72,6 +206,12 @@ class _SplashScreenState extends State<SplashScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const DoctorDashboard()),
+          );
+        } else if (userType == 'family') {
+          // Family member route
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const FamilyHomeScreen()),
           );
         } else {
           // Invalid user type, go to login
@@ -90,6 +230,7 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     } catch (e) {
       // Error checking session, go to login
+      print('Error checking login status: $e');
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const SignInScreen()),
@@ -99,6 +240,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final appTitle = AppLocalizations.of(context)?.appTitle ?? 'Safe Mother';
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -108,41 +251,35 @@ class _SplashScreenState extends State<SplashScreen> {
             end: Alignment.bottomRight,
           ),
         ),
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // App Logo
-              CircleAvatar(
+              const CircleAvatar(
                 radius: 60,
                 backgroundColor: Colors.white,
                 backgroundImage: AssetImage('assets/logo.png'),
               ),
-              SizedBox(height: 24),
-              
-              // App Name
+              const SizedBox(height: 24),
               Text(
-                'Safe Mother',
-                style: TextStyle(
+                appTitle,
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF7B1FA2),
                 ),
               ),
-              SizedBox(height: 8),
-              
-              // Tagline
+              const SizedBox(height: 8),
               Text(
-                'Your trusted companion',
-                style: TextStyle(
+                AppLocalizations.of(context)?.welcomeMessage ??
+                    'Empowering Every Step of Motherhood',
+                style: const TextStyle(
                   fontSize: 16,
                   color: Color(0xFF9575CD),
                 ),
               ),
-              SizedBox(height: 40),
-              
-              // Loading indicator
-              CircularProgressIndicator(
+              const SizedBox(height: 40),
+              const CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFE91E63)),
               ),
             ],
