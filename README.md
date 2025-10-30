@@ -218,3 +218,7 @@ dependencies:
 ✅ **Production Ready**: Complete setup guides and configuration  
 
 The app is now ready for both development/testing (demo mode) and production (with Firebase) use!
+
+## Security note
+
+Sensitive credentials were previously committed to this repository. Those values have been removed from the working tree and a `SECURITY.md` file has been added with remediation steps (rotation, history scrub, and best practices). Do not commit real secrets — use the provided `.env.example` and keep your `.env` file local and ignored by git.
